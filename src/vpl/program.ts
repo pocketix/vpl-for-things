@@ -2,7 +2,12 @@ import { VariableTypes, ArgumentTypes } from './language';
 
 export class Program {
   header: Header;
-  block: ProgramStatement[];
+  body: ProgramStatement[];
+
+  constructor() {
+    this.header = { userVariables: {} };
+    this.body = [];
+  }
 
   addUserVariable() {}
   removeUserVariable() {}

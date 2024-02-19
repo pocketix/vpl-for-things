@@ -7,7 +7,6 @@ export const baseLanguageStatements: Statements = {
     icon: '',
     foregroundColor: '',
     backgroundColor: '',
-    allowNesting: true,
     args: [{ type: 'bool_expr' }],
   },
   else: {
@@ -16,7 +15,6 @@ export const baseLanguageStatements: Statements = {
     icon: '',
     foregroundColor: '',
     backgroundColor: '',
-    allowNesting: true,
     predecessors: ['if'],
   },
   repeat: {
@@ -25,16 +23,14 @@ export const baseLanguageStatements: Statements = {
     icon: '',
     foregroundColor: '',
     backgroundColor: '',
-    allowNesting: true,
     args: [{ type: 'num' }],
   },
   alert: {
-    type: 'abstract_with_args',
+    type: 'unit_with_args',
     label: 'Send Notification',
     icon: '',
     foregroundColor: '',
     backgroundColor: '',
-    allowNesting: false,
     args: [
       {
         type: 'str_opt',
@@ -47,12 +43,11 @@ export const baseLanguageStatements: Statements = {
     ],
   },
   setvar: {
-    type: 'abstract_with_args',
+    type: 'unit_with_args',
     label: 'Set Variable',
     icon: '',
     foregroundColor: '',
     backgroundColor: '',
-    allowNesting: false,
     args: [{ type: 'var' }, { type: 'unknown' }],
   },
 };

@@ -1,20 +1,31 @@
 {
   "name": "vpl-for-things",
+  "type": "module",
   "version": "1.0.0",
-  "description": "A visual programming language library for IoT devices.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "private": "true",
-  "scripts": {
-    "build": "npx tsc",
-    "dev-watch": "npx nodemon ./src/index.ts",
-    "test-watch": "npx nodemon ./src/test.ts"
-  },
   "author": "Lukáš Podvojský",
   "license": "MIT",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/vpl-for-things.umd.cjs",
+  "module": "./dist/lit-project.js",
+  "exports": {
+    ".": {
+      "import": "./dist/vpl-for-things.js",
+      "require": "./dist/vpl-for-things.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lit": "^3.1.2"
+  },
   "devDependencies": {
-    "nodemon": "^3.0.3",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0"
   }
 }
