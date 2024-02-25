@@ -1,7 +1,7 @@
 {
   "name": "@podvojsky/vpl-for-things",
   "type": "module",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Lukáš Podvojský",
   "license": "MIT",
   "private": false,
