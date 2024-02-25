@@ -1,18 +1,37 @@
+import { Language } from '@/vpl/language';
+import { Program } from '@/vpl/program';
+import { consume } from '@lit/context';
 import { html, css, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
+import { languageContext, programContext } from '@/editor/context/editor-context';
 
-@customElement('simple-greeting')
-export class SimpleGreeting extends LitElement {
+@customElement('graphical-editor')
+export class GraphicalEditor extends LitElement {
   static styles = css`
-    p {
-      color: blue;
+    :host {
+      width: 500px;
+      background-color: var(--ge-background);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 1rem;
+      border-radius: var(--ge-wrapper-radius);
     }
   `;
 
-  @property()
-  name = 'Somebody';
+  @consume({ context: languageContext })
+  _language?: Language;
+
+  @consume({ context: programContext })
+  _program?: Program;
 
   render() {
-    return html`<p>Hello, ${this.name}!</p>`;
+    return html` <ge-block .block="${this._program.block}"> </ge-block> `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'graphical-editor': GraphicalEditor;
   }
 }
