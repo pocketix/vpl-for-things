@@ -4,7 +4,7 @@
   "version": "1.0.1",
   "author": "Lukáš Podvojský",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "files": [
     "dist"
   ],
