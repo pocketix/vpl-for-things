@@ -1,35 +1,145 @@
-import { ProgramStatement } from '@vpl/program';
+import { Block } from '@vpl/program';
 
-export const exampleProgram: ProgramStatement[] = [
+export const exampleProgram: Block = [
   {
     id: 'if',
-    args: [{ type: 'bool_expr', value: 'Water Level-1.lvl_measurement_percent_full > 50' }],
+    args: [
+      {
+        type: 'bool_expr',
+        value: {
+          opd1: {
+            type: 'device',
+            label: 'Water Level-1.lvl_measurement_precent_full',
+          },
+          opr: '>',
+          opd2: 50,
+        },
+      },
+    ],
     block: [
       {
-        id: 'repeat',
-        args: [{ type: 'bool_expr', value: "LT22222-1.Relay1 === 'open'" }],
-        block: [
+        id: 'if',
+        args: [
           {
-            id: 'alert',
-            args: [
-              { type: 'str', value: '+420555666777' },
-              { type: 'str', value: 'example@email.com' },
-            ],
+            type: 'bool_expr',
+            value: {
+              opd1: {
+                type: 'device',
+                label: 'LT22222.Relay1',
+              },
+              opr: '===',
+              opd2: 'open',
+            },
           },
         ],
-      },
-      {
-        id: 'if',
+        block: [
+          {
+            id: 'LT222221.setRelay1',
+            args: [{ type: 'str', value: 'close' }],
+          },
+        ],
       },
     ],
   },
   {
     id: 'else',
+    block: [
+      {
+        id: 'if',
+        args: [
+          {
+            type: 'bool_expr',
+            value: {
+              opd1: {
+                type: 'device',
+                label: 'LT22222.Relay1',
+              },
+              opr: '===',
+              opd2: 'close',
+            },
+          },
+        ],
+        block: [
+          {
+            id: 'LT222221.setRelay1',
+            args: [{ type: 'str', value: 'open' }],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const exampleExprProgram: Block = [
+  {
+    id: 'if',
+    block: [],
+    args: [
+      {
+        type: 'bool_expr',
+        value: {
+          // 1 < 2 && 3 < 4 && 5 < 6
+          exprList: [
+            { opd1: 1, opr: '<', opd2: 2 },
+            { opd1: 2, opr: '<', opd2: 3 },
+            { opd1: 3, opr: '<', opd2: 4 },
+          ],
+          opr: '&&',
+        },
+      },
+    ],
   },
   {
-    id: 'repeat',
+    id: 'if',
+    block: [],
+    args: [
+      {
+        type: 'bool_expr',
+        value: {
+          // (1 < 2 && 3 < 4) || 5 < 6
+          exprList: [
+            {
+              exprList: [
+                { opd1: 1, opr: '<', opd2: 2 },
+                { opd1: 2, opr: '<', opd2: 3 },
+              ],
+              opr: '&&',
+            },
+            {
+              opd1: 5,
+              opr: '<',
+              opd2: 6,
+            },
+          ],
+          opr: '||',
+        },
+      },
+    ],
   },
+];
+
+export const exampleNumExprProgram: Block = [
   {
-    id: 'alert',
+    id: 'if',
+    block: [],
+    args: [
+      {
+        type: 'num_expr',
+        value: {
+          // (abc < 32) >= (5 > 3)
+          opd1: {
+            opd1: 'abc',
+            opr: '<',
+            opd2: 32,
+          },
+          opr: '>=',
+          opd2: {
+            opd1: 5,
+            opr: '>',
+            opd2: 3,
+          },
+        },
+      },
+    ],
   },
 ];
