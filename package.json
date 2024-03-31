@@ -22,6 +22,10 @@
     "preview": "vite preview",
     "release": "standard-version && git push --follow-tags && npm publish"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": "https://github.com/podvojsky/vpl-for-things",
   "dependencies": {
     "@lit/context": "^1.1.0",
     "lit": "^3.1.2",
