@@ -12,6 +12,8 @@ export * from '@components/editor-expression-list';
 export * from '@components/editor-icon';
 export * from '@components/editor-expression-modal';
 export * from '@components/ge-statement-argument';
+export * from '@components/editor-expression';
+export * from '@components/editor-variables-modal';
 
 export * from '@vpl/base.language';
 export * from '@vpl/language';
