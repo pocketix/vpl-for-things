@@ -1,4 +1,4 @@
-import { Block } from '@vpl/program';
+import { Block, Program } from '@vpl/program';
 
 export const exampleProgram: Block = [
   {
@@ -77,15 +77,22 @@ export const exampleExprProgram: Block = [
     args: [
       {
         type: 'bool_expr',
-        value: {
-          // 1 < 2 && 3 < 4 && 5 < 6
-          exprList: [
-            { opd1: 1, opr: '<', opd2: 2 },
-            { opd1: 2, opr: '<', opd2: 3 },
-            { opd1: 3, opr: '<', opd2: 4 },
-          ],
-          opr: '&&',
-        },
+        value: [
+          {
+            exprList: [
+              {
+                // 1 < 2 && 3 < 4 && 5 < 6
+                exprList: [
+                  { opd1: 1, opr: '<', opd2: 2 },
+                  { opd1: 2, opr: '<', opd2: 3 },
+                  { opd1: 3, opr: '<', opd2: 4 },
+                ],
+                opr: '&&',
+              },
+            ],
+            opr: '??',
+          },
+        ],
       },
     ],
   },
@@ -95,24 +102,45 @@ export const exampleExprProgram: Block = [
     args: [
       {
         type: 'bool_expr',
-        value: {
-          // (1 < 2 && 3 < 4) || 5 < 6
-          exprList: [
-            {
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-              ],
-              opr: '&&',
-            },
-            {
-              opd1: 5,
-              opr: '<',
-              opd2: 6,
-            },
-          ],
-          opr: '||',
-        },
+        value: [
+          {
+            exprList: [
+              {
+                // (1 < 2 && 3 < 4) || 5 < 6
+                exprList: [
+                  {
+                    exprList: [
+                      { opd1: 1, opr: '<', opd2: 222222222 },
+                      { opd1: 2, opr: '<', opd2: 3 },
+                      {
+                        exprList: [
+                          { opd1: 1, opr: '<', opd2: 222222222 },
+                          { opd1: 2, opr: '<', opd2: 3 },
+                          {
+                            exprList: [
+                              { opd1: 1, opr: '<', opd2: 222222222 },
+                              { opd1: 2, opr: '<', opd2: 3 },
+                            ],
+                            opr: '||',
+                          },
+                        ],
+                        opr: '&&',
+                      },
+                    ],
+                    opr: '||',
+                  },
+                  {
+                    opd1: 5,
+                    opr: '<',
+                    opd2: 6,
+                  },
+                ],
+                opr: '||',
+              },
+            ],
+            opr: '??',
+          },
+        ],
       },
     ],
   },
@@ -138,6 +166,41 @@ export const exampleNumExprProgram: Block = [
             opr: '>',
             opd2: 3,
           },
+        },
+      },
+    ],
+  },
+];
+
+let exampleUserVarProgram = new Program();
+exampleUserVarProgram.header = {
+  userVariables: {
+    promenna1: {
+      type: 'str',
+      value: '',
+    },
+    promenna2: {
+      type: 'num',
+      value: 0,
+    },
+  },
+};
+
+exampleUserVarProgram.block = [
+  {
+    id: 'if',
+    block: [],
+    args: [
+      {
+        type: 'bool_expr',
+        value: {
+          // $promenna1 < 32
+          opd1: {
+            label: 'promenna1',
+            type: 'str',
+          },
+          opr: '<',
+          opd2: 32,
         },
       },
     ],
