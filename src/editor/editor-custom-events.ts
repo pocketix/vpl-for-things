@@ -26,3 +26,13 @@ export const expressionListCustomEvent = {
 export const editorControlsCustomEvent = {
   EDITOR_VIEW_CHANGED: 'ec-view-changed',
 } as const;
+
+export const editorExpressionCustomEvent = {
+  EXPRESSION_SELECTED: 'e-expression-selected',
+  EXPRESSION_HIGHLIGHTED: 'e-expression-highlighted',
+  EXPRESSION_ADD_TRIGGERED: 'e-expression-add-triggered',
+} as const;
+
+export const editorVariablesModalCustomEvent = {
+  VARIABLE_SELECTED: 'e-variable-modal-var-selected',
+} as const;
