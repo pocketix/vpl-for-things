@@ -138,12 +138,23 @@ export const globalStyles = css`
     border-color: var(--blue-500);
   }
 
+  input[type='checkbox'] {
+    accent-color: var(--blue-500);
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+  }
+
   label {
     font-weight: 600;
   }
 
   .mono-font {
     font-family: var(--mono-font);
+  }
+
+  .regular-font {
+    font-family: var(--main-font);
   }
 
   .bold-font {
