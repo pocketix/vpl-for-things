@@ -74,6 +74,11 @@ export const globalStyles = css`
     border-color: var(--blue-500);
   }
 
+  select:disabled {
+    pointer-events: none;
+    opacity: 50%;
+  }
+
   ::-webkit-scrollbar {
     height: 0.85rem;
     width: 0.85rem;
