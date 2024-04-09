@@ -83,59 +83,15 @@ export const exampleExprProgram: Block = [
               {
                 // 1 < 2 && 3 < 4 && 5 < 6
                 exprList: [
-                  { opd1: 1, opr: '<', opd2: 2 },
-                  { opd1: 2, opr: '<', opd2: 3 },
-                  { opd1: 3, opr: '<', opd2: 4 },
+                  {
+                    opd1: { type: 'var', value: 'LT222222-1.temperature1' },
+                    opr: '<',
+                    opd2: { type: 'num', value: 2 },
+                  },
+                  { opd1: { type: 'num', value: 2 }, opr: '<', opd2: { type: 'num', value: 2 } },
+                  { opd1: { type: 'num', value: 2 }, opr: '<', opd2: { type: 'num', value: 2 } },
                 ],
                 opr: '&&',
-              },
-            ],
-            opr: '??',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'if',
-    block: [],
-    args: [
-      {
-        type: 'bool_expr',
-        value: [
-          {
-            exprList: [
-              {
-                // (1 < 2 && 3 < 4) || 5 < 6
-                exprList: [
-                  {
-                    exprList: [
-                      { opd1: 1, opr: '<', opd2: 222222222 },
-                      { opd1: 2, opr: '<', opd2: 3 },
-                      {
-                        exprList: [
-                          { opd1: 1, opr: '<', opd2: 222222222 },
-                          { opd1: 2, opr: '<', opd2: 3 },
-                          {
-                            exprList: [
-                              { opd1: 1, opr: '<', opd2: 222222222 },
-                              { opd1: 2, opr: '<', opd2: 3 },
-                            ],
-                            opr: '||',
-                          },
-                        ],
-                        opr: '&&',
-                      },
-                    ],
-                    opr: '||',
-                  },
-                  {
-                    opd1: 5,
-                    opr: '<',
-                    opd2: 6,
-                  },
-                ],
-                opr: '||',
               },
             ],
             opr: '??',

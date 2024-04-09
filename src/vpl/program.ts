@@ -156,7 +156,12 @@ export class Program {
       case 'bool':
         return true;
       case 'bool_expr':
-        return [{ exprList: [{ opd1: null, opr: '>', opd2: null }], opr: '??' }];
+        return [
+          {
+            exprList: [{ opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } }],
+            opr: '??',
+          },
+        ];
       case 'num':
         return 0;
       case 'num_expr':
@@ -183,7 +188,12 @@ export class Program {
             break;
           case 'bool_expr':
             resultStatement['args'][resultStatement['args'].length - 1]['value'] = [
-              { exprList: [{ opd1: null, opr: '>', opd2: null }], opr: '??' },
+              {
+                exprList: [
+                  { opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } },
+                ],
+                opr: '??',
+              },
             ];
             break;
           case 'num':
@@ -226,16 +236,16 @@ export class Program {
   moveStatement() {}
 
   parseExpression(expression: Expression): string {
-    if (!expression.opd1) {
+    if (!expression.opd1.value) {
       return 'Enter expression';
     }
-    if (!expression.opd2 && expression.opr !== '!') {
+    if (!expression.opd2.value && expression.opr !== '!') {
       return 'Enter expression';
     }
     if ('opd2' in expression) {
-      return `(${expression.opd1} ${expression.opr} ${expression.opd2})`;
+      return `(${expression.opd1.value} ${expression.opr} ${expression.opd2.value})`;
     } else {
-      return expression.opd1.toString();
+      return expression.opd1.value.toString();
     }
   }
 
@@ -317,10 +327,19 @@ export type ProgramStatementArgument = {
 };
 
 export type Expression = {
-  opd1: string | number | boolean | Expression | UserVariable;
+  opd1: ExpressionOperand;
   opr: NumericOperator | CompareOperator;
-  opd2?: string | number | boolean | Expression | UserVariable;
+  opd2?: ExpressionOperand;
 };
+
+export type ExpressionOperand = {
+  type: ExpressionOperandType;
+  value: string | number | boolean | Expression;
+};
+
+export const expressionOperandTypes = ['str', 'num', 'bool', 'expr', 'var', 'unknown'] as const;
+type ExpressionOperandTypesTuple = typeof expressionOperandTypes;
+export type ExpressionOperandType = ExpressionOperandTypesTuple[number];
 
 export type GroupedExpressions = {
   exprList: (GroupedExpressions | Expression)[];

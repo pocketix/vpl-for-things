@@ -120,7 +120,12 @@ export class EditorExpressionList extends LitElement {
   }
 
   handleAddExpression() {
-    this.exprList.unshift({ opd1: null, opr: '>', opd2: null, _uuid: uuidv4() });
+    this.exprList.unshift({
+      opd1: { type: 'unknown', value: null },
+      opr: '>',
+      opd2: { type: 'unknown', value: null },
+      _uuid: uuidv4(),
+    });
 
     this.handleHideExpressionControlsModal();
 
