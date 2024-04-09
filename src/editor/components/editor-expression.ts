@@ -28,16 +28,6 @@ export class EditorExpression extends LitElement {
         align-items: center;
       }
 
-      .operand-button {
-        width: 200px;
-        font-family: var(--mono-font);
-        white-space: nowrap;
-        overflow-x: auto;
-        /* flex: 1; */
-        /* width: 100%; */
-        justify-content: center;
-      }
-
       .expr-header-wrapper {
         display: flex;
         position: sticky;
@@ -118,15 +108,6 @@ export class EditorExpression extends LitElement {
   exprHeaderWrapperRef: Ref<HTMLElement> = createRef();
   exprWrapperRef: Ref<HTMLElement> = createRef();
 
-  handleAddExpressionArgument(exprRef: Expression, opdNum: number) {
-    const event = new CustomEvent(expressionListCustomEvent.ADD_EXPR_ARG, {
-      bubbles: true,
-      composed: true,
-      detail: { selectedAddExpression: { expressionRef: exprRef, opd: `opd${opdNum}` } },
-    });
-    this.dispatchEvent(event);
-  }
-
   handleOprChange(event: Event, expr: Expression) {
     if (this.program.operatorIsUnary(event.currentTarget.value) && !this.program.operatorIsUnary(expr.opr)) {
       delete expr.opd1;
@@ -166,24 +147,11 @@ export class EditorExpression extends LitElement {
     e.stopPropagation();
   }
 
-  handleAddExpression(e: Event) {
-    this.expr.exprList.unshift({ opd1: null, opr: '>', opd2: null, _uuid: uuidv4() });
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
   expressionModifyTemplate() {
     return html`
       <div class="expressions-wrapper" style="width: 100%;">
         ${!this.program.operatorIsUnary(this.expr.opr)
-          ? html`
-              <editor-button @click="${() => this.handleAddExpressionArgument(this.expr, 1)}" class="operand-button">
-                ${this.expr.opd1 ? this.expr.opd1 : html`<editor-icon .icon="${plusLg}"></editor-icon>`}
-              </editor-button>
-            `
+          ? html` <editor-expression-operand .operand="${this.expr.opd1}"></editor-expression-operand> `
           : nothing}
         <select
           .value="${this.expr.opr}"
@@ -194,9 +162,7 @@ export class EditorExpression extends LitElement {
             return html`<option value="${exprOpt}" ?selected=${this.expr.opr === exprOpt}>${exprOpt}</option>`;
           })}
         </select>
-        <editor-button @click="${() => this.handleAddExpressionArgument(this.expr, 2)}" class="operand-button">
-          ${this.expr.opd2 ? this.expr.opd2 : html`<editor-icon .icon="${plusLg}"></editor-icon>`}
-        </editor-button>
+        <editor-expression-operand .operand="${this.expr.opd2}"></editor-expression-operand>
         ${this.exprListIsSelected || this.nestedLevel === 1
           ? html`
               <input

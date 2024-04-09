@@ -115,7 +115,7 @@ export class VplEditor extends LitElement {
     }
 
     deepQuerySelectorAll(
-      'editor-button, editor-controls, editor-expression-list, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal',
+      'editor-button, editor-controls, editor-expression-list, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand',
       this.shadowRoot
     ).forEach((elem: LitElement) => {
       elem.requestUpdate();

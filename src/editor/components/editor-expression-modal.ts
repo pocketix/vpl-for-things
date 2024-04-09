@@ -39,9 +39,6 @@ export class EditorExpressionModal extends LitElement {
   constructor() {
     super();
 
-    this.addEventListener(expressionListCustomEvent.ADD_EXPR_ARG, (e: CustomEvent) => {
-      this.handleAddExpressionArgument(e);
-    });
     this.addEventListener(editorExpressionCustomEvent.EXPRESSION_HIGHLIGHTED, (e: CustomEvent) => {
       this.handleHighlightExpression(
         e.detail.exprToHighlight,
@@ -49,13 +46,6 @@ export class EditorExpressionModal extends LitElement {
         e.detail.exprGroupRelation
       );
     });
-  }
-
-  handleAddExpressionArgument(e: CustomEvent) {
-    this.selectedAddExpression = e.detail.selectedAddExpression;
-
-    this.expressionModalCurrentView = 'addOperand';
-    this.switchViews();
   }
 
   handleHighlightExpression(exprElement: HTMLElement, exprHeaderElement: HTMLElement, exprGroupRelation: '&&' | '||') {
@@ -85,47 +75,6 @@ export class EditorExpressionModal extends LitElement {
     this.expressionModalRef.value.showModal();
   }
 
-  switchViews() {
-    this.expressionsWapperRef.value.classList.add('hidden');
-    this.addOperandWrapperRef.value.classList.add('hidden');
-
-    switch (this.expressionModalCurrentView) {
-      case 'expressions':
-        this.expressionsWapperRef.value.classList.remove('hidden');
-        break;
-      case 'addOperand':
-        this.addOperandWrapperRef.value.classList.remove('hidden');
-        break;
-    }
-  }
-
-  addOperandTemplate() {
-    return html`
-      <div ${ref(this.addOperandWrapperRef)} class="hidden">
-        <editor-button
-          @click="${() => {
-            this.expressionModalCurrentView = 'expressions';
-            this.switchViews();
-          }}">
-          zpet
-        </editor-button>
-        <editor-button
-          @click="${() => {
-            this.selectedAddExpression.expressionRef[this.selectedAddExpression.opd] = 5;
-            this.expressionModalCurrentView = 'expressions';
-            this.switchViews();
-            const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-              bubbles: true,
-              composed: true,
-            });
-            this.dispatchEvent(event);
-          }}">
-          5
-        </editor-button>
-      </div>
-    `;
-  }
-
   render() {
     return html`
       <editor-modal ${ref(this.expressionModalRef)} modalTitle="${'Create Expression'}" class="expression-list-modal">
@@ -136,7 +85,6 @@ export class EditorExpressionModal extends LitElement {
             style="padding: 0;">
           </editor-expression-list>
         </div>
-        ${this.addOperandTemplate()}
       </editor-modal>
     `;
   }
