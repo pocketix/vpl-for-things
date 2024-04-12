@@ -75,10 +75,9 @@ export type UnitLanguageStatement = {
   backgroundColor?: string;
   predecessors?: string[];
   avoidPredecessors?: string[];
-  successors?: string[];
-  avoidSuccessors?: string[];
   parents?: string[];
   avoidParents?: string[];
+  isUserProcedure?: boolean;
 };
 
 export type UnitLanguageStatementWithArgs = UnitLanguageStatement & {
