@@ -12,6 +12,7 @@ import { Argument, ArgumentType, Language } from '@vpl/language';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import {
+  editorVariablesModalCustomEvent,
   expressionListCustomEvent,
   graphicalEditorCustomEvent,
   statementCustomEvent,
@@ -165,6 +166,37 @@ export class GEStatement extends LitElement {
   //#endregion
 
   //#region Lifecycles
+
+  constructor() {
+    super();
+    this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
+      if (this.statement.id === 'setvar') {
+        this.statement.args[1].type = this.program.header.userVariables[this.statement.args[0].value]
+          ? this.program.header.userVariables[this.statement.args[0].value].type
+          : this.language.variables[this.statement.args[0].value]
+          ? 'device'
+          : 'invalid';
+        this.statement.args[1].value =
+          this.statement.args[1].type === 'bool_expr'
+            ? [
+                {
+                  exprList: [
+                    { opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } },
+                  ],
+                  opr: '??',
+                },
+              ]
+            : null;
+
+        const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          bubbles: true,
+          composed: true,
+        });
+        this.dispatchEvent(event);
+      }
+    });
+  }
+
   updated() {
     this.statementHeaderRef.value.setAttribute(
       'style',
@@ -244,7 +276,10 @@ export class GEStatement extends LitElement {
                   .argument="${arg}"
                   .argPosition="${i}"
                   .stmtId="${this.statement.id}"
-                  .showLabel="${true}">
+                  .showLabel="${true}"
+                  .variableKey="${this.statement.id === 'setvar' && arg.type === 'unknown'
+                    ? this.statement.args[0].value
+                    : null}">
                 </ge-statement-argument>
               `
           )}
@@ -288,7 +323,7 @@ export class GEStatement extends LitElement {
               @click="${this.handleToggleStatementControlsModal}"
               title="Statement Controls"
               class="statement-controls-expand-button">
-              <editor-icon .icon="${icons.threeDots}"></editor-icon>
+              <editor-icon .icon="${icons.list}"></editor-icon>
             </editor-button>
             <editor-modal
               class="statement-controls-modal"
@@ -342,7 +377,8 @@ export class GEStatement extends LitElement {
               ${ref(this.statementNestedBlockRef)}
               style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
               class="nested ${this.nestedBlockVisible ? '' : 'hidden'}"
-              .block="${(this.statement as CompoundStatement).block}"></ge-block>
+              .block="${(this.statement as CompoundStatement).block}"
+              .parentStmt="${this.statement}"></ge-block>
           `
         : this.statementTemplate(false)}
     `;
