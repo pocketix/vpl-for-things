@@ -31,12 +31,13 @@ export class VplEditor extends LitElement {
         gap: 0.5rem;
         position: relative;
         width: 100%;
-        max-width: 1000px;
+        max-width: 1200px;
       }
 
       .editor-view-wrapper {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: center;
       }
     `,
   ];
@@ -45,6 +46,8 @@ export class VplEditor extends LitElement {
   //#region Props
   @property() width?: number;
   @property() height?: number;
+  @property() isSmallScreen: boolean = document.body.clientWidth < 800;
+  @property() viewMode: string = 'split';
   //#endregion
 
   //#region Refs
@@ -74,16 +77,28 @@ export class VplEditor extends LitElement {
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
       this.handleChangeEditorView(e.detail.newView);
+      this.viewMode = e.detail.newView;
+      this.requestUpdate();
+    });
+
+    window.addEventListener('resize', () => {
+      if (document.body.clientWidth < 800) {
+        this.isSmallScreen = true;
+      } else {
+        this.isSmallScreen = false;
+      }
     });
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.program.loadProgramBody(exampleExprProgram);
     console.log(this.language);
     console.log(this.program);
 
-    this.shadowRoot.host.style = this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : '';
+    (this.shadowRoot.host as HTMLElement).setAttribute(
+      'style',
+      this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
+    );
   }
   //#endregion
 
@@ -115,14 +130,13 @@ export class VplEditor extends LitElement {
     }
 
     deepQuerySelectorAll(
-      'editor-button, editor-controls, editor-expression-list, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand',
+      'editor-button, editor-controls, editor-expression-list, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal',
       this.shadowRoot
     ).forEach((elem: LitElement) => {
       elem.requestUpdate();
     });
 
-    // TODO Only for Monaco, modify for textarea.
-    this.textEditorRef.value.monacoInstance.getModel().setValue(JSON.stringify(this.program.block, null, '  '));
+    this.textEditorRef.value.textEditorValue = JSON.stringify(this.program.block, null, '  ');
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
@@ -158,11 +172,10 @@ export class VplEditor extends LitElement {
       <editor-controls></editor-controls>
       <div class="editor-view-wrapper">
         <graphical-editor ${ref(this.graphicalEditorRef)}></graphical-editor>
-        <text-editor ${ref(this.textEditorRef)}></text-editor>
+        <text-editor
+          ${ref(this.textEditorRef)}
+          style="${this.isSmallScreen && this.viewMode !== 'te' ? 'display: none;' : ''}"></text-editor>
       </div>
-      <editor-button @click="${() => console.log(JSON.stringify(this.program.block, null, ' '))}">
-        Log Program
-      </editor-button>
     `;
   }
   //#endregion
