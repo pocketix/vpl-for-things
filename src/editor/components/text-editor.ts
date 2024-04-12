@@ -1,12 +1,5 @@
 import { LitElement, html, css, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import * as monaco from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker&inline';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker&inline';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker&inline';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker&inline';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline';
-import monacoEditorStyles from '../../../node_modules/monaco-editor/dev/vs/editor/editor.main.css?inline';
 import { programContext } from '@/editor/context/editor-context';
 import { Program } from '@/vpl/program';
 import { consume, provide } from '@lit/context';
@@ -24,24 +17,31 @@ export class TextEditor extends LitElement {
       :host {
         display: block;
       }
-      .text-editor-container {
-        width: 1000px;
-        height: 500px;
-        border: 1px solid gray;
+
+      #text-editor-content {
+        resize: none;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        font-family: var(--mono-font);
       }
-    `,
-    css`
-      ${unsafeCSS(monacoEditorStyles)}
+
+      #text-editor-content:focus {
+        outline: none !important;
+        border: 1px solid var(--gray-500);
+      }
     `,
   ];
   //#endregion
 
   //#region Props
-  @property() monacoInstance;
+  @property() textEditorValue: string = '';
+  @property() textEditorValueIsInvalid: boolean = false;
   //#endregion
 
   //#region Refs
   textEditorContainerRef: Ref<HTMLElement> = createRef();
+  textAreaRef: Ref<HTMLElement> = createRef();
   //#endregion
 
   //#region Context
@@ -53,56 +53,54 @@ export class TextEditor extends LitElement {
   //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
+    this.textEditorValue = JSON.stringify(this.program.block, null, ' ');
   }
 
-  firstUpdated() {
-    this.initMonacoEditor();
-  }
+  firstUpdated() {}
   //#endregion
 
   //#region Methods
-  initMonacoEditor() {
-    // Register workers
-    self.MonacoEnvironment = {
-      getWorker(_, label) {
-        if (label === 'json') {
-          return new jsonWorker();
-        }
-        if (label === 'css' || label === 'scss' || label === 'less') {
-          return new cssWorker();
-        }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
-          return new htmlWorker();
-        }
-        if (label === 'typescript' || label === 'javascript') {
-          return new tsWorker();
-        }
-        return new editorWorker();
-      },
+  debounce(callback, delay) {
+    let timer;
+    return () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        callback();
+      }, delay);
     };
-
-    // Create monaco editor instance
-    this.monacoInstance = monaco.editor.create(this.textEditorContainerRef.value, {
-      value: `${JSON.stringify(this.program.block, null, ' ')}`,
-      language: 'javascript',
-      minimap: { enabled: false },
-      // automaticLayout: true,
-    });
-
-    // Emit changes to graphical editor
-    this.monacoInstance.getModel().onDidChangeContent(() => {
-      this.program.block = JSON.parse(this.monacoInstance.getValue());
-
-      const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
-      this.dispatchEvent(event);
-      this.requestUpdate();
-    });
   }
   //#endregion
 
+  handleTextEditorValueChange(e: Event) {
+    this.textEditorValueIsInvalid = false;
+    this.textEditorValue = (e.currentTarget as HTMLTextAreaElement).value;
+
+    try {
+      this.program.block = JSON.parse(this.textEditorValue);
+    } catch (error) {
+      this.textEditorValueIsInvalid = true;
+    }
+
+    const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+    this.dispatchEvent(event);
+    this.requestUpdate();
+  }
+
   //#region Render
   render() {
-    return html` <div ${ref(this.textEditorContainerRef)} class="text-editor-container"></div> `;
+    return html`
+      <div ${ref(this.textEditorContainerRef)} class="text-editor-container">
+        <textarea
+          ${ref(this.textAreaRef)}
+          style="${this.textEditorValueIsInvalid ? 'color: var(--red-600);' : ''}"
+          name="text-editor-content"
+          id="text-editor-content"
+          cols="50"
+          rows="30"
+          .value="${this.textEditorValue}"
+          @input="${this.handleTextEditorValueChange}"></textarea>
+      </div>
+    `;
   }
   //#endregion
 }
