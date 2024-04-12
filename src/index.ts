@@ -15,6 +15,9 @@ export * from '@components/ge-statement-argument';
 export * from '@components/editor-expression';
 export * from '@components/editor-variables-modal';
 export * from '@components/editor-expression-operand';
+export * from '@components/editor-user-procedures-modal';
+export * from '@components/editor-user-procedure-modal';
+export * from '@components/editor-user-var-expr-modal';
 
 export * from '@vpl/base.language';
 export * from '@vpl/language';
