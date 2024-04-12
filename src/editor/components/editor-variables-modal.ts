@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
@@ -49,6 +49,11 @@ export class EditorVariablesModal extends LitElement {
         flex-direction: column;
         gap: 0.25rem;
       }
+
+      .vars-not-available {
+        text-align: center;
+        color: var(--gray-500);
+      }
     `,
   ];
 
@@ -78,6 +83,10 @@ export class EditorVariablesModal extends LitElement {
         // } else {
         //   variableIsSameType = this.program.header.userVariables[varKey].type === this.argument.type;
         // }
+        if (this.permittedVarType === 'all') {
+          return varKey.toLowerCase().includes(this.variableSearchInput.toLowerCase());
+        }
+
         variableIsSameType = this.program.header.userVariables[varKey].type === this.permittedVarType;
 
         if (this.variableSearchInput) {
@@ -114,7 +123,7 @@ export class EditorVariablesModal extends LitElement {
   }
 
   handleVariableSearchInputChange(e: Event) {
-    this.variableSearchInput = e.currentTarget.value;
+    this.variableSearchInput = (e.currentTarget as HTMLInputElement).value;
     console.log(this.filteredUserVariables);
   }
 
@@ -146,6 +155,9 @@ export class EditorVariablesModal extends LitElement {
   userVariablesTemplate() {
     return html`
       <div class="variables-wrapper">
+        ${this.filteredUserVariables.length < 1
+          ? html`<div class="vars-not-available">No available variables.</div>`
+          : nothing}
         ${this.filteredUserVariables.map((varKey) => {
           return html`
             <editor-button @click="${() => this.handleSelectUserVariable(varKey)}">${varKey}</editor-button>
@@ -158,6 +170,9 @@ export class EditorVariablesModal extends LitElement {
   deviceVariablesTemplate() {
     return html`
       <div class="variables-wrapper">
+        ${this.filteredDeviceVariables.length < 1
+          ? html`<div class="vars-not-available">No available variables.</div>`
+          : nothing}
         ${this.filteredDeviceVariables.map((varKey) => {
           return html`
             <editor-button @click="${() => this.handleSelectUserVariable(varKey)}">${varKey}</editor-button>
