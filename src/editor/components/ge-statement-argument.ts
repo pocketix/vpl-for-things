@@ -7,6 +7,7 @@ import {
   Program,
   ProgramStatementArgument,
   UserVariableType,
+  VariableTypes,
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -74,6 +75,7 @@ export class GeStatementArgument extends LitElement {
   @property() selectedBoolValue: boolean = true;
   @property() showLabel: boolean = false;
   @property() originalArgumentType: ArgumentType;
+  @property() variableKey: string;
 
   @consume({ context: languageContext })
   @property()
@@ -90,11 +92,11 @@ export class GeStatementArgument extends LitElement {
     this.expressionModalRef.value.showModal();
   }
 
-  handleShowSelectArgumentVariableModalModal() {
+  handleShowSelectArgumentVariableModal() {
     this.selectArgumentVariableModalRef.value.showModal();
   }
 
-  handleHideSelectArgumentVariableModalModal() {
+  handleHideSelectArgumentVariableModal() {
     this.selectArgumentVariableModalRef.value.hideModal();
   }
 
@@ -127,7 +129,6 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleVariableSelected(e: CustomEvent) {
-    console.log('handling select variable');
     this.argument.type = 'var';
     this.argument.value = e.detail.varKey;
 
@@ -158,6 +159,20 @@ export class GeStatementArgument extends LitElement {
     }
   }
 
+  updated() {
+    console.log('ge-statement-argument was updated');
+
+    if (this.variableKey) {
+      if (this.program.header.userVariables[this.variableKey]) {
+        this.argument.type = this.program.header.userVariables[this.variableKey].type;
+      } else {
+        if (this.language.variables[this.variableKey]) {
+          this.argument.type = 'unknown';
+        }
+      }
+    }
+  }
+
   argumentLabelTemplate(labelId: string) {
     return this.language.statements[this.stmtId].args[this.argPosition].label && this.showLabel
       ? html` <label for="${labelId}">${this.language.statements[this.stmtId].args[this.argPosition].label}</label> `
@@ -176,17 +191,21 @@ export class GeStatementArgument extends LitElement {
       permittedVarType = this.argument.type;
     }
 
+    if (this.stmtId === 'setvar' && this.argument.type === 'var') {
+      permittedVarType = 'all';
+    }
+
     return html`
       <div class="${this.argument.type === 'var' && this.argument.value ? 'argument-var-wrapper' : ''}">
         <editor-button
           class="${this.argument.type === 'var' && this.argument.value ? 'expr-arg' : ''}"
           style="height: 100%;"
-          @click="${this.handleShowSelectArgumentVariableModalModal}">
+          @click="${this.handleShowSelectArgumentVariableModal}">
           ${this.argument.type === 'var' && this.argument.value
             ? this.argument.value
             : html`<div class="variables-icon">𝑥</div>`}
         </editor-button>
-        ${this.argument.type === 'var' && this.argument.value
+        ${this.argument.type === 'var' && this.argument.value && this.stmtId !== 'setvar'
           ? html`
               <editor-button @click="${this.handleDeselectUserVariable}">
                 <div class="variables-icon">𝑥-</div>
@@ -202,6 +221,8 @@ export class GeStatementArgument extends LitElement {
   render() {
     let argumentElementId = uuidv4();
 
+    console.log('argument type', this.argument.type);
+
     switch (this.argument.type) {
       case 'bool':
         return html`
@@ -216,7 +237,7 @@ export class GeStatementArgument extends LitElement {
                 <option value="true">True</option>
                 <option value="false">False</option>
               </select>
-              ${this.useVariableTemplate()}
+              ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
         `;
@@ -232,7 +253,7 @@ export class GeStatementArgument extends LitElement {
               </editor-button>
               <editor-expression-modal ${ref(this.expressionModalRef)} .exprList="${this.argument.value}">
               </editor-expression-modal>
-              ${this.useVariableTemplate()}
+              ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
         `;
@@ -244,9 +265,10 @@ export class GeStatementArgument extends LitElement {
               <input
                 id="${argumentElementId}"
                 type="number"
+                placeholder="123"
                 .value="${this.argument.value}"
                 @input="${this.handleValueChange}" />
-              ${this.useVariableTemplate()}
+              ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
         `;
@@ -272,10 +294,11 @@ export class GeStatementArgument extends LitElement {
             <div class="argument-var-wrapper">
               <input
                 id="${argumentElementId}"
+                placeholder="abc"
                 type="text"
                 .value="${this.argument.value}"
                 @input="${this.handleValueChange}" />
-              ${this.useVariableTemplate()}
+              ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
         `;
@@ -296,6 +319,18 @@ export class GeStatementArgument extends LitElement {
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)} ${this.useVariableTemplate()}
+          </div>
+        `;
+      case 'unknown':
+        return html` <div class="argument-wrapper">
+          ${this.argumentLabelTemplate(argumentElementId)}
+          <editor-button disabled>Select variable to set</editor-button>
+        </div>`;
+      case 'device':
+        return html`
+          <div class="argument-wrapper">
+            ${this.argumentLabelTemplate(argumentElementId)}
+            <editor-button disabled>Device variable can't be set</editor-button>
           </div>
         `;
       default:
