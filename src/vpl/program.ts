@@ -1,4 +1,4 @@
-import { VariableTypes, ArgumentType, LanguageStatementType, Variable } from './language';
+import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument } from './language';
 import { v4 as uuidv4 } from 'uuid';
 
 export class Program {
@@ -7,106 +7,8 @@ export class Program {
 
   constructor() {
     this.header = {
-      userVariables: {
-        myvar1: {
-          type: 'bool',
-          value: false,
-        },
-        myvar2: {
-          type: 'bool_expr',
-          value: [
-            {
-              // 1 < 2 && 3 < 4 && 5 < 6
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-                { opd1: 3, opr: '<', opd2: 4 },
-              ],
-              opr: '&&',
-            },
-          ],
-        },
-        myvar3: {
-          type: 'num',
-          value: 342,
-        },
-        myvar4: {
-          type: 'num_expr',
-          value: '(1 + 2 + 3 * 5) / 6',
-        },
-        myvar5: {
-          type: 'str',
-          value: 'hello this is my string andaveryveryverylongoneword.',
-        },
-        myvar6: {
-          type: 'str',
-          value: 'hello this is my string andaveryveryverylongoneword.',
-        },
-        myvar7: {
-          type: 'str',
-          value: 'hello this is my string andaveryveryverylongoneword.',
-        },
-        myvar8: {
-          type: 'str',
-          value: 'hello this is my string andaveryveryverylongoneword.',
-        },
-        myvar9: {
-          type: 'bool_expr',
-          value: [
-            {
-              // 1 < 2 && 3 < 4 && 5 < 6
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-                { opd1: 3, opr: '<', opd2: 4 },
-              ],
-              opr: '&&',
-            },
-          ],
-        },
-        myvar10: {
-          type: 'bool_expr',
-          value: [
-            {
-              // 1 < 2 && 3 < 4 && 5 < 6
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-                { opd1: 3, opr: '<', opd2: 4 },
-              ],
-              opr: '&&',
-            },
-          ],
-        },
-        myvar11: {
-          type: 'bool_expr',
-          value: [
-            {
-              // 1 < 2 && 3 < 4 && 5 < 6
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-                { opd1: 3, opr: '<', opd2: 4 },
-              ],
-              opr: '&&',
-            },
-          ],
-        },
-        myvar12: {
-          type: 'bool_expr',
-          value: [
-            {
-              // 1 < 2 && 3 < 4 && 5 < 6
-              exprList: [
-                { opd1: 1, opr: '<', opd2: 2 },
-                { opd1: 2, opr: '<', opd2: 3 },
-                { opd1: 3, opr: '<', opd2: 4 },
-              ],
-              opr: '&&',
-            },
-          ],
-        },
-      },
+      userVariables: {},
+      userProcedures: {},
     };
     this.block = [];
   }
@@ -114,10 +16,10 @@ export class Program {
   loadProgramBody(block: Block) {
     const assignUUIDRecursive = (stmt: ProgramStatement) => {
       stmt['_uuid'] = uuidv4();
-      if (stmt.args) {
-        for (let arg of stmt.args) {
+      if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
+        for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
           if (arg.type === 'bool_expr') {
-            for (let expr of arg.value) {
+            for (let expr of arg.value as Expression[] | GroupedExpressions[]) {
               assignUUIDRecursiveExpression(expr);
             }
           }
@@ -143,7 +45,6 @@ export class Program {
       assignUUIDRecursive(stmt);
     }
 
-    console.log(JSON.stringify(block), block);
     this.block = block;
   }
   exportProgramBody() {}
@@ -174,7 +75,7 @@ export class Program {
   }
 
   addStatement(block: Block, statement: stmt) {
-    let resultStatement = {};
+    let resultStatement: any = {};
 
     const initArgs = () => {
       for (let arg of statement.args) {
@@ -236,22 +137,28 @@ export class Program {
   moveStatement() {}
 
   parseExpression(expression: Expression): string {
-    if (!expression.opd1.value) {
-      return 'Enter expression';
+    if (expression.opd1) {
+      if (expression.opd1.value === null) {
+        return 'Enter expression';
+      }
     }
-    if (!expression.opd2.value && expression.opr !== '!') {
+    if (expression.opd2.value === null && expression.opr !== '!') {
       return 'Enter expression';
     }
     if ('opd2' in expression) {
-      return `(${expression.opd1.value} ${expression.opr} ${expression.opd2.value})`;
+      if (expression.opd1) {
+        return `(${expression.opd1.value} ${expression.opr} ${expression.opd2.value})`;
+      } else {
+        return `(${expression.opr}${expression.opd2.value})`;
+      }
     } else {
       return expression.opd1.value.toString();
     }
   }
 
   parseGroupedExpressions(groupedExpressions: GroupedExpressions | Expression, topLevel: boolean = true): string {
-    if (groupedExpressions.exprList) {
-      const expressions = groupedExpressions.exprList.map((expr) => {
+    if ((groupedExpressions as GroupedExpressions).exprList) {
+      const expressions = (groupedExpressions as GroupedExpressions).exprList.map((expr) => {
         if ('exprList' in expr) {
           return this.parseGroupedExpressions(expr, false);
         } else {
@@ -279,7 +186,7 @@ export class Program {
 type stmt = {
   type: LanguageStatementType;
   key: string;
-  args?: ProgramStatementArgument[];
+  args?: Argument[];
 };
 
 export type Block = ProgramStatement[];
@@ -287,6 +194,9 @@ export type Block = ProgramStatement[];
 export type Header = {
   userVariables: {
     [id: string]: UserVariable;
+  };
+  userProcedures: {
+    [id: string]: Block;
   };
 };
 
