@@ -112,6 +112,9 @@ export class EditorExpression extends LitElement {
     if (this.program.operatorIsUnary(event.currentTarget.value) && !this.program.operatorIsUnary(expr.opr)) {
       delete expr.opd1;
     }
+    if (this.program.operatorIsUnary(expr.opr) && !this.program.operatorIsUnary(event.currentTarget.value)) {
+      expr.opd1 = { type: 'unknown', value: null };
+    }
     expr.opr = event.currentTarget.value;
 
     const evnt = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
