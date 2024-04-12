@@ -30,14 +30,17 @@ import {
   Expression,
   GroupedExpressions,
   Program,
+  ProgramStatement,
   UserVariable,
   UserVariableType,
   UserVariableValue,
   userVariableTypes,
 } from '@/vpl/program';
-import { editorControlsCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
+import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
+import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 
 export type VariableTableMode = 'display' | 'edit';
+export type SelectedEditorView = 'ge' | 'te' | 'split';
 
 @customElement('editor-controls')
 export class EditorControls extends LitElement {
@@ -173,6 +176,7 @@ export class EditorControls extends LitElement {
         display: flex;
         flex-direction: column;
         column-gap: 1rem;
+        padding: 0.25rem;
       }
 
       .variable-types-legend-item {
@@ -224,15 +228,18 @@ export class EditorControls extends LitElement {
   @property()
   program?: Program;
 
-  @property() selectedEditorView: 'ge' | 'te' | 'split' = 'split';
+  @property() selectedEditorView: SelectedEditorView = 'split';
   @property() variablesTableMode: VariableTableMode = 'display';
   @property() selectedAddVariableType: UserVariableType = 'str';
-  @property() selectedAddVariableInitialValueBool: boolean = true;
-  @property() selectedAddVariableInitialValueBoolExpr: Expression[] | GroupedExpressions[] = [
-    { exprList: [{ opd1: null, opr: '>', opd2: null }], opr: '??' },
+  @property() selectedAddVariableInitialValueBool: any = true;
+  @property() selectedAddVariableInitialValueBoolExpr: any = [
+    {
+      exprList: [{ opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } }],
+      opr: '??',
+    },
   ];
-  @property() selectedAddVariableInitialValueStr: string = '';
-  @property() selectedAddVariableInitialValueNum: string = '0';
+  @property() selectedAddVariableInitialValueStr: any = '';
+  @property() selectedAddVariableInitialValueNum: any = '0';
   @property() selectedAddVariableInitialValueNumExpr: any = [];
   @property() addVariableNameIsMissing: boolean = false;
   @property() addVariableInitialValueIsMissing: boolean = false;
@@ -243,10 +250,12 @@ export class EditorControls extends LitElement {
   @property() tempNewVariable: UserVariable;
 
   userVariablesModalRef: Ref<EditorModal> = createRef();
-  expressionModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
   addVariableModalRef: Ref<EditorModal> = createRef();
   variableTypesLegendModalRef: Ref<EditorModal> = createRef();
+  userProceduresModalRef: Ref<EditorUserProceduresModal> = createRef();
+  inputProgramFileRef: Ref<HTMLInputElement> = createRef();
+  exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -264,7 +273,7 @@ export class EditorControls extends LitElement {
   }
 
   handleUserVariableTypeChange(e: Event, varKey: string) {
-    this.program.header.userVariables[varKey].type = e.currentTarget.value;
+    this.program.header.userVariables[varKey].type = (e.currentTarget as HTMLInputElement).value as UserVariableType;
     console.log(this.program.header.userVariables[varKey]);
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -309,17 +318,13 @@ export class EditorControls extends LitElement {
   }
 
   handleSelectEditorView(e: Event) {
-    this.selectedEditorView = e.currentTarget.value;
+    this.selectedEditorView = (e.currentTarget as HTMLInputElement).value as SelectedEditorView;
     const event = new CustomEvent(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, {
       bubbles: true,
       composed: true,
       detail: { newView: this.selectedEditorView },
     });
     this.dispatchEvent(event);
-  }
-
-  handleShowExpressionModal() {
-    this.expressionModalRef.value.showModal();
   }
 
   handleShowAddVariableExpressionModal() {
@@ -342,11 +347,11 @@ export class EditorControls extends LitElement {
 
   handleSelectVariableType(e: Event) {
     this.addVariableInitialValueIsMissing = false;
-    this.selectedAddVariableType = e.currentTarget.value;
+    this.selectedAddVariableType = (e.currentTarget as HTMLSelectElement).value as UserVariableType;
   }
 
   handleAddVariableNameInputChange(e: Event) {
-    this.addVariableName = e.currentTarget.value;
+    this.addVariableName = (e.currentTarget as HTMLInputElement).value;
     this.addVariableNameIsMissing = false;
     this.addVariableNameExists = false;
   }
@@ -356,19 +361,19 @@ export class EditorControls extends LitElement {
 
     switch (this.selectedAddVariableType) {
       case 'bool':
-        this.selectedAddVariableInitialValueBool = e.currentTarget.value;
+        this.selectedAddVariableInitialValueBool = (e.currentTarget as HTMLInputElement).value;
         break;
       case 'bool_expr':
-        this.selectedAddVariableInitialValueBoolExpr = e.currentTarget.value;
+        this.selectedAddVariableInitialValueBoolExpr = (e.currentTarget as HTMLInputElement).value;
         break;
       case 'num':
-        this.selectedAddVariableInitialValueNum = e.currentTarget.value;
+        this.selectedAddVariableInitialValueNum = (e.currentTarget as HTMLInputElement).value;
         break;
       case 'num_expr':
-        this.selectedAddVariableInitialValueNumExpr = e.currentTarget.value;
+        this.selectedAddVariableInitialValueNumExpr = (e.currentTarget as HTMLInputElement).value;
         break;
       case 'str':
-        this.selectedAddVariableInitialValueStr = e.currentTarget.value;
+        this.selectedAddVariableInitialValueStr = (e.currentTarget as HTMLInputElement).value;
         break;
     }
   }
@@ -459,7 +464,7 @@ export class EditorControls extends LitElement {
   }
 
   handleVariablesSearch(e: Event) {
-    this.variableSearchInput = e.currentTarget.value;
+    this.variableSearchInput = (e.currentTarget as HTMLInputElement).value;
     console.log(this.variableSearchInput);
   }
 
@@ -476,7 +481,7 @@ export class EditorControls extends LitElement {
   }
 
   handleModifyVariableName(e: Event, oldVarKey: string) {
-    let newVarKey = e.currentTarget.value;
+    let newVarKey = (e.currentTarget as HTMLInputElement).value;
     if (newVarKey) {
       if (this.program.header.userVariables[newVarKey]) {
         return;
@@ -488,8 +493,8 @@ export class EditorControls extends LitElement {
   }
 
   handleModifyVariableInitialValue(e: Event, varKey: string) {
-    if (e.currentTarget.value) {
-      this.program.header.userVariables[varKey].value = e.currentTarget.value;
+    if ((e.currentTarget as HTMLInputElement).value) {
+      this.program.header.userVariables[varKey].value = (e.currentTarget as HTMLInputElement).value;
       const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
         bubbles: true,
         composed: true,
@@ -497,6 +502,38 @@ export class EditorControls extends LitElement {
       });
       this.dispatchEvent(event);
     }
+  }
+
+  handleImportProgram() {
+    if (this.inputProgramFileRef.value.files[0]) {
+      if (this.inputProgramFileRef.value.files[0].type === 'application/json') {
+        let fr = new FileReader();
+        fr.onload = (e) => {
+          this.program.loadProgramBody(JSON.parse(e.target.result as string));
+
+          const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(event);
+          const event2 = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(event2);
+        };
+        fr.readAsText(this.inputProgramFileRef.value.files[0]);
+      }
+    }
+  }
+
+  handleExportProgram() {
+    let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
+      JSON.stringify(this.program.block, null, '  ')
+    )}`;
+    this.exportProgramLinkRef.value.setAttribute('href', programStrData);
+    this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
+    this.exportProgramLinkRef.value.click();
   }
 
   userVariablesModalTemplate() {
@@ -785,17 +822,7 @@ export class EditorControls extends LitElement {
           </select>
         `;
       case 'bool_expr':
-        return html`
-          <editor-button @click="${this.handleShowExpressionModal}"
-            >${(this.program.header.userVariables[varKey].value as GroupedExpressions[])?.length > 0
-              ? this.program.parseGroupedExpressions(this.program.header.userVariables[varKey].value[0])
-              : 'Enter expression'}
-          </editor-button>
-          <editor-expression-modal
-            ${ref(this.expressionModalRef)}
-            .exprList="${this.program.header.userVariables[varKey].value}">
-          </editor-expression-modal>
-        `;
+        return html`<editor-user-var-expr-modal .varKey="${varKey}"></editor-user-var-expr-modal> `;
       case 'num':
         return html`
           <input
@@ -826,15 +853,30 @@ export class EditorControls extends LitElement {
     return html`
       <div class="controls">
         <div class="controls-group-export">
-          <editor-button>
-            <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program"></editor-icon>
-          </editor-button>
-          <editor-button>
+          <label for="program-file-input">
+            <input
+              ${ref(this.inputProgramFileRef)}
+              type="file"
+              name="program-file-input"
+              id="program-file-input"
+              style="display: none;"
+              accept="application/json"
+              @input="${this.handleImportProgram}" />
+            <editor-button @click="${this.handleImportProgram}">
+              <editor-icon
+                .icon="${boxArrowInDown}"
+                .width="${18}"
+                .height="${18}"
+                title="Import Program"></editor-icon>
+            </editor-button>
+          </label>
+          <editor-button @click="${this.handleExportProgram}">
             <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+            <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
           </editor-button>
         </div>
         <div class="controls-group-editor">
-          <editor-button>
+          <!-- <editor-button>
             <editor-icon
               .icon="${arrowCounterClockwise}"
               .width="${18}"
@@ -849,7 +891,7 @@ export class EditorControls extends LitElement {
           </editor-button>
           <editor-button>
             <editor-icon .icon="${cloudUpload}" .width="${18}" .height="${18}" title="Save Program"></editor-icon>
-          </editor-button>
+          </editor-button> -->
           <editor-button>
             <editor-icon .icon="${questionCircle}" .width="${18}" .height="${18}" title="Show Help"></editor-icon>
           </editor-button>
@@ -858,7 +900,7 @@ export class EditorControls extends LitElement {
           <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}">
             <div class="variables-icon">𝑥</div>
           </editor-button>
-          <editor-button>
+          <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}">
             <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
           </editor-button>
         </div>
@@ -869,6 +911,7 @@ export class EditorControls extends LitElement {
         <option value="te">Text View</option>
       </select>
       ${this.userVariablesModalTemplate()}
+      <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
   }
 }
