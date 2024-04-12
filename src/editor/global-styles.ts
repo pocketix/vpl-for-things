@@ -13,6 +13,7 @@ export const globalStyles = css`
     --gray-300: #d1d5db;
     --gray-400: #9ca3af;
     --gray-500: #6b7280;
+    --gray-700: #374151;
     --blue-100: #dbeafe;
     --blue-200: #bfdbfe;
     --blue-500: #3b82f6;
@@ -40,7 +41,7 @@ export const globalStyles = css`
   }
 
   .block {
-    display: block !important;
+    display: block;
   }
 
   select {
