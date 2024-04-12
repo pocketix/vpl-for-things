@@ -47,6 +47,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram3',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
+    parents: ['switch'],
     args: [{ type: 'str' }],
   },
 
@@ -102,40 +103,6 @@ export const baseLanguageStatements: Statements = {
     args: [
       { type: 'var', label: 'Variable' },
       { type: 'unknown', label: 'Value' },
-    ],
-  },
-
-  teststmt: {
-    type: 'compound_with_args',
-    group: 'misc',
-    label: 'Testing Statement',
-    icon: 'lightningChargeFill',
-    foregroundColor: '#ffffff',
-    backgroundColor: '#078706',
-    args: [
-      { type: 'bool', label: 'IsTurnedOn' },
-      { type: 'bool_expr', label: 'IdkU' },
-      { type: 'bool_expr', label: 'aaaaaaaaa' },
-      { type: 'num', label: 'asdsdfsdijbf' },
-      { type: 'num_expr', label: 'sdfhsdf' },
-      {
-        type: 'num_opt',
-        label: 'sdhibisd',
-        options: [
-          { id: 10, label: '10' },
-          { id: 20, label: '20' },
-        ],
-      },
-      { type: 'str', label: 'asdfij' },
-      {
-        type: 'str_opt',
-        label: 'ojsijndf',
-        options: [
-          { id: 'str_opt1', label: 'Str Opt 1' },
-          { id: 'str_opt2', label: 'Str Opt 2' },
-        ],
-      },
-      { type: 'unknown' },
     ],
   },
 };
