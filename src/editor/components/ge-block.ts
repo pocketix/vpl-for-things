@@ -2,9 +2,15 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program } from '@/vpl/program';
+import { Block, Program, ProgramStatement } from '@/vpl/program';
 import { graphicalEditorCustomEvent, modalCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
-import { EditorModal, Language } from '@/index';
+import {
+  CompoundLanguageStatementWithArgs,
+  DeviceStatement,
+  EditorModal,
+  Language,
+  UnitLanguageStatementWithArgs,
+} from '@/index';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
@@ -19,7 +25,7 @@ export class GeBlock extends LitElement {
       :host {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem;
       }
 
       .add-new-statement-btn {
@@ -109,6 +115,7 @@ export class GeBlock extends LitElement {
   @property() addStatementOptionsFilter: string = '';
   @property() renderBasicStatements: boolean = true;
   @property() selectedDevice: string;
+  @property() parentStmt: ProgramStatement;
   //#endregion
 
   //#region Refs
@@ -139,6 +146,20 @@ export class GeBlock extends LitElement {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
+      if (this.parentStmt) {
+        if (this.language.statements[this.parentStmt.id].nestedStatements) {
+          console.log(this.language.statements[this.parentStmt.id].nestedStatements, stmt.key);
+
+          if (this.language.statements[this.parentStmt.id].nestedStatements.includes(stmt.key)) {
+            return this.addStatementOptionsFilter
+              ? stmt.label.toLowerCase().includes(this.addStatementOptionsFilter.toLowerCase())
+              : true;
+          } else {
+            return false;
+          }
+        }
+      }
+
       if (this.addStatementOptionsFilter) {
         return stmt.label.toLowerCase().includes(this.addStatementOptionsFilter.toLowerCase());
       }
@@ -180,10 +201,11 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
-      args: this.language.statements[stmtKey].args,
+      args: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
+        .args,
     });
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
     this.dispatchEvent(event);
   }
 
@@ -205,7 +227,7 @@ export class GeBlock extends LitElement {
       this.block[statementIndex] = this.block[statementIndex - 1];
       this.block[statementIndex - 1] = tmpStatement;
       this.requestUpdate();
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
       this.dispatchEvent(event);
     }
     e.stopPropagation();
@@ -219,7 +241,7 @@ export class GeBlock extends LitElement {
       this.block[statementIndex] = this.block[statementIndex + 1];
       this.block[statementIndex + 1] = tmpStatement;
       this.requestUpdate();
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
       this.dispatchEvent(event);
     }
     e.stopPropagation();
@@ -231,7 +253,7 @@ export class GeBlock extends LitElement {
     this.requestUpdate();
     e.stopPropagation();
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
     this.dispatchEvent(event);
   }
 
@@ -272,7 +294,7 @@ export class GeBlock extends LitElement {
   }
 
   handleSelectedDeviceChange(e: Event) {
-    this.selectedDevice = e.currentTarget.value;
+    this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
   //#endregion
@@ -318,7 +340,7 @@ export class GeBlock extends LitElement {
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length
           ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
-              if (!this.language.statements[stmtKey].deviceName) {
+              if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
                 return this.addStatementOptionTemplate(stmtKey);
               }
             })
@@ -333,7 +355,7 @@ export class GeBlock extends LitElement {
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length > 0
           ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
-              return this.language.statements[stmtKey].deviceName === this.selectedDevice
+              return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice
                 ? this.addStatementOptionTemplate(stmtKey)
                 : nothing;
             })
