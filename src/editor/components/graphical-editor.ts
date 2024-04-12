@@ -13,6 +13,7 @@ export class GraphicalEditor extends LitElement {
     globalStyles,
     css`
       :host {
+        width: 100%;
         background-color: white;
         display: flex;
         flex-direction: column;
