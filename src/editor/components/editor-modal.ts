@@ -19,7 +19,8 @@ export class EditorModal extends LitElement {
       }
 
       .dialog {
-        padding: 0.75rem;
+        /* padding: 0.75rem; */
+        padding: 0;
         border: 1px solid var(--gray-300);
         border-radius: 0.5rem;
         outline: none;
@@ -32,7 +33,7 @@ export class EditorModal extends LitElement {
 
       .close-btn {
         margin-left: auto;
-        background-color: white;
+        background-color: rgba(255, 255, 255, 0.8);
         border: none;
         box-shadow: none;
         padding: 0.25rem;
@@ -46,26 +47,36 @@ export class EditorModal extends LitElement {
         display: flex;
         align-items: center;
         gap: 1rem;
+        padding: 0.75rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
       }
 
       .dialog-content {
         display: flex;
         flex-direction: column;
         overflow: auto;
-        max-height: 500px;
+        /* max-height: 500px; */
+        padding: 0.75rem;
+        padding-top: 0;
+        height: 100%;
+        /* align-items: center; */
       }
 
       .dialog-form-wrapper {
         display: flex;
         flex-direction: column;
+        border-radius: 0.5rem;
       }
 
       .dialog-title {
         font-size: 1.125rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
       }
 
       .spacer {
-        margin-top: 0.25rem;
         margin-bottom: 0.5rem;
         border-bottom: 1px solid var(--gray-300);
       }
@@ -75,10 +86,15 @@ export class EditorModal extends LitElement {
 
   //#region Props
   @property() modalTitle: string = 'Default title';
+  @property() modalIcon?: string;
   @property() displayType: DisplayType = 'modal';
   @property() isVisible: boolean = false;
   @property() titleIsVisible: boolean = true;
   @property() closeButtonIsVisible: boolean = true;
+  @property() backgroundColor: string;
+  @property() foregroundColor: string;
+  @property() isFullWidth?: boolean = false;
+  @property() isFullHeight?: boolean = false;
   //#endregion Props
 
   //#region Refs
@@ -147,20 +163,41 @@ export class EditorModal extends LitElement {
   //#region Render
   render() {
     return html`
-      <dialog ${ref(this.dialogRef)} class="dialog" part="dialog">
+      <dialog
+        ${ref(this.dialogRef)}
+        class="dialog"
+        part="dialog"
+        style="${this.backgroundColor ? `border: 2px solid ${this.backgroundColor};` : ''}
+        ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''}
+        ${this.isFullHeight ? 'height: 100%;' : ''}">
         <form method="dialog" class="dialog-form-wrapper">
-          <div class="dialog-header">
-            ${this.titleIsVisible ? html` <div class="dialog-title">${this.modalTitle}</div> ` : nothing}
+          <div
+            class="dialog-header"
+            style="${this.backgroundColor
+              ? `background-color: ${this.backgroundColor}; color: ${this.foregroundColor};`
+              : this.displayType === 'dialog'
+              ? 'padding: 0;'
+              : ''}">
+            ${this.titleIsVisible
+              ? html`
+                  <div class="dialog-title" part="dialog-title">
+                    ${this.modalIcon
+                      ? html` <editor-icon .icon="${this.modalIcon}" .width="${18}" .height="${18}"></editor-icon> `
+                      : nothing}
+                    <span>${this.modalTitle}</span>
+                  </div>
+                `
+              : nothing}
             ${this.closeButtonIsVisible
               ? html`
                   <editor-button @click="${this.hideModal}" type="reset" class="close-btn">
-                    <editor-icon .icon="${xLg}"></editor-icon>
+                    <editor-icon .icon="${xLg}" .width="${18}" .height="${18}"></editor-icon>
                   </editor-button>
                 `
               : nothing}
           </div>
           ${this.titleIsVisible ? html`<div class="spacer"></div>` : nothing}
-          <div class="dialog-content">
+          <div class="dialog-content" style="${this.displayType === 'dialog' ? 'padding: 0;' : ''}">
             <slot></slot>
           </div>
         </form>
