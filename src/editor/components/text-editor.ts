@@ -1,96 +1,108 @@
 import { LitElement, html, css, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-
-import * as monaco from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker&inline';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker&inline';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker&inline';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker&inline';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline';
-import { programContext } from '../context/editor-context';
+import { programContext } from '@/editor/context/editor-context';
 import { Program } from '@/vpl/program';
 import { consume, provide } from '@lit/context';
 import { exampleProgram } from '@/vpl/example.program';
-import monacoEditorStyles from '../../../node_modules/monaco-editor/dev/vs/editor/editor.main.css?inline';
+import { textEditorCustomEvent } from '@/editor/editor-custom-events';
+import { Ref, createRef, ref } from 'lit/directives/ref.js';
+import { globalStyles } from '../global-styles';
 
 @customElement('text-editor')
 export class TextEditor extends LitElement {
-  @consume({ context: programContext })
-  _program?: Program;
-
-  @property()
-  public monacoInstance;
-
+  //#region Styles
   static styles = [
+    globalStyles,
     css`
       :host {
         display: block;
       }
-      .text-editor-wrapper {
-        width: 500px;
-        height: 300px;
+
+      #text-editor-content {
+        resize: none;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        font-family: var(--mono-font);
+      }
+
+      #text-editor-content:focus {
+        outline: none !important;
+        border: 1px solid var(--gray-500);
       }
     `,
-    css`
-      ${unsafeCSS(monacoEditorStyles)}
-    `,
   ];
+  //#endregion
 
+  //#region Props
+  @property() textEditorValue: string = '';
+  @property() textEditorValueIsInvalid: boolean = false;
+  //#endregion
+
+  //#region Refs
+  textEditorContainerRef: Ref<HTMLElement> = createRef();
+  textAreaRef: Ref<HTMLElement> = createRef();
+  //#endregion
+
+  //#region Context
+  @consume({ context: programContext })
+  @property()
+  program?: Program;
+  //#endregion
+
+  //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
-
-    this._program.block = exampleProgram;
-
-    console.log(this._program);
+    this.textEditorValue = JSON.stringify(this.program.block, null, ' ');
   }
 
-  firstUpdated() {
-    self.MonacoEnvironment = {
-      getWorker(_, label) {
-        if (label === 'json') {
-          return new jsonWorker();
-        }
-        if (label === 'css' || label === 'scss' || label === 'less') {
-          return new cssWorker();
-        }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
-          return new htmlWorker();
-        }
-        if (label === 'typescript' || label === 'javascript') {
-          return new tsWorker();
-        }
-        return new editorWorker();
-      },
+  firstUpdated() {}
+  //#endregion
+
+  //#region Methods
+  debounce(callback, delay) {
+    let timer;
+    return () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        callback();
+      }, delay);
     };
+  }
+  //#endregion
 
-    this.monacoInstance = monaco.editor.create(this.shadowRoot.querySelector('#container'), {
-      value: `${JSON.stringify(this._program.block, null, ' ')}`,
-      language: 'javascript',
-      minimap: { enabled: false },
-      // automaticLayout: true,
-    });
+  handleTextEditorValueChange(e: Event) {
+    this.textEditorValueIsInvalid = false;
+    this.textEditorValue = (e.currentTarget as HTMLTextAreaElement).value;
 
-    console.log(this.monacoInstance.getModel());
+    try {
+      this.program.block = JSON.parse(this.textEditorValue);
+    } catch (error) {
+      this.textEditorValueIsInvalid = true;
+    }
 
-    this.monacoInstance.getModel().onDidChangeContent(() => {
-      this._program.block = JSON.parse(this.monacoInstance.getValue());
-
-      console.log(this._program.block);
-
-      const event = new CustomEvent('programchanged', { bubbles: true, composed: true });
-      console.log(event);
-      this.dispatchEvent(event);
-      this.requestUpdate();
-    });
+    const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
+    this.dispatchEvent(event);
+    this.requestUpdate();
   }
 
+  //#region Render
   render() {
     return html`
-      <div style="display:flex; flex-grow: 1; width: 100%; height: 100%">
-        <div id="container" style="width: 500px; height: 500px; border: 1px solid grey"></div>
+      <div ${ref(this.textEditorContainerRef)} class="text-editor-container">
+        <textarea
+          ${ref(this.textAreaRef)}
+          style="${this.textEditorValueIsInvalid ? 'color: var(--red-600);' : ''}"
+          name="text-editor-content"
+          id="text-editor-content"
+          cols="50"
+          rows="30"
+          .value="${this.textEditorValue}"
+          @input="${this.handleTextEditorValueChange}"></textarea>
       </div>
     `;
   }
+  //#endregion
 }
 
 declare global {

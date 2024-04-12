@@ -10,11 +10,9 @@ export default defineConfig({
       fileName: 'vpl-for-things',
     },
     rollupOptions: {
-      external: ['lit', 'monaco-editor'],
       output: {
         globals: {
           lit: 'Lit',
-          'monaco-editor': 'Monaco',
         },
       },
     },
