@@ -18,7 +18,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "release": "standard-version && git push --follow-tags && npm publish"
   },
@@ -29,7 +29,6 @@
   "dependencies": {
     "@lit/context": "^1.1.0",
     "lit": "^3.1.2",
-    "monaco-editor": "^0.46.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
