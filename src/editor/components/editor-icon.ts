@@ -1,7 +1,6 @@
-import { Icon, Language, Program } from '@/index';
+import { Language, Program } from '@/index';
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import * as icons from '@/editor/icons';
 import { globalStyles } from '../global-styles';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
