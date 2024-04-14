@@ -1,8 +1,16 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
-import { EditorModal, EditorVariablesModal, ExpressionOperand, Language, Program, UserVariableType } from '@/index';
-import { checkLg, plusLg, xLg } from '../icons';
+import {
+  EditorModal,
+  EditorVariablesModal,
+  ExpressionOperand,
+  ExpressionOperandType,
+  Language,
+  Program,
+  UserVariableType,
+} from '@/index';
+import { checkLg, plusLg } from '../icons';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
@@ -14,9 +22,8 @@ export class EditorExpressionOperand extends LitElement {
     globalStyles,
     css`
       :host {
-        display: block;
-        width: 100%;
-        flex-grow: 1;
+        display: flex;
+        width: 95%;
       }
 
       .operand-button {
@@ -24,9 +31,13 @@ export class EditorExpressionOperand extends LitElement {
         white-space: nowrap;
         overflow-x: auto;
         flex: 1;
-        width: 100%;
-        max-width: 500px;
-        justify-content: center;
+        width: 95%;
+        justify-content: flex-start;
+        border: none;
+        box-shadow: none;
+        background: none;
+        padding-left: 0;
+        padding-right: 0;
       }
 
       .add-operand-modal-wrapper {
@@ -43,6 +54,7 @@ export class EditorExpressionOperand extends LitElement {
 
       .operand-value-wrapper {
         display: flex;
+        width: 100%;
       }
 
       .variables-icon {
@@ -83,6 +95,7 @@ export class EditorExpressionOperand extends LitElement {
     { id: 'bool', label: 'Boolean' },
   ];
   @property() operandValueIsMissing: boolean = false;
+  @property() visibleOnRender: boolean = false;
 
   exprAddOperandModalRef: Ref<EditorModal> = createRef();
   variablesModalRef: Ref<EditorVariablesModal> = createRef();
@@ -108,7 +121,7 @@ export class EditorExpressionOperand extends LitElement {
 
   handleSelectOperandTypeChange(e: Event) {
     this.operandValueIsMissing = false;
-    this.operand.type = e.currentTarget.value;
+    this.operand.type = (e.currentTarget as HTMLSelectElement).value as ExpressionOperandType;
     this.operand.value = this.initOperandValue(this.operand.type);
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -139,7 +152,7 @@ export class EditorExpressionOperand extends LitElement {
 
   handleOperandValueChange(e: Event) {
     this.operandValueIsMissing = false;
-    this.operand.value = this.convertOperandInputValue(this.operand.type, e.currentTarget.value);
+    this.operand.value = this.convertOperandInputValue(this.operand.type, (e.currentTarget as HTMLSelectElement).value);
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
@@ -148,8 +161,8 @@ export class EditorExpressionOperand extends LitElement {
   }
 
   handleDeselectUserVariable() {
-    this.operand.type = this.program.header.userVariables[this.operand.value]
-      ? this.program.header.userVariables[this.operand.value].type
+    this.operand.type = this.program.header.userVariables[this.operand.value as string]
+      ? this.program.header.userVariables[this.operand.value as string].type
       : 'str';
     this.operand.value = this.initOperandValue(this.operand.type);
 
@@ -165,11 +178,9 @@ export class EditorExpressionOperand extends LitElement {
       case 'bool':
         return short ? 'Bool' : 'Boolean';
       case 'bool_expr':
-        return short ? 'BE' : 'Boolean Expression';
+        return short ? 'Expr' : 'Expression';
       case 'num':
         return short ? 'Num' : 'Number';
-      case 'num_expr':
-        return short ? 'NE' : 'Numeric Expression';
       case 'str':
         return short ? 'Str' : 'String';
       default:
@@ -204,7 +215,11 @@ export class EditorExpressionOperand extends LitElement {
       case 'bool':
         return html`
           <div class="operand-value-wrapper">
-            <select id="add-opd-input" .value="${this.operand.value}" @change="${this.handleOperandValueChange}">
+            <select
+              id="add-opd-input"
+              .value="${this.operand.value}"
+              @change="${this.handleOperandValueChange}"
+              style="${'width: 100%;'}">
               <option value="true">True</option>
               <option value="false">False</option>
             </select>
@@ -221,14 +236,12 @@ export class EditorExpressionOperand extends LitElement {
               id=""
               inputmode="decimal"
               placeholder="123"
-              style="${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
+              style="width: 100%; ${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
               @input="${this.handleOperandValueChange}"
               .value="${this.operand.value}" />
             ${this.variableModalTemplate()}
           </div>
         `;
-      case 'num_expr':
-        return html`num expr`;
       case 'str':
         return html`
           <div class="operand-value-wrapper">
@@ -238,7 +251,7 @@ export class EditorExpressionOperand extends LitElement {
               name=""
               id=""
               placeholder="abc"
-              style="${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
+              style="width: 100%; ${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
               .value="${this.operand.value}"
               @input="${this.handleOperandValueChange}" />
             ${this.variableModalTemplate()}
@@ -254,7 +267,7 @@ export class EditorExpressionOperand extends LitElement {
       <div class="${this.operand.type === 'var' && this.operand.value ? 'operand-value-wrapper' : ''}">
         <editor-button
           class="${this.operand.type === 'var' && this.operand.value ? 'operand-var-input' : ''}"
-          style="height: 100%;"
+          style="height: 100%; width: 100%;"
           @click="${() => this.variablesModalRef.value.showModal()}">
           ${this.operand.type === 'var' && this.operand.value
             ? this.operand.value
@@ -271,9 +284,9 @@ export class EditorExpressionOperand extends LitElement {
       <editor-variables-modal
         ${ref(this.variablesModalRef)}
         .permittedVarType="${this.operand.type === 'var'
-          ? this.program.header.userVariables[this.operand.value]
-            ? this.program.header.userVariables[this.operand.value].type
-            : this.language.variables[this.operand.value].type
+          ? this.program.header.userVariables[this.operand.value as string]
+            ? this.program.header.userVariables[this.operand.value as string].type
+            : this.language.variables[this.operand.value as string].type
           : this.operand.type}">
       </editor-variables-modal>
     `;
@@ -283,21 +296,31 @@ export class EditorExpressionOperand extends LitElement {
     return html`
       <editor-button @click="${this.handleAddExpressionOperand}" class="operand-button">
         ${this.operand.value !== null
-          ? this.operand.value.toString()
+          ? typeof this.operand.value === 'string' && this.operand.type === 'str'
+            ? `"${this.operand.value.toString()}"`
+            : this.operand.type === 'var'
+            ? `$${this.operand.value.toString()}`
+            : this.operand.value.toString()
           : html`<editor-icon .icon="${plusLg}"></editor-icon>`}
       </editor-button>
-      <editor-modal ${ref(this.exprAddOperandModalRef)} .modalTitle="${'Add operand'}" .closeButtonIsVisible="${false}">
+      <editor-modal
+        ${ref(this.exprAddOperandModalRef)}
+        .modalTitle="${'Add operand'}"
+        .closeButtonIsVisible="${false}"
+        .isVisible="${this.operand.value === null ? this.visibleOnRender : false}">
         <div class="add-operand-modal-wrapper">
           <div class="add-operand-modal-item-wrapper">
             <label for="opd-type-select">Type</label>
             ${this.operand.type === 'var'
               ? html`
                   <editor-button disabled>
-                    ${this.program.header.userVariables[this.operand.value]
+                    ${this.program.header.userVariables[this.operand.value as string]
                       ? this.convertVariableTypeToDisplayVariableType(
-                          this.program.header.userVariables[this.operand.value].type
+                          this.program.header.userVariables[this.operand.value as string].type
                         )
-                      : this.convertVariableTypeToDisplayVariableType(this.language.variables[this.operand.value].type)}
+                      : this.convertVariableTypeToDisplayVariableType(
+                          this.language.variables[this.operand.value as string].type as UserVariableType
+                        )}
                   </editor-button>
                 `
               : html`

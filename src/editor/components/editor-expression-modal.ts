@@ -1,13 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
-import {
-  editorExpressionCustomEvent,
-  expressionListCustomEvent,
-  graphicalEditorCustomEvent,
-} from '../editor-custom-events';
+import { editorExpressionCustomEvent } from '../editor-custom-events';
 import { globalStyles } from '../global-styles';
-import { consume } from '@lit/context';
+import { ExpressionOperator } from '@/index';
 
 type ExpressionModalCurrentView = 'expressions' | 'addOperand';
 
@@ -21,13 +17,18 @@ export class EditorExpressionModal extends LitElement {
       }
 
       .expression-list-modal-content-wrapper {
-        min-height: 200px;
-        min-width: 200px;
+        min-height: 300px;
+        min-width: 300px;
+        max-height: 590px;
+      }
+
+      .expression-list-modal::part(dialog) {
+        overflow: auto;
       }
     `,
   ];
 
-  @property() exprList: any;
+  @property() expression: any;
   @property() expressionModalCurrentView: ExpressionModalCurrentView = 'expressions';
   @property() selectedAddExpression: any;
   @property() highlightedExpr: HTMLElement;
@@ -40,35 +41,32 @@ export class EditorExpressionModal extends LitElement {
     super();
 
     this.addEventListener(editorExpressionCustomEvent.EXPRESSION_HIGHLIGHTED, (e: CustomEvent) => {
-      this.handleHighlightExpression(
-        e.detail.exprToHighlight,
-        e.detail.exprHeaderToHighlight,
-        e.detail.exprGroupRelation
-      );
+      this.handleHighlightExpression(e.detail.exprToHighlight, e.detail.exprGroupRelation);
     });
   }
 
-  handleHighlightExpression(exprElement: HTMLElement, exprHeaderElement: HTMLElement, exprGroupRelation: '&&' | '||') {
-    let exprHeader;
-
+  handleHighlightExpression(exprElement: HTMLElement, exprGroupRelation: ExpressionOperator) {
     if (this.highlightedExpr === exprElement) {
-      exprHeader = this.highlightedExpr.getElementsByClassName('expr-header-wrapper')[0];
-      this.highlightedExpr.classList.toggle(exprGroupRelation === '&&' ? 'grouped-by-and' : 'grouped-by-or');
-      exprHeader.classList.toggle(exprGroupRelation === '&&' ? 'grouped-by-and-header' : 'grouped-by-or-header');
+      this.highlightedExpr.classList.toggle('expr-selected');
+      this.highlightedExpr.classList.toggle(
+        exprGroupRelation === '&&'
+          ? 'grouped-by-and'
+          : exprGroupRelation === '||'
+          ? 'grouped-by-or'
+          : 'grouped-by-other'
+      );
       this.highlightedExpr = undefined;
       return;
     }
 
     if (this.highlightedExpr) {
-      exprHeader = this.highlightedExpr.getElementsByClassName('expr-header-wrapper')[0];
-      this.highlightedExpr.classList.remove('grouped-by-and', 'grouped-by-or');
-      exprHeader.classList.remove('grouped-by-and-header', 'grouped-by-or-header');
+      this.highlightedExpr.classList.remove('grouped-by-and', 'grouped-by-or', 'grouped-by-other', 'expr-selected');
     }
     this.highlightedExpr = exprElement;
-    this.highlightedExpr.classList.add(exprGroupRelation === '&&' ? 'grouped-by-and' : 'grouped-by-or');
-
-    exprHeader = this.highlightedExpr.getElementsByClassName('expr-header-wrapper')[0];
-    exprHeader.classList.add(exprGroupRelation === '&&' ? 'grouped-by-and-header' : 'grouped-by-or-header');
+    this.highlightedExpr.classList.add('expr-selected');
+    this.highlightedExpr.classList.add(
+      exprGroupRelation === '&&' ? 'grouped-by-and' : exprGroupRelation === '||' ? 'grouped-by-or' : 'grouped-by-other'
+    );
   }
 
   showModal() {
@@ -79,11 +77,8 @@ export class EditorExpressionModal extends LitElement {
     return html`
       <editor-modal ${ref(this.expressionModalRef)} modalTitle="${'Create Expression'}" class="expression-list-modal">
         <div ${ref(this.expressionsWapperRef)} class="expression-list-modal-content-wrapper">
-          <editor-expression-list
-            .exprList="${this.exprList}"
-            .highlightedExpr="${this.highlightedExpr}"
-            style="padding: 0;">
-          </editor-expression-list>
+          <editor-expression .expression="${this.expression}" .highlightedExpr="${this.highlightedExpr}">
+          </editor-expression>
         </div>
       </editor-modal>
     `;
