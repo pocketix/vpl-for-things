@@ -65,7 +65,7 @@ export const baseLanguageStatements: Statements = {
     type: 'compound_with_args',
     group: 'loop',
     label: 'While',
-    icon: 'repeat',
+    icon: 'repeatIcon',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
     args: [{ type: 'bool_expr', label: 'Condition' }],
