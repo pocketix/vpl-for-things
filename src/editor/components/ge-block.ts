@@ -3,8 +3,9 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { Block, Program, ProgramStatement } from '@/vpl/program';
-import { graphicalEditorCustomEvent, modalCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
+import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
+  CompoundLanguageStatement,
   CompoundLanguageStatementWithArgs,
   DeviceStatement,
   EditorModal,
@@ -110,7 +111,6 @@ export class GeBlock extends LitElement {
 
   //#region Props
   @property() block: Block;
-  @property() visible: boolean;
   @property() addStatementOptionsVisible: boolean = true;
   @property() addStatementOptionsFilter: string = '';
   @property() renderBasicStatements: boolean = true;
@@ -147,10 +147,12 @@ export class GeBlock extends LitElement {
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
       if (this.parentStmt) {
-        if (this.language.statements[this.parentStmt.id].nestedStatements) {
-          console.log(this.language.statements[this.parentStmt.id].nestedStatements, stmt.key);
-
-          if (this.language.statements[this.parentStmt.id].nestedStatements.includes(stmt.key)) {
+        if ((this.language.statements[this.parentStmt.id] as CompoundLanguageStatement).nestedStatements) {
+          if (
+            (this.language.statements[this.parentStmt.id] as CompoundLanguageStatement).nestedStatements.includes(
+              stmt.key
+            )
+          ) {
             return this.addStatementOptionsFilter
               ? stmt.label.toLowerCase().includes(this.addStatementOptionsFilter.toLowerCase())
               : true;
@@ -205,7 +207,11 @@ export class GeBlock extends LitElement {
         .args,
     });
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { programBodyUpdated: true },
+    });
     this.dispatchEvent(event);
   }
 
@@ -221,13 +227,16 @@ export class GeBlock extends LitElement {
   //#region Handlers
   handleMoveStatementUp(e: CustomEvent) {
     let statementIndex = e.detail.index;
-    console.log(e.target);
     if (statementIndex > 0) {
       let tmpStatement = this.block[statementIndex];
       this.block[statementIndex] = this.block[statementIndex - 1];
       this.block[statementIndex - 1] = tmpStatement;
       this.requestUpdate();
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+        detail: { programBodyUpdated: true },
+      });
       this.dispatchEvent(event);
     }
     e.stopPropagation();
@@ -235,13 +244,16 @@ export class GeBlock extends LitElement {
 
   handleMoveStatementDown(e: CustomEvent) {
     let statementIndex = e.detail.index;
-    console.log(statementIndex);
     if (statementIndex < this.block.length - 1) {
       let tmpStatement = this.block[statementIndex];
       this.block[statementIndex] = this.block[statementIndex + 1];
       this.block[statementIndex + 1] = tmpStatement;
       this.requestUpdate();
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+        detail: { programBodyUpdated: true },
+      });
       this.dispatchEvent(event);
     }
     e.stopPropagation();
@@ -253,13 +265,16 @@ export class GeBlock extends LitElement {
     this.requestUpdate();
     e.stopPropagation();
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true, detail: {programBodyUpdated: true} });
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { programBodyUpdated: true },
+    });
     this.dispatchEvent(event);
   }
 
   handleAddNewStatement(e: Event) {
     let target = e.currentTarget as HTMLButtonElement;
-    console.log(target.value);
     this.addNewStatement(target.value);
     this.hideAddNewStatementDialog();
     if (this.language.deviceList) {

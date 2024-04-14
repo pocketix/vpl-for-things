@@ -1,13 +1,12 @@
 import {
-  Argument,
   ArgumentType,
+  CompoundLanguageStatementWithArgs,
   EditorModal,
-  GroupedExpressions,
   Language,
   Program,
   ProgramStatementArgument,
-  UserVariableType,
-  VariableTypes,
+  UnitLanguageStatementWithArgs,
+  initDefaultArgumentType,
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -17,6 +16,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
+import { threeDots } from '../icons';
 
 @customElement('ge-statement-argument')
 export class GeStatementArgument extends LitElement {
@@ -65,6 +65,7 @@ export class GeStatementArgument extends LitElement {
       .argument-var-wrapper {
         display: flex;
         width: 100%;
+        gap: 2px;
       }
     `,
   ];
@@ -102,9 +103,9 @@ export class GeStatementArgument extends LitElement {
 
   handleValueChange(e: Event) {
     if (this.argument.type === 'num' || this.argument.type === 'num_opt') {
-      this.argument.value = Number(e.currentTarget.value);
+      this.argument.value = Number((e.currentTarget as HTMLSelectElement).value);
     } else {
-      this.argument.value = e.currentTarget.value;
+      this.argument.value = (e.currentTarget as HTMLSelectElement).value;
     }
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -117,9 +118,11 @@ export class GeStatementArgument extends LitElement {
     if (this.program.header.userVariables[this.argument.value as string] !== undefined) {
       this.argument.type = this.program.header.userVariables[this.argument.value as string].type;
     } else {
-      this.argument.type = this.language.statements[this.stmtId].args[this.argPosition].type;
+      this.argument.type = (
+        this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+      ).args[this.argPosition].type;
     }
-    this.argument.value = this.program.initDefaultArgumentType(this.argument.type);
+    this.argument.value = initDefaultArgumentType(this.argument.type);
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -149,8 +152,9 @@ export class GeStatementArgument extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     if (this.argument.type === 'num_opt' || this.argument.type === 'str_opt') {
-      this.argument.value = this.language.statements[this.stmtId].args[this.argPosition].options[0].id;
-      console.log(this.language.statements[this.stmtId].args[this.argPosition].options[0].id);
+      this.argument.value = (
+        this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+      ).args[this.argPosition].options[0].id;
       const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
         bubbles: true,
         composed: true,
@@ -160,8 +164,6 @@ export class GeStatementArgument extends LitElement {
   }
 
   updated() {
-    console.log('ge-statement-argument was updated');
-
     if (this.variableKey) {
       if (this.program.header.userVariables[this.variableKey]) {
         this.argument.type = this.program.header.userVariables[this.variableKey].type;
@@ -174,8 +176,15 @@ export class GeStatementArgument extends LitElement {
   }
 
   argumentLabelTemplate(labelId: string) {
-    return this.language.statements[this.stmtId].args[this.argPosition].label && this.showLabel
-      ? html` <label for="${labelId}">${this.language.statements[this.stmtId].args[this.argPosition].label}</label> `
+    return (this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
+      .args[this.argPosition].label && this.showLabel
+      ? html`
+          <label for="${labelId}"
+            >${(
+              this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+            ).args[this.argPosition].label}</label
+          >
+        `
       : nothing;
   }
 
@@ -183,7 +192,9 @@ export class GeStatementArgument extends LitElement {
     let permittedVarType;
     if (this.argument.type === 'var' && this.argument.value !== null) {
       if (this.program.header.userVariables[this.argument.value as string] === undefined) {
-        permittedVarType = this.language.statements[this.stmtId].args[this.argPosition].type;
+        permittedVarType = (
+          this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+        ).args[this.argPosition].type;
       } else {
         permittedVarType = this.program.header.userVariables[this.argument.value as string].type;
       }
@@ -212,18 +223,16 @@ export class GeStatementArgument extends LitElement {
               </editor-button>
             `
           : nothing}
+        <editor-variables-modal ${ref(this.selectArgumentVariableModalRef)} .permittedVarType="${permittedVarType}">
+        </editor-variables-modal>
       </div>
-      <editor-variables-modal ${ref(this.selectArgumentVariableModalRef)} .permittedVarType="${permittedVarType}">
-      </editor-variables-modal>
     `;
   }
 
   render() {
     let argumentElementId = uuidv4();
 
-    console.log('argument type', this.argument.type);
-
-    switch (this.argument.type) {
+    switch (this.argument.type as ArgumentType | 'device') {
       case 'bool':
         return html`
           <div class="argument-wrapper">
@@ -247,11 +256,12 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
               <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg">
-                ${(this.argument.value as GroupedExpressions[])?.length > 0
-                  ? this.program.parseGroupedExpressions(this.argument.value[0])
-                  : 'Enter expression'}
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <editor-icon .icon="${threeDots}"></editor-icon>
+                  Expression
+                </div>
               </editor-button>
-              <editor-expression-modal ${ref(this.expressionModalRef)} .exprList="${this.argument.value}">
+              <editor-expression-modal ${ref(this.expressionModalRef)} .expression="${this.argument.value}">
               </editor-expression-modal>
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
@@ -272,15 +282,17 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'num_expr':
-        return html`<editor-button>Enter numeric expression</editor-button>`;
       case 'num_opt':
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select id="${argumentElementId}" .value="${this.argument.value}" @change="${this.handleValueChange}">
-                ${this.language.statements[this.stmtId].args[this.argPosition].options.map(
+                ${(
+                  this.language.statements[this.stmtId] as
+                    | UnitLanguageStatementWithArgs
+                    | CompoundLanguageStatementWithArgs
+                ).args[this.argPosition].options.map(
                   (option) => html`<option value="${option.id}">${option.label}</option>`
                 )}
               </select>
@@ -308,7 +320,11 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select id="${argumentElementId}" .value="${this.argument.value}" @change="${this.handleValueChange}">
-                ${this.language.statements[this.stmtId].args[this.argPosition].options.map(
+                ${(
+                  this.language.statements[this.stmtId] as
+                    | UnitLanguageStatementWithArgs
+                    | CompoundLanguageStatementWithArgs
+                ).args[this.argPosition].options.map(
                   (option) => html`<option value="${option.id}">${option.label}</option>`
                 )}
               </select>

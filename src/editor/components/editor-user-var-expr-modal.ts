@@ -2,8 +2,9 @@ import { consume } from '@lit/context';
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { programContext } from '../context/editor-context';
-import { EditorModal, GroupedExpressions, Program } from '@/index';
+import { EditorModal, Program } from '@/index';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
+import { threeDots } from '../icons';
 
 @customElement('editor-user-var-expr-modal')
 export class EditorUserVarExprModal extends LitElement {
@@ -29,14 +30,15 @@ export class EditorUserVarExprModal extends LitElement {
 
   render() {
     return html`
-      <editor-button @click="${this.handleShowExpressionModal}"
-        >${(this.program.header.userVariables[this.varKey].value as GroupedExpressions[])?.length > 0
-          ? this.program.parseGroupedExpressions(this.program.header.userVariables[this.varKey].value[0])
-          : 'Enter expression'}
+      <editor-button @click="${this.handleShowExpressionModal}">
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <editor-icon .icon="${threeDots}"></editor-icon>
+          Expression
+        </div>
       </editor-button>
       <editor-expression-modal
         ${ref(this.expressionModalRef)}
-        .exprList="${this.program.header.userVariables[this.varKey].value}">
+        .expression="${this.program.header.userVariables[this.varKey].value}">
       </editor-expression-modal>
     `;
   }

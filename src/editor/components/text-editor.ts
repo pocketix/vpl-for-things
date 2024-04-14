@@ -3,7 +3,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { programContext } from '@/editor/context/editor-context';
 import { Program } from '@/vpl/program';
 import { consume, provide } from '@lit/context';
-import { exampleProgram } from '@/vpl/example.program';
 import { textEditorCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
@@ -53,22 +52,10 @@ export class TextEditor extends LitElement {
   //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
-    this.textEditorValue = JSON.stringify(this.program.block, null, ' ');
+    this.textEditorValue = JSON.stringify(this.program.exportProgramBody(), null, ' ');
   }
 
   firstUpdated() {}
-  //#endregion
-
-  //#region Methods
-  debounce(callback, delay) {
-    let timer;
-    return () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        callback();
-      }, delay);
-    };
-  }
   //#endregion
 
   handleTextEditorValueChange(e: Event) {
@@ -76,8 +63,9 @@ export class TextEditor extends LitElement {
     this.textEditorValue = (e.currentTarget as HTMLTextAreaElement).value;
 
     try {
-      this.program.block = JSON.parse(this.textEditorValue);
+      this.program.loadProgramBody(JSON.parse(this.textEditorValue));
     } catch (error) {
+      console.log(error);
       this.textEditorValueIsInvalid = true;
     }
 

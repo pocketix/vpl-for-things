@@ -1,22 +1,15 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { Language } from '@/vpl/language';
 import { Program } from '@/vpl/program';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { exampleExprProgram, exampleNumExprProgram } from '@/vpl/example.program';
-import {
-  editorControlsCustomEvent,
-  graphicalEditorCustomEvent,
-  statementCustomEvent,
-  textEditorCustomEvent,
-} from '../editor-custom-events';
+import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
 import { TextEditor } from './text-editor';
 import { GraphicalEditor } from './graphical-editor';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
-import { EditorModal } from './editor-modal';
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -69,7 +62,6 @@ export class VplEditor extends LitElement {
   constructor() {
     super();
     this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
-      console.log('program was updated');
       this.handleTextEditorProgramUpdated();
     });
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
@@ -130,13 +122,13 @@ export class VplEditor extends LitElement {
     }
 
     deepQuerySelectorAll(
-      'editor-button, editor-controls, editor-expression-list, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal',
+      'editor-button, editor-controls, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal, editor-expression-operand-list',
       this.shadowRoot
     ).forEach((elem: LitElement) => {
       elem.requestUpdate();
     });
 
-    this.textEditorRef.value.textEditorValue = JSON.stringify(this.program.block, null, '  ');
+    this.textEditorRef.value.textEditorValue = JSON.stringify(this.program.exportProgramBody(), null, '  ');
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
