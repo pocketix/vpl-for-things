@@ -6,18 +6,18 @@ export class Language {
   deviceList: string[];
 
   constructor(devices?: Device[]) {
-    this.variables = {}; // TODO Dynamically add device variables.
-    this.statements = baseLanguageStatements; // TODO Add basic language statements and dynamic device statements.
+    this.variables = {};
+    this.statements = baseLanguageStatements;
     this.deviceList = [];
 
     if (devices) {
       for (let device of devices) {
-        // Convert device attributes to language variables.
+        // Converts device attributes to language variables.
         for (let attr of device.attributes) {
           this.variables[`${device.deviceName}.${attr}`] = { type: 'device', label: `${device.deviceName}.${attr}` };
         }
 
-        // Convert device functions to language statements.
+        // Converts device functions to language statements.
         for (let func of device.functions) {
           this.statements[`${device.deviceName}.${func.label}`] = {
             ...func,
@@ -30,12 +30,6 @@ export class Language {
       }
     }
   }
-
-  addStatement() {}
-  removeStatement() {}
-
-  addVariable() {}
-  removeVariable() {}
 }
 
 export type Statements = {
@@ -58,7 +52,7 @@ export type Variable = {
   label: string;
 };
 
-export type VariableTypes = 'str' | 'num' | 'bool' | 'bool_expr' | 'num_expr' | 'device';
+export type VariableTypes = 'str' | 'num' | 'bool' | 'bool_expr' | 'device';
 
 export type LanguageStatementType = 'unit' | 'unit_with_args' | 'compound' | 'compound_with_args';
 
@@ -102,11 +96,12 @@ export type ArgumentType =
   | 'num'
   | 'bool'
   | 'bool_expr'
-  | 'num_expr'
   | 'str_opt'
   | 'num_opt'
   | 'var'
-  | 'unknown';
+  | 'unknown'
+  | 'device'
+  | 'invalid';
 
 export type ArgumentOptions = {
   id: string | number;
