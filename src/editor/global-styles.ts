@@ -22,6 +22,7 @@ export const globalStyles = css`
     --orange-500: #f97316;
     --emerald-500: #10b981;
     --indigo-500: #6366f1;
+    --violet-500: #8b5cf6;
     --yellow-500: #eab308;
     --green-600: #16a34a;
   }
@@ -107,7 +108,7 @@ export const globalStyles = css`
   }
 
   table tbody tr:nth-child(odd) {
-    background-color: var(--gray-200);
+    background-color: var(--gray-100);
   }
 
   table tbody tr:first-child {

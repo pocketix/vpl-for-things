@@ -25,6 +25,8 @@ export class EditorModal extends LitElement {
         border-radius: 0.5rem;
         outline: none;
         z-index: 10000;
+        width: 100%;
+        max-width: 100vw;
       }
 
       .dialog::backdrop {
@@ -80,6 +82,12 @@ export class EditorModal extends LitElement {
         margin-bottom: 0.5rem;
         border-bottom: 1px solid var(--gray-300);
       }
+
+      @media (min-width: 450px) {
+        .dialog {
+          width: fit-content;
+        }
+      }
     `,
   ];
   //#endregion CSS
@@ -109,6 +117,12 @@ export class EditorModal extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+  }
+
+  updated() {
+    if (this.isVisible) {
+      this.showModal();
+    }
   }
 
   disconnectedCallback() {
@@ -169,7 +183,8 @@ export class EditorModal extends LitElement {
         part="dialog"
         style="${this.backgroundColor ? `border: 2px solid ${this.backgroundColor};` : ''}
         ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''}
-        ${this.isFullHeight ? 'height: 100%;' : ''}">
+        ${this.isFullHeight ? 'height: 100%;' : ''}
+        ${this.displayType === 'dialog' ? 'width: fit-content;' : ''}">
         <form method="dialog" class="dialog-form-wrapper">
           <div
             class="dialog-header"

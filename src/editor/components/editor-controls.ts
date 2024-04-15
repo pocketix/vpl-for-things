@@ -2,20 +2,12 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
 import {
-  arrowClockwise,
-  arrowCounterClockwise,
-  boxArrowDown,
   boxArrowInDown,
   boxArrowUp,
   braces,
   checkLg,
-  circleFill,
-  cloudUpload,
-  fileEarmarkArrowDown,
-  fileEarmarkArrowUp,
   floppy,
   pencilSquare,
-  playCircle,
   plusLg,
   questionCircle,
   trash,
@@ -26,18 +18,10 @@ import { EditorModal } from './editor-modal';
 import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
-import {
-  Expression,
-  GroupedExpressions,
-  Program,
-  ProgramStatement,
-  UserVariable,
-  UserVariableType,
-  UserVariableValue,
-  userVariableTypes,
-} from '@/vpl/program';
+import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userVariableTypes } from '@/vpl/program';
 import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
+import * as icons from '@/editor/icons';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -232,12 +216,7 @@ export class EditorControls extends LitElement {
   @property() variablesTableMode: VariableTableMode = 'display';
   @property() selectedAddVariableType: UserVariableType = 'str';
   @property() selectedAddVariableInitialValueBool: any = true;
-  @property() selectedAddVariableInitialValueBoolExpr: any = [
-    {
-      exprList: [{ opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } }],
-      opr: '??',
-    },
-  ];
+  @property() selectedAddVariableInitialValueBoolExpr: any = initDefaultArgumentType('bool_expr');
   @property() selectedAddVariableInitialValueStr: any = '';
   @property() selectedAddVariableInitialValueNum: any = '0';
   @property() selectedAddVariableInitialValueNumExpr: any = [];
@@ -274,7 +253,6 @@ export class EditorControls extends LitElement {
 
   handleUserVariableTypeChange(e: Event, varKey: string) {
     this.program.header.userVariables[varKey].type = (e.currentTarget as HTMLInputElement).value as UserVariableType;
-    console.log(this.program.header.userVariables[varKey]);
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -288,11 +266,9 @@ export class EditorControls extends LitElement {
       case 'bool':
         return short ? 'Bool' : 'Boolean';
       case 'bool_expr':
-        return short ? 'BE' : 'Boolean Expression';
+        return short ? 'Expr' : 'Expression';
       case 'num':
         return short ? 'Num' : 'Number';
-      case 'num_expr':
-        return short ? 'NE' : 'Numeric Expression';
       case 'str':
         return short ? 'Str' : 'String';
       default:
@@ -305,15 +281,26 @@ export class EditorControls extends LitElement {
       case 'bool':
         return 'var(--blue-500)';
       case 'bool_expr':
-        return 'var(--indigo-500)';
+        return 'var(--violet-500)';
       case 'num':
         return 'var(--yellow-500)';
-      case 'num_expr':
-        return 'var(--orange-500)';
       case 'str':
         return 'var(--emerald-500)';
       default:
         return '#000000';
+    }
+  }
+
+  convertVariableTypeToIcon(varType: UserVariableType) {
+    switch (varType) {
+      case 'bool':
+        return 'toggles';
+      case 'bool_expr':
+        return 'codeSlash';
+      case 'num':
+        return 'numbers';
+      case 'str':
+        return 'text';
     }
   }
 
@@ -337,7 +324,6 @@ export class EditorControls extends LitElement {
       this.variablesTableMode = 'edit';
     } else if (this.variablesTableMode === 'edit') {
       this.variablesTableMode = 'display';
-      // TODO emit update event.
     }
   }
 
@@ -368,9 +354,6 @@ export class EditorControls extends LitElement {
         break;
       case 'num':
         this.selectedAddVariableInitialValueNum = (e.currentTarget as HTMLInputElement).value;
-        break;
-      case 'num_expr':
-        this.selectedAddVariableInitialValueNumExpr = (e.currentTarget as HTMLInputElement).value;
         break;
       case 'str':
         this.selectedAddVariableInitialValueStr = (e.currentTarget as HTMLInputElement).value;
@@ -411,9 +394,6 @@ export class EditorControls extends LitElement {
           return;
         }
         break;
-      case 'num_expr':
-        // TODO Add numeric expression support.
-        break;
     }
 
     if (fromIsValid) {
@@ -425,27 +405,19 @@ export class EditorControls extends LitElement {
       switch (this.selectedAddVariableType) {
         case 'str':
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueStr;
-          this.selectedAddVariableInitialValueStr = this.program.initDefaultArgumentType(this.selectedAddVariableType);
+          this.selectedAddVariableInitialValueStr = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case 'bool':
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBool;
-          this.selectedAddVariableInitialValueBool = this.program.initDefaultArgumentType(this.selectedAddVariableType);
+          this.selectedAddVariableInitialValueBool = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case 'bool_expr':
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
-          this.selectedAddVariableInitialValueBoolExpr = this.program.initDefaultArgumentType(
-            this.selectedAddVariableType
-          );
+          this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case 'num':
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNum;
-          this.selectedAddVariableInitialValueNum = this.program.initDefaultArgumentType(this.selectedAddVariableType);
-          break;
-        case 'num_expr':
-          this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNumExpr;
-          this.selectedAddVariableInitialValueNumExpr = this.program.initDefaultArgumentType(
-            this.selectedAddVariableType
-          );
+          this.selectedAddVariableInitialValueNum = initDefaultArgumentType(this.selectedAddVariableType);
           break;
       }
       this.addVariableName = '';
@@ -465,7 +437,6 @@ export class EditorControls extends LitElement {
 
   handleVariablesSearch(e: Event) {
     this.variableSearchInput = (e.currentTarget as HTMLInputElement).value;
-    console.log(this.variableSearchInput);
   }
 
   handleDeleteVariable(varKey: string) {
@@ -529,7 +500,7 @@ export class EditorControls extends LitElement {
 
   handleExportProgram() {
     let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
-      JSON.stringify(this.program.block, null, '  ')
+      JSON.stringify(this.program.exportProgramBody(), null, '  ')
     )}`;
     this.exportProgramLinkRef.value.setAttribute('href', programStrData);
     this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
@@ -658,14 +629,15 @@ export class EditorControls extends LitElement {
         return html`
           <editor-button
             @click="${this.handleShowAddVariableExpressionModal}"
-            style="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
-            >${(this.selectedAddVariableInitialValueBoolExpr as GroupedExpressions[])?.length > 0
-              ? this.program.parseGroupedExpressions(this.selectedAddVariableInitialValueBoolExpr[0])
-              : 'Enter expression'}
+            style="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <editor-icon .icon="${icons.threeDots}"></editor-icon>
+              Expression
+            </div>
           </editor-button>
           <editor-expression-modal
             ${ref(this.addVariableExpressionModalRef)}
-            .exprList="${this.selectedAddVariableInitialValueBoolExpr}">
+            .expression="${this.selectedAddVariableInitialValueBoolExpr}">
           </editor-expression-modal>
         `;
       case 'num':
@@ -681,8 +653,6 @@ export class EditorControls extends LitElement {
             @input="${this.handleAddVariableInitialInputChange}"
             .value="${this.selectedAddVariableInitialValueNum}" />
         `;
-      case 'num_expr':
-        return html``;
       case 'str':
         return html`
           <input
@@ -719,8 +689,11 @@ export class EditorControls extends LitElement {
                   return html`
                     <div class="variable-types-legend-item" style="white-space: nowrap;">
                       <editor-icon
-                        .icon="${circleFill}"
-                        .color="${this.convertVariableTypeToDisplayColor(varType)}"></editor-icon>
+                        .icon="${icons[this.convertVariableTypeToIcon(varType)]}"
+                        .width="${18}"
+                        .height="${18}"
+                        .color="${this.convertVariableTypeToDisplayColor(varType)}">
+                      </editor-icon>
                       <span>${this.convertVariableTypeToDisplayVariableType(varType)}</span>
                     </div>
                   `;
@@ -742,10 +715,11 @@ export class EditorControls extends LitElement {
                 <td>
                   <div class="variable-type-wrapper">
                     <editor-icon
-                      .icon="${circleFill}"
-                      .color="${this.convertVariableTypeToDisplayColor(
-                        this.program.header.userVariables[key].type
-                      )}"></editor-icon>
+                      .icon="${icons[this.convertVariableTypeToIcon(this.program.header.userVariables[key].type)]}"
+                      .width="${18}"
+                      .height="${18}"
+                      .color="${this.convertVariableTypeToDisplayColor(this.program.header.userVariables[key].type)}">
+                    </editor-icon>
                     <div>
                       ${this.convertVariableTypeToDisplayVariableType(
                         this.program.header.userVariables[key].type,
@@ -764,7 +738,7 @@ export class EditorControls extends LitElement {
                         .value="${key}"
                         @change="${(e) => this.handleModifyVariableName(e, key)}" />`}
                 </td>
-                <td class="mono-font">
+                <td>
                   ${this.variablesTableMode === 'display'
                     ? this.userVaribleInitialValueTemplate(key)
                     : this.userVaribleModifyInitialValueTemplate(key)}
@@ -795,15 +769,14 @@ export class EditorControls extends LitElement {
       case 'bool_expr':
         return html`
           <div style="word-break: break-all;">
-            ${(this.program.header.userVariables[varKey].value as GroupedExpressions[])?.length > 0
-              ? this.program.parseGroupedExpressions(this.program.header.userVariables[varKey].value[0])
-              : 'Enter expression'}
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <editor-icon .icon="${icons.threeDots}"></editor-icon>
+              Expression
+            </div>
           </div>
         `;
       case 'num':
         return html` <div style="word-break: break-all;">${this.program.header.userVariables[varKey].value}</div> `;
-      case 'num_expr':
-        return html``;
       case 'str':
         return html` <div style="word-break: break-all;">${this.program.header.userVariables[varKey].value}</div> `;
     }
@@ -834,8 +807,6 @@ export class EditorControls extends LitElement {
             .value="${this.program.header.userVariables[varKey].value}"
             @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
-      case 'num_expr':
-        return html``;
       case 'str':
         return html`
           <input
@@ -873,27 +844,6 @@ export class EditorControls extends LitElement {
           <editor-button @click="${this.handleExportProgram}">
             <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
-          </editor-button>
-        </div>
-        <div class="controls-group-editor">
-          <!-- <editor-button>
-            <editor-icon
-              .icon="${arrowCounterClockwise}"
-              .width="${18}"
-              .height="${18}"
-              title="Step Back"></editor-icon>
-          </editor-button>
-          <editor-button>
-            <editor-icon .icon="${arrowClockwise}" .width="${18}" .height="${18}" title="Step Forward"></editor-icon>
-          </editor-button>
-          <editor-button>
-            <editor-icon .icon="${playCircle}" .width="${18}" .height="${18}" title="Run Program"></editor-icon>
-          </editor-button>
-          <editor-button>
-            <editor-icon .icon="${cloudUpload}" .width="${18}" .height="${18}" title="Save Program"></editor-icon>
-          </editor-button> -->
-          <editor-button>
-            <editor-icon .icon="${questionCircle}" .width="${18}" .height="${18}" title="Show Help"></editor-icon>
           </editor-button>
         </div>
         <div class="controls-group-user">

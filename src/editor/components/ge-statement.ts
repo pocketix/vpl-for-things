@@ -1,26 +1,23 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import {
   AbstractStatementWithArgs,
   CompoundStatement,
   CompoundStatementWithArgs,
-  GroupedExpressions,
   Program,
   ProgramStatement,
+  initDefaultArgumentType,
 } from '@vpl/program';
-import { Argument, ArgumentType, Language } from '@vpl/language';
+import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import {
   editorVariablesModalCustomEvent,
-  expressionListCustomEvent,
   graphicalEditorCustomEvent,
   statementCustomEvent,
-  textEditorCustomEvent,
 } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
-import { live } from 'lit/directives/live.js';
 import * as icons from '../icons';
 import { EditorModal } from './editor-modal';
 
@@ -171,21 +168,21 @@ export class GEStatement extends LitElement {
     super();
     this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
-        this.statement.args[1].type = this.program.header.userVariables[this.statement.args[0].value]
-          ? this.program.header.userVariables[this.statement.args[0].value].type
-          : this.language.variables[this.statement.args[0].value]
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type = this.program.header
+          .userVariables[
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+        ]
+          ? this.program.header.userVariables[
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+            ].type
+          : this.language.variables[
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+            ]
           ? 'device'
           : 'invalid';
-        this.statement.args[1].value =
-          this.statement.args[1].type === 'bool_expr'
-            ? [
-                {
-                  exprList: [
-                    { opd1: { type: 'unknown', value: null }, opr: '>', opd2: { type: 'unknown', value: null } },
-                  ],
-                  opr: '??',
-                },
-              ]
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].value =
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type === 'bool_expr'
+            ? initDefaultArgumentType('bool_expr')
             : null;
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -265,7 +262,10 @@ export class GEStatement extends LitElement {
   multipleArgumentTemplate(args: Argument[]) {
     return html`
       <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value.showModal()}">
-        Set Arguments
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <editor-icon .icon="${icons.threeDots}"></editor-icon>
+          <div>Arguments</div>
+        </div>
       </editor-button>
       <editor-modal ${ref(this.multipleArgsModalRef)} .modalTitle="${'Set Arguments'}">
         <div class="statement-arguments-wrapper">
@@ -278,7 +278,7 @@ export class GEStatement extends LitElement {
                   .stmtId="${this.statement.id}"
                   .showLabel="${true}"
                   .variableKey="${this.statement.id === 'setvar' && arg.type === 'unknown'
-                    ? this.statement.args[0].value
+                    ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value
                     : null}">
                 </ge-statement-argument>
               `
@@ -310,12 +310,12 @@ export class GEStatement extends LitElement {
           ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args.length === 1
             ? html`
                 <ge-statement-argument
-                  .argument="${this.statement.args[0]}"
+                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}">
                 </ge-statement-argument>
               `
-            : this.multipleArgumentTemplate(this.statement.args)
+            : this.multipleArgumentTemplate((this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args)
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">

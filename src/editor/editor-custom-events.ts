@@ -36,3 +36,8 @@ export const editorExpressionCustomEvent = {
 export const editorVariablesModalCustomEvent = {
   VARIABLE_SELECTED: 'e-variable-modal-var-selected',
 } as const;
+
+export const editorExpressionOperandCustomEvent = {
+  ADD_OPD_MODAL_VISIBLE: 'e-expr-opd-add-opd-modal-visible',
+  REMOVE_PARENT_EXPR: 'e-expr-opd-remove-parent-expr',
+} as const;

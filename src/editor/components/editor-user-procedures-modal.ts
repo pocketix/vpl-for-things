@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
@@ -173,7 +173,7 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   handleProcedureSearch(e: Event) {
-    this.procedureSearchInput = e.currentTarget.value;
+    this.procedureSearchInput = (e.currentTarget as HTMLInputElement).value;
   }
 
   handleShowAddProcedureModal() {
@@ -186,11 +186,11 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   handleBgColorChange(e: Event) {
-    this.selectedBgColor = e.currentTarget.value;
+    this.selectedBgColor = (e.currentTarget as HTMLInputElement).value;
   }
 
   handleFgColorChange(e: Event) {
-    this.selectedFgColor = e.currentTarget.value;
+    this.selectedFgColor = (e.currentTarget as HTMLInputElement).value;
   }
 
   handleAddNewProc() {
@@ -233,7 +233,7 @@ export class EditorUserProceduresModal extends LitElement {
   handleAddProcNameChange(e: Event) {
     this.addProcNameIsMissing = false;
     this.addProcNameIsTaken = false;
-    this.addProcName = e.currentTarget.value;
+    this.addProcName = (e.currentTarget as HTMLInputElement).value;
   }
 
   render() {
@@ -332,7 +332,7 @@ export class EditorUserProceduresModal extends LitElement {
               ? html`${this.filteredUserProcedureKeys.map(
                   (stmtKey) => html`<editor-user-procedure-modal .stmtKey="${stmtKey}"></editor-user-procedure-modal>`
                 )}`
-              : html` <div class="no-procedures">No available procedures.</div> `}
+              : html` <div class="no-procedures">Click on "+ Add" to add new procedure</div> `}
           </div>
         </div>
       </editor-modal>

@@ -7,14 +7,3 @@
   font-family: 'Inter';
   src: url('./assets/Inter-VariableFont_slnt_wght.ttf');
 }
-
-/* TODO Delete this in production! */
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0rem 0.5rem 0rem 0.5rem;
-}

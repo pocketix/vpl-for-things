@@ -6,7 +6,7 @@ import { EditorModal } from './editor-modal';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
 import { Language, Program, VariableTypes } from '@/index';
-import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
+import { editorVariablesModalCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-variables-modal')
 export class EditorVariablesModal extends LitElement {
@@ -66,7 +66,7 @@ export class EditorVariablesModal extends LitElement {
   language?: Language;
 
   @property() variableSearchInput = '';
-  @property() permittedVarType: VariableTypes;
+  @property() permittedVarType: VariableTypes | 'all';
   @property() renderUserVariables: boolean = true;
 
   get filteredUserVariables() {
@@ -76,13 +76,6 @@ export class EditorVariablesModal extends LitElement {
       })
       .filter((varKey) => {
         let variableIsSameType;
-        // if (this.argument.type === 'var' && this.argument.value !== null) {
-        //   variableIsSameType =
-        //     this.program.header.userVariables[varKey].type ===
-        //     this.program.header.userVariables[this.argument.value as string].type;
-        // } else {
-        //   variableIsSameType = this.program.header.userVariables[varKey].type === this.argument.type;
-        // }
         if (this.permittedVarType === 'all') {
           return varKey.toLowerCase().includes(this.variableSearchInput.toLowerCase());
         }
@@ -124,7 +117,6 @@ export class EditorVariablesModal extends LitElement {
 
   handleVariableSearchInputChange(e: Event) {
     this.variableSearchInput = (e.currentTarget as HTMLInputElement).value;
-    console.log(this.filteredUserVariables);
   }
 
   handleSelectUserVariable(varKey: string) {
