@@ -10,11 +10,15 @@ import {
   Program,
   UserVariableType,
 } from '@/index';
-import { checkLg, plusLg } from '../icons';
+import { checkLg, plusLg, xLg } from '../icons';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
+import {
+  editorExpressionOperandCustomEvent,
+  editorVariablesModalCustomEvent,
+  graphicalEditorCustomEvent,
+} from '../editor-custom-events';
 
 @customElement('editor-expression-operand')
 export class EditorExpressionOperand extends LitElement {
@@ -147,6 +151,17 @@ export class EditorExpressionOperand extends LitElement {
     if (this.operand.value === null || this.operand.value === '') {
       this.operandValueIsMissing = true;
       return;
+    }
+    this.exprAddOperandModalRef.value.hideModal();
+  }
+
+  handleCancelOperand() {
+    if (this.operand.value === null) {
+      const event = new CustomEvent(editorExpressionOperandCustomEvent.CANCEL_ADD_OPD, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
     }
     this.exprAddOperandModalRef.value.hideModal();
   }
@@ -302,7 +317,12 @@ export class EditorExpressionOperand extends LitElement {
             : this.operand.type === 'var'
             ? `$${this.operand.value.toString()}`
             : this.operand.value.toString()
-          : html`<editor-icon .icon="${plusLg}"></editor-icon>`}
+          : html`
+              <div style="display: flex; gap: 4px; color: var(--red-600); align-items: center;">
+                <editor-icon .icon="${plusLg}"></editor-icon>
+                <span>Add operand value</span>
+              </div>
+            `}
       </editor-button>
       <editor-modal
         ${ref(this.exprAddOperandModalRef)}
@@ -342,13 +362,20 @@ export class EditorExpressionOperand extends LitElement {
             <label for="add-opd-input">Value</label>
             ${this.operandValueTemplate(this.operand.type)}
           </div>
-          <div>
+          <div style="display: flex; gap: 4px;">
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--green-600);"
+              style="color: var(--green-600); width: 100%;"
               @click="${this.handleConfirmOperand}">
               <editor-icon .icon="${checkLg}"></editor-icon>
               <div>OK</div>
+            </editor-button>
+            <editor-button
+              class="add-operand-confirm-button"
+              style="color: var(--red-600); width: 100%;"
+              @click="${this.handleCancelOperand}">
+              <editor-icon .icon="${xLg}"></editor-icon>
+              <div>Cancel</div>
             </editor-button>
           </div>
         </div>

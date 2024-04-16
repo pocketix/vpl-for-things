@@ -40,4 +40,5 @@ export const editorVariablesModalCustomEvent = {
 export const editorExpressionOperandCustomEvent = {
   ADD_OPD_MODAL_VISIBLE: 'e-expr-opd-add-opd-modal-visible',
   REMOVE_PARENT_EXPR: 'e-expr-opd-remove-parent-expr',
+  CANCEL_ADD_OPD: 'e-expr-opd-cancel-add-opd',
 } as const;

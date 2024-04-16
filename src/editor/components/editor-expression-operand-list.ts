@@ -11,7 +11,7 @@ import {
 } from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { graphicalEditorCustomEvent } from '../editor-custom-events';
+import { editorExpressionOperandCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { arrowDown, arrowUp, check2square, plusLg, stack, trash, xLg } from '../icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -188,9 +188,30 @@ export class EditorExpressionOperandList extends LitElement {
   exprOpdRef: Ref<EditorExpressionOperand> = createRef();
   selectOprModalRef: Ref<EditorModal> = createRef();
 
+  constructor() {
+    super();
+
+    this.addEventListener(editorExpressionOperandCustomEvent.CANCEL_ADD_OPD, (e: CustomEvent) => {
+      this.handleCancelAddOpd();
+      e.stopPropagation();
+    });
+  }
+
   handleAddNewOpd() {
     this.operands.push({ type: 'unknown', value: null, _uuid: uuidv4() });
     this.opdModalVisibleOnRender = true;
+
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
+  handleCancelAddOpd() {
+    console.log('removing last added opd');
+
+    this.operands.pop();
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,

@@ -17,8 +17,8 @@ export class EditorExpressionModal extends LitElement {
       }
 
       .expression-list-modal-content-wrapper {
+        min-width: 250px;
         min-height: 300px;
-        min-width: 300px;
         max-height: 590px;
       }
 
