@@ -146,19 +146,28 @@ export class GeBlock extends LitElement {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
+      if (stmt.key.startsWith('_')) {
+        return false;
+      }
+
       if (this.parentStmt) {
+        if (this.language.statements[stmt.key].parents) {
+          if (!this.language.statements[stmt.key].parents.includes(this.parentStmt.id)) {
+            return false;
+          }
+        }
         if ((this.language.statements[this.parentStmt.id] as CompoundLanguageStatement).nestedStatements) {
           if (
-            (this.language.statements[this.parentStmt.id] as CompoundLanguageStatement).nestedStatements.includes(
+            !(this.language.statements[this.parentStmt.id] as CompoundLanguageStatement).nestedStatements.includes(
               stmt.key
             )
           ) {
-            return this.addStatementOptionsFilter
-              ? stmt.label.toLowerCase().includes(this.addStatementOptionsFilter.toLowerCase())
-              : true;
-          } else {
             return false;
           }
+        }
+      } else {
+        if (this.language.statements[stmt.key].parents) {
+          return false;
         }
       }
 
@@ -431,8 +440,6 @@ export class GeBlock extends LitElement {
           <div class="add-statements-wrapper">
             ${this.renderBasicStatements ? this.basicStatementsTemplate() : this.deviceStatementsTemplate()}
           </div>
-
-          <!-- <editor-button @click="${this.handleToggleAddNewStatementOptionsVisibility}">⌄</editor-button> -->
         </div>
       </editor-modal>
     `;

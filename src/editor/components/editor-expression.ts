@@ -50,14 +50,20 @@ export class EditorExpression extends LitElement {
         cursor: pointer;
         user-select: none;
         z-index: 400;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
       }
 
       .opr-button {
         background: rgb(255, 255, 255);
-        padding: 4px 2px;
+        padding: 10px 2px;
         font-size: 1.25rem;
         line-height: 1rem;
         font-family: var(--mono-font);
+        border-radius: 8px;
+        display: flex;
+        gap: 4px;
+        align-items: center;
       }
 
       .dots {
@@ -192,17 +198,21 @@ export class EditorExpression extends LitElement {
               <div
                 @click="${this.handleOprButtonClicked}"
                 class="opr-button-wrapper"
-                style="${`top: ${(this.nestedLevel - 1) * 23}px; z-index: ${300 - (this.nestedLevel + 4)}`}">
+                style="${`top: ${(this.nestedLevel - 1) * 37}px; z-index: ${300 - (this.nestedLevel + 4)}`}">
                 <div
                   class="opr-button ${this.expression.opr === '&&'
                     ? 'and-group'
                     : this.expression.opr === '||'
                     ? 'or-group'
                     : ''}">
-                  ${this.program.convertOprToDisplayOpr(this.expression.opr)}
-                </div>
-                <div class="dots ${this.nestedExprListIsVisible ? 'hidden' : ''}">
-                  <editor-icon .icon="${icons.threeDots}"></editor-icon>
+                  <span> ${this.program.convertOprToDisplayOpr(this.expression.opr)} </span>
+                  ${!this.nestedExprListIsVisible
+                    ? html`
+                        <span>
+                          <editor-icon .icon="${icons.threeDots}" style="color: black;"></editor-icon>
+                        </span>
+                      `
+                    : nothing}
                 </div>
               </div>
             `

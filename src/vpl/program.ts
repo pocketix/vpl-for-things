@@ -1,4 +1,4 @@
-import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument } from './language';
+import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
 
 export function initDefaultArgumentType(argumentType: ArgumentType) {
@@ -18,6 +18,89 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
   }
 }
 
+export function analyzeBlock(block: Block, langStmts: Statements, parentStmt: ProgramStatement) {
+  for (let i = 0; i < block.length; i++) {
+    let previousPrgStmt: ProgramStatement;
+    let nextPrgStmt: ProgramStatement;
+    let currentPrgStmt = block[i];
+    let currentLangStmt = langStmts[currentPrgStmt.id];
+
+    if ((currentPrgStmt as CompoundStatement).block) {
+      analyzeBlock((currentPrgStmt as CompoundStatement).block, langStmts, currentPrgStmt);
+    }
+
+    if (currentPrgStmt.isInvalid) {
+      delete currentPrgStmt.isInvalid;
+    }
+
+    if (i - 1 >= 0) {
+      previousPrgStmt = block[i - 1];
+    }
+    if (i + 1 < block.length) {
+      nextPrgStmt = block[i + 1];
+    }
+
+    if (currentLangStmt.predecessors) {
+      if (!previousPrgStmt) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+      if (!currentLangStmt.predecessors.includes(previousPrgStmt.id)) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+    }
+
+    if (currentLangStmt.successors) {
+      if (!nextPrgStmt) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+      if (!currentLangStmt.successors.includes(nextPrgStmt.id)) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+    }
+
+    if (currentLangStmt.parents) {
+      if (parentStmt === null) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+      if (!currentLangStmt.parents.includes(parentStmt.id)) {
+        currentPrgStmt.isInvalid = true;
+        continue;
+      }
+    }
+  }
+}
+
+export function assignUuidToExprOperands(expr: Expression) {
+  for (let opd of expr.opds) {
+    opd._uuid = uuidv4();
+    if ((opd as Expression).opds) {
+      assignUuidToExprOperands(opd as Expression);
+    }
+  }
+}
+
+export function assignUuidToBlock(block) {
+  for (let stmt of block) {
+    stmt._uuid = uuidv4();
+    if (stmt.args) {
+      for (let arg of stmt.args) {
+        if (arg.type === 'bool_expr') {
+          assignUuidToExprOperands(arg.value);
+        }
+      }
+    }
+
+    if (stmt.block) {
+      assignUuidToBlock(stmt.block);
+    }
+  }
+}
+
 export class Program {
   header: Header;
   block: Block;
@@ -31,38 +114,23 @@ export class Program {
   }
 
   loadProgramBody(block: Block) {
-    function assignUuidToExprOperands(expr: Expression) {
-      for (let opd of expr.opds) {
-        opd._uuid = uuidv4();
-        if ((opd as Expression).opds) {
-          assignUuidToExprOperands(opd as Expression);
-        }
-      }
-    }
-
-    function assignUuidToBlock(block) {
-      for (let stmt of block) {
-        stmt._uuid = uuidv4();
-        if (stmt.args) {
-          for (let arg of stmt.args) {
-            if (arg.type === 'bool_expr') {
-              assignUuidToExprOperands(arg.value);
-            }
-          }
-        }
-
-        if (stmt.block) {
-          assignUuidToBlock(stmt.block);
-        }
-      }
-    }
-
     assignUuidToBlock(block);
     this.block = block;
   }
 
-  exportProgramBody() {
-    let blockCopy = JSON.parse(JSON.stringify(this.block));
+  loadProgram(programExport: any) {
+    for (let proc of Object.keys(programExport.header.userProcedures)) {
+      assignUuidToBlock(programExport.header.userProcedures[proc]);
+    }
+    assignUuidToBlock(programExport.block);
+
+    this.header.userProcedures = programExport.header.userProcedures;
+    this.header.userVariables = programExport.header.userVariables;
+    this.block = programExport.block;
+  }
+
+  exportProgramBlock(block: Block) {
+    let blockCopy = JSON.parse(JSON.stringify(block));
 
     function removeUuidFromExprOperands(expr: Expression) {
       for (let opd of expr.opds) {
@@ -76,6 +144,9 @@ export class Program {
     function removeUuidFromBlock(block) {
       for (let stmt of block) {
         delete stmt._uuid;
+        if (stmt.isInvalid) {
+          delete stmt.isInvalid;
+        }
         if (stmt.args) {
           for (let arg of stmt.args) {
             if (arg.type === 'bool_expr') {
@@ -92,6 +163,24 @@ export class Program {
 
     removeUuidFromBlock(blockCopy);
     return blockCopy;
+  }
+
+  exportProgram() {
+    let programExport = {
+      header: {
+        userVariables: this.header.userVariables,
+        userProcedures: {},
+      },
+      block: this.exportProgramBlock(this.block),
+    };
+    let proceduresCopy = JSON.parse(JSON.stringify(this.header.userProcedures));
+
+    for (let proc of Object.keys(proceduresCopy)) {
+      proceduresCopy[proc] = this.exportProgramBlock(proceduresCopy[proc]);
+    }
+    programExport.header.userProcedures = proceduresCopy;
+
+    return programExport;
   }
 
   addStatement(block: Block, statement: stmt) {
@@ -206,6 +295,7 @@ export type ProgramStatement =
 export type AbstractStatement = {
   _uuid?: string;
   id: string;
+  isInvalid?: boolean;
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {

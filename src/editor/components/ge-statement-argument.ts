@@ -2,6 +2,7 @@ import {
   ArgumentType,
   CompoundLanguageStatementWithArgs,
   EditorModal,
+  Expression,
   Language,
   Program,
   ProgramStatementArgument,
@@ -16,7 +17,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
-import { threeDots } from '../icons';
+import { pencilSquare, plusLg, threeDots } from '../icons';
 
 @customElement('ge-statement-argument')
 export class GeStatementArgument extends LitElement {
@@ -151,7 +152,7 @@ export class GeStatementArgument extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    if (this.argument.type === 'num_opt' || this.argument.type === 'str_opt') {
+    if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
       this.argument.value = (
         this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
       ).args[this.argPosition].options[0].id;
@@ -213,7 +214,7 @@ export class GeStatementArgument extends LitElement {
           style="height: 100%;"
           @click="${this.handleShowSelectArgumentVariableModal}">
           ${this.argument.type === 'var' && this.argument.value
-            ? this.argument.value
+            ? `$${this.argument.value}`
             : html`<div class="variables-icon">𝑥</div>`}
         </editor-button>
         ${this.argument.type === 'var' && this.argument.value && this.stmtId !== 'setvar'
@@ -255,11 +256,20 @@ export class GeStatementArgument extends LitElement {
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
-              <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg">
-                <div style="display: flex; gap: 4px; align-items: center;">
-                  <editor-icon .icon="${threeDots}"></editor-icon>
-                  Expression
-                </div>
+              <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
+                ${(this.argument.value as Expression).opds.length === 0
+                  ? html`
+                      <div style="display: flex; gap: 4px; align-items: center;">
+                        <editor-icon .icon="${plusLg}"></editor-icon>
+                        Enter Expression
+                      </div>
+                    `
+                  : html`
+                      <div style="display: flex; gap: 4px; align-items: center;">
+                        <editor-icon .icon="${pencilSquare}"></editor-icon>
+                        Edit Expression
+                      </div>
+                    `}
               </editor-button>
               <editor-expression-modal ${ref(this.expressionModalRef)} .expression="${this.argument.value}">
               </editor-expression-modal>
@@ -287,7 +297,11 @@ export class GeStatementArgument extends LitElement {
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
-              <select id="${argumentElementId}" .value="${this.argument.value}" @change="${this.handleValueChange}">
+              <select
+                id="${argumentElementId}"
+                .value="${this.argument.value}"
+                @change="${this.handleValueChange}"
+                @click="${this.handleValueChange}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
@@ -319,13 +333,23 @@ export class GeStatementArgument extends LitElement {
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
-              <select id="${argumentElementId}" .value="${this.argument.value}" @change="${this.handleValueChange}">
+              <select
+                style="width: 100%;"
+                id="${argumentElementId}"
+                .value="${this.argument.value}"
+                @change="${this.handleValueChange}"
+                @click="${this.handleValueChange}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
                     | CompoundLanguageStatementWithArgs
                 ).args[this.argPosition].options.map(
-                  (option) => html`<option value="${option.id}">${option.label}</option>`
+                  (option) =>
+                    html`
+                      <option .value="${option.id}" ?selected="${this.argument.value === option.id}">
+                        ${option.label}
+                      </option>
+                    `
                 )}
               </select>
             </div>

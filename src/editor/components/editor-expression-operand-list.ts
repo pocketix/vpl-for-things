@@ -13,7 +13,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { graphicalEditorCustomEvent } from '../editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
-import { check2square, plusLg, stack, trash, xLg } from '../icons';
+import { arrowDown, arrowUp, check2square, plusLg, stack, trash, xLg } from '../icons';
 import { v4 as uuidv4 } from 'uuid';
 import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
@@ -56,7 +56,7 @@ export class EditorExpressionOperandList extends LitElement {
         display: flex;
         align-items: flex-start;
         box-sizing: border-box;
-        gap: 4px;
+        padding-top: 8px;
       }
 
       .expr-opd-list-wrapper {
@@ -156,6 +156,17 @@ export class EditorExpressionOperandList extends LitElement {
       .opr-list-item {
         justify-content: center;
         font-family: var(--mono-font);
+      }
+
+      .move-opd-button {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        padding-left: 2px;
+        padding-right: 2px;
+        cursor: pointer;
+        border: 1px solid var(--gray-300);
+        background: white;
+        border-radius: 8px;
       }
     `,
   ];
@@ -268,6 +279,36 @@ export class EditorExpressionOperandList extends LitElement {
     this.selectedOprType = (e.currentTarget as HTMLSelectElement).value;
   }
 
+  handleMoveOpdUp(opdIndex: number) {
+    if (opdIndex > 0) {
+      let tmpOpd = this.operands[opdIndex];
+      this.operands[opdIndex] = this.operands[opdIndex - 1];
+      this.operands[opdIndex - 1] = tmpOpd;
+      this.requestUpdate();
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+        detail: { programBodyUpdated: true },
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
+  handleMoveOpdDown(opdIndex: number) {
+    if (opdIndex < this.operands.length - 1) {
+      let tmpOpd = this.operands[opdIndex];
+      this.operands[opdIndex] = this.operands[opdIndex + 1];
+      this.operands[opdIndex + 1] = tmpOpd;
+      this.requestUpdate();
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+        detail: { programBodyUpdated: true },
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
   operatorListTemplate(oprType) {
     let operatorList;
 
@@ -336,15 +377,29 @@ export class EditorExpressionOperandList extends LitElement {
                               .visibleOnRender="${this.opdModalVisibleOnRender}">
                             </editor-expression-operand>
                           `}
+                      ${!(operand as Expression).opds &&
+                      !this.groupModeIsActive &&
+                      (this.exprIsSelected || this.nestedLevel === 0)
+                        ? html`
+                            <div class="move-opd-button" @click="${() => this.handleMoveOpdUp(i)}">
+                              <editor-icon .icon="${arrowUp}"></editor-icon>
+                            </div>
+                            <div class="move-opd-button" @click="${() => this.handleMoveOpdDown(i)}">
+                              <editor-icon .icon="${arrowDown}"></editor-icon>
+                            </div>
+                          `
+                        : nothing}
                       ${this.groupModeIsActive && (this.exprIsSelected || this.nestedLevel === 0)
                         ? html`
                             <input
                               type="checkbox"
                               name=""
                               id=""
-                              style="${`position: sticky; top: ${(this.nestedLevel - 1) * 23}px; z-index: ${
-                                300 - (this.nestedLevel + 4)
-                              }`}"
+                              style="${`position: sticky; top: ${
+                                (operand as Expression).opds ? this.nestedLevel * 37 + 9 : this.nestedLevel * 37
+                              }px; z-index: ${200 - (this.nestedLevel + 4)};`} ${(operand as Expression).opds
+                                ? 'margin-top: 9px; margin-left: 6px; margin-right: 6px;'
+                                : ''}"
                               @change="${(e) => this.handleSelectExpr(e, i, operand)}" />
                           `
                         : nothing}

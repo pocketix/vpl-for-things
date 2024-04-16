@@ -17,11 +17,12 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { EditorModal } from './editor-modal';
 import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
-import { programContext } from '../context/editor-context';
+import { languageContext, programContext } from '../context/editor-context';
 import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userVariableTypes } from '@/vpl/program';
 import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
+import { Language } from '@/index';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -45,9 +46,12 @@ export class EditorControls extends LitElement {
 
       .controls {
         display: flex;
-        gap: 1.5rem;
+        flex-wrap: wrap;
+        column-gap: 1.5rem;
+        row-gap: 0.25rem;
         justify-content: center;
         width: 100%;
+        padding-bottom: 0.5rem;
       }
 
       .controls-group-editor {
@@ -58,11 +62,23 @@ export class EditorControls extends LitElement {
       .controls-group-user {
         display: flex;
         gap: 0.25rem;
+        width: 100%;
+      }
+
+      .controls-group-user editor-button {
+        flex: 1;
       }
 
       .controls-group-export {
         display: flex;
         gap: 0.25rem;
+        width: 100%;
+        height: 100%;
+      }
+
+      .controls-group-export editor-button {
+        flex: 1;
+        height: 100%;
       }
 
       .variables-icon {
@@ -196,6 +212,11 @@ export class EditorControls extends LitElement {
         color: var(--gray-500);
       }
 
+      .control-button {
+        gap: 0.25rem;
+        font-weight: 400;
+      }
+
       @media (min-width: 500px) {
         :host {
           flex-direction: row;
@@ -204,6 +225,27 @@ export class EditorControls extends LitElement {
         .editor-switcher {
           width: initial;
         }
+
+        .controls-group-user {
+          width: fit-content;
+        }
+
+        .controls-group-user editor-button {
+          flex-grow: 0;
+        }
+
+        .controls-group-export {
+          width: fit-content;
+          height: fit-content;
+        }
+
+        .controls-group-export editor-button {
+          height: fit-content;
+        }
+
+        .controls {
+          padding-bottom: 0;
+        }
       }
     `,
   ];
@@ -211,6 +253,10 @@ export class EditorControls extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
+
+  @consume({ context: languageContext })
+  @property()
+  language?: Language;
 
   @property() selectedEditorView: SelectedEditorView = 'split';
   @property() variablesTableMode: VariableTableMode = 'display';
@@ -480,7 +526,19 @@ export class EditorControls extends LitElement {
       if (this.inputProgramFileRef.value.files[0].type === 'application/json') {
         let fr = new FileReader();
         fr.onload = (e) => {
-          this.program.loadProgramBody(JSON.parse(e.target.result as string));
+          this.program.loadProgram(JSON.parse(e.target.result as string));
+
+          for (let proc of Object.keys(this.program.header.userProcedures)) {
+            this.language.statements[proc] = {
+              type: 'unit',
+              group: 'misc',
+              label: proc,
+              icon: 'lightningChargeFill',
+              foregroundColor: '#ffffff',
+              backgroundColor: '#d946ef',
+              isUserProcedure: true,
+            };
+          }
 
           const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
@@ -500,7 +558,7 @@ export class EditorControls extends LitElement {
 
   handleExportProgram() {
     let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
-      JSON.stringify(this.program.exportProgramBody(), null, '  ')
+      JSON.stringify(this.program.exportProgram(), null, '  ')
     )}`;
     this.exportProgramLinkRef.value.setAttribute('href', programStrData);
     this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
@@ -730,7 +788,7 @@ export class EditorControls extends LitElement {
                 </td>
                 <td class="bold-font">
                   ${this.variablesTableMode === 'display'
-                    ? html`${key}`
+                    ? html`<span style="word-break: break-all;">${key}</span>`
                     : html`<input
                         type="text"
                         name=""
@@ -833,25 +891,26 @@ export class EditorControls extends LitElement {
               style="display: none;"
               accept="application/json"
               @input="${this.handleImportProgram}" />
-            <editor-button @click="${this.handleImportProgram}">
-              <editor-icon
-                .icon="${boxArrowInDown}"
-                .width="${18}"
-                .height="${18}"
-                title="Import Program"></editor-icon>
+            <editor-button @click="${this.handleImportProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+              </editor-icon>
+              <span>Import Program</span>
             </editor-button>
           </label>
-          <editor-button @click="${this.handleExportProgram}">
+          <editor-button @click="${this.handleExportProgram}" class="control-button">
             <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
-            <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
+            <span>Export Program</span>
           </editor-button>
+          <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
         </div>
         <div class="controls-group-user">
-          <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}">
+          <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
             <div class="variables-icon">𝑥</div>
+            <div>Variables</div>
           </editor-button>
-          <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}">
+          <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
             <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+            <span>Procedures</span>
           </editor-button>
         </div>
       </div>

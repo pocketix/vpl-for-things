@@ -68,9 +68,11 @@ export type UnitLanguageStatement = {
   foregroundColor?: string;
   backgroundColor?: string;
   predecessors?: string[];
-  avoidPredecessors?: string[];
+
+  successors?: string[];
+
   parents?: string[];
-  avoidParents?: string[];
+
   isUserProcedure?: boolean;
 };
 
@@ -80,7 +82,6 @@ export type UnitLanguageStatementWithArgs = UnitLanguageStatement & {
 
 export type CompoundLanguageStatement = UnitLanguageStatement & {
   nestedStatements?: string[];
-  avoidNestedStatements?: string[];
 };
 
 export type CompoundLanguageStatementWithArgs = UnitLanguageStatementWithArgs & CompoundLanguageStatement;

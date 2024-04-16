@@ -142,8 +142,8 @@ export class EditorUserProceduresModal extends LitElement {
 
   @property() procedureSearchInput: string = '';
   @property() selectedProcIconKey: Icon = 'lightningChargeFill';
-  @property() selectedBgColor: string = '#C2FFF3';
-  @property() selectedFgColor: string = '#000000';
+  @property() selectedBgColor: string = '#2dd4bf';
+  @property() selectedFgColor: string = '#ffffff';
   @property() addProcNameIsMissing: boolean = false;
   @property() addProcName: string = '';
   @property() addProcNameIsTaken: boolean = false;
@@ -207,7 +207,7 @@ export class EditorUserProceduresModal extends LitElement {
       }
     }
 
-    let newProcId = uuidv4();
+    let newProcId = this.addProcName;
 
     this.language.statements[newProcId] = {
       type: 'unit',
