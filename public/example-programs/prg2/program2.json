@@ -1,0 +1,98 @@
+ {
+  "header": {
+    "userVariables": {},
+    "userProcedures": {}
+  },
+  "block": [
+    {
+      "id": "if",
+      "block": [
+        {
+          "id": "LT22222-Relay-1.setRelay",
+          "args": [
+            {
+              "type": "str_opt",
+              "value": "close"
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "type": "bool_expr",
+          "value": {
+            "opds": [
+              {
+                "opds": [
+                  {
+                    "opds": [
+                      {
+                        "type": "var",
+                        "value": "LT22222-Relay-1.relayState"
+                      },
+                      {
+                        "type": "str",
+                        "value": "opened"
+                      }
+                    ],
+                    "opr": "==="
+                  },
+                  {
+                    "opds": [
+                      {
+                        "type": "var",
+                        "value": "DistanceSensor-1.waterLevel"
+                      },
+                      {
+                        "type": "num",
+                        "value": 80
+                      }
+                    ],
+                    "opr": ">"
+                  }
+                ],
+                "opr": "&&"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "elseif",
+      "block": [
+        {
+          "id": "LT22222-Relay-1.setRelay",
+          "args": [
+            {
+              "type": "str_opt",
+              "value": "open"
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "type": "bool_expr",
+          "value": {
+            "opds": [
+              {
+                "opds": [
+                  {
+                    "type": "var",
+                    "value": "LT22222-Relay-1.relayState"
+                  },
+                  {
+                    "type": "str",
+                    "value": "closed"
+                  }
+                ],
+                "opr": "==="
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+ {
+  "header": {
+    "userVariables": {},
+    "userProcedures": {
+      "buzzerBeep3x": [
+        {
+          "id": "repeat",
+          "block": [
+            {
+              "id": "Buzzer-1.beep"
+            }
+          ],
+          "args": [
+            {
+              "type": "num",
+              "value": 3
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "block": [
+    {
+      "id": "switch",
+      "block": [
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "args": [
+                {
+                  "type": "str_opt",
+                  "value": "red"
+                }
+              ]
+            }
+          ],
+          "args": [
+            {
+              "type": "str",
+              "value": "high"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "args": [
+                {
+                  "type": "str_opt",
+                  "value": "orange"
+                }
+              ]
+            }
+          ],
+          "args": [
+            {
+              "type": "str",
+              "value": "ideal"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "args": [
+                {
+                  "type": "str_opt",
+                  "value": "green"
+                }
+              ]
+            }
+          ],
+          "args": [
+            {
+              "type": "str",
+              "value": "low"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "buzzerBeep3x"
+            }
+          ],
+          "args": [
+            {
+              "type": "str",
+              "value": "critical_low"
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "type": "var",
+          "value": "TemperatureDevice-1.temperatureLevel"
+        }
+      ]
+    }
+  ]
+}

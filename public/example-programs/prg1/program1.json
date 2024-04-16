@@ -1,0 +1,64 @@
+ {
+  "header": {
+    "userVariables": {
+      "myPhoneNumber": {
+        "type": "str",
+        "value": "+420123456789"
+      },
+      "alertMessage": {
+        "type": "str",
+        "value": "Movement detected!"
+      }
+    },
+    "userProcedures": {}
+  },
+  "block": [
+    {
+      "id": "if",
+      "block": [
+        {
+          "id": "alert",
+          "args": [
+            {
+              "type": "str_opt",
+              "value": "phone_number"
+            },
+            {
+              "type": "var",
+              "value": "myPhoneNumber"
+            },
+            {
+              "type": "var",
+              "value": "alertMessage"
+            }
+          ]
+        },
+        {
+          "id": "Doorbell-1.takePicture"
+        }
+      ],
+      "args": [
+        {
+          "type": "bool_expr",
+          "value": {
+            "opds": [
+              {
+                "opds": [
+                  {
+                    "type": "var",
+                    "value": "Doorbell-1.motionSensor"
+                  },
+                  {
+                    "type": "str",
+                    "value": "active"
+                  }
+                ],
+                "opr": "==="
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
