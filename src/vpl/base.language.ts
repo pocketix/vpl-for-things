@@ -1,6 +1,16 @@
 import { Statements } from './language';
 
 export const baseLanguageStatements: Statements = {
+  // Internal
+  _err: {
+    type: 'unit',
+    group: 'misc',
+    label: 'Error!',
+    icon: 'exclamationDiamond',
+    foregroundColor: '#ffffff',
+    backgroundColor: '#ef4444',
+  },
+
   // Logic
   if: {
     type: 'compound_with_args',
@@ -89,6 +99,7 @@ export const baseLanguageStatements: Statements = {
         ],
       },
       { type: 'str', label: 'Email or Phone Number' },
+      { type: 'str', label: 'Notification Message' },
     ],
   },
 

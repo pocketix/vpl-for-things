@@ -28,7 +28,8 @@ export class EditorExpressionOperand extends LitElement {
 
       .operand-button {
         font-family: var(--mono-font);
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-all;
         overflow-x: auto;
         flex: 1;
         width: 95%;

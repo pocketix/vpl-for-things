@@ -1,11 +1,12 @@
 import { LitElement, html, css, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { programContext } from '@/editor/context/editor-context';
-import { Program } from '@/vpl/program';
+import { languageContext, programContext } from '@/editor/context/editor-context';
+import { Program, analyzeBlock } from '@/vpl/program';
 import { consume, provide } from '@lit/context';
 import { textEditorCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
+import { Language } from '@/index';
 
 @customElement('text-editor')
 export class TextEditor extends LitElement {
@@ -47,12 +48,16 @@ export class TextEditor extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
+
+  @consume({ context: languageContext })
+  @property()
+  language?: Language;
   //#endregion
 
   //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
-    this.textEditorValue = JSON.stringify(this.program.exportProgramBody(), null, ' ');
+    this.textEditorValue = JSON.stringify(this.program.exportProgramBlock(this.program.block), null, ' ');
   }
 
   firstUpdated() {}
@@ -64,8 +69,8 @@ export class TextEditor extends LitElement {
 
     try {
       this.program.loadProgramBody(JSON.parse(this.textEditorValue));
+      analyzeBlock(this.program.block, this.language.statements, null);
     } catch (error) {
-      console.log(error);
       this.textEditorValueIsInvalid = true;
     }
 

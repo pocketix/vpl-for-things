@@ -44,10 +44,6 @@ export class GEStatement extends LitElement {
         margin-left: auto;
       }
 
-      .statement-label {
-        white-space: nowrap;
-      }
-
       .statement-label-wrapper {
         display: flex;
         align-items: center;
@@ -59,6 +55,7 @@ export class GEStatement extends LitElement {
         display: flex;
         flex-direction: row;
         /* justify-content: space-between; */
+        align-items: center;
         gap: 0.35rem;
         padding: 0.5rem;
         border-top-left-radius: 0.5rem;
@@ -66,7 +63,7 @@ export class GEStatement extends LitElement {
       }
 
       .nested {
-        padding: 1rem 1rem 1rem 1rem;
+        padding: 0.75rem;
         border-bottom-left-radius: 0.5rem;
         border-bottom-right-radius: 0.5rem;
       }
@@ -135,6 +132,12 @@ export class GEStatement extends LitElement {
         flex-direction: column;
         gap: 0.5rem;
       }
+
+      @media (min-width: 500px) {
+        .statement-label {
+          white-space: nowrap;
+        }
+      }
     `,
   ];
   //#endregion
@@ -142,7 +145,7 @@ export class GEStatement extends LitElement {
   //#region Props
   @property() statement: ProgramStatement;
   @property() index: number;
-  @property() nestedBlockVisible: boolean = false;
+  @property() nestedBlockVisible: boolean = true;
   //#endregion
 
   //#region Context
@@ -197,17 +200,19 @@ export class GEStatement extends LitElement {
   updated() {
     this.statementHeaderRef.value.setAttribute(
       'style',
-      `background-color: ${this.language.statements[this.statement.id].backgroundColor}; color: ${
-        this.language.statements[this.statement.id].foregroundColor
-      };`
+      `background-color: ${
+        this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
+      }; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}; ${
+        this.statement.isInvalid ? 'border: 4px dashed #facc15' : ''
+      }`
     );
 
     if (this.statementNestedBlockRef.value) {
       this.statementNestedBlockRef.value.setAttribute(
         'style',
-        `background-color: ${this.language.statements[this.statement.id].backgroundColor}3a; color: ${
-          this.language.statements[this.statement.id].foregroundColor
-        };`
+        `background-color: ${
+          this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
+        }3a; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor};`
       );
     }
   }
@@ -297,7 +302,7 @@ export class GEStatement extends LitElement {
           ${this.language.statements[this.statement.id].icon
             ? html`
                 <editor-icon
-                  .icon="${icons[this.language.statements[this.statement.id].icon]}"
+                  .icon="${icons[this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].icon]}"
                   .color="${this.language.statements[this.statement.id].foregroundColor}"
                   .width="${24}"
                   .height="${24}">
@@ -310,12 +315,15 @@ export class GEStatement extends LitElement {
           ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args.length === 1
             ? html`
                 <ge-statement-argument
+                  ?disabled="${this.statement.isInvalid ? true : false}"
                   .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}">
                 </ge-statement-argument>
               `
-            : this.multipleArgumentTemplate((this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args)
+            : this.multipleArgumentTemplate(
+                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
+              )
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">

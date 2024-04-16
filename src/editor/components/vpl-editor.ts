@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { provide } from '@lit/context';
-import { Language } from '@/vpl/language';
-import { Program } from '@/vpl/program';
+import { Language, Statement, Statements } from '@/vpl/language';
+import { Block, CompoundStatement, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
 import { TextEditor } from './text-editor';
@@ -80,12 +80,14 @@ export class VplEditor extends LitElement {
         this.isSmallScreen = false;
       }
     });
+
+    window.onbeforeunload = function () {
+      return 'Changes may be lost!';
+    };
   }
 
   connectedCallback() {
     super.connectedCallback();
-    console.log(this.language);
-    console.log(this.program);
 
     (this.shadowRoot.host as HTMLElement).setAttribute(
       'style',
@@ -121,6 +123,11 @@ export class VplEditor extends LitElement {
       return results;
     }
 
+    analyzeBlock(this.program.block, this.language.statements, null);
+    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+    }
+
     deepQuerySelectorAll(
       'editor-button, editor-controls, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal, editor-expression-operand-list',
       this.shadowRoot
@@ -128,7 +135,11 @@ export class VplEditor extends LitElement {
       elem.requestUpdate();
     });
 
-    this.textEditorRef.value.textEditorValue = JSON.stringify(this.program.exportProgramBody(), null, '  ');
+    this.textEditorRef.value.textEditorValue = JSON.stringify(
+      this.program.exportProgramBlock(this.program.block),
+      null,
+      '  '
+    );
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
