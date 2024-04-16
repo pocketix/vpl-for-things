@@ -147,9 +147,12 @@ export const globalStyles = css`
 
   input[type='checkbox'] {
     accent-color: var(--blue-500);
-    width: 1rem;
-    height: 1rem;
+    width: 1.125rem;
+    height: 1.125rem;
     margin: 0;
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+    cursor: pointer;
   }
 
   label {
