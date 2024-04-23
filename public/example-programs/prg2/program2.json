@@ -12,7 +12,7 @@
           "args": [
             {
               "type": "str_opt",
-              "value": "close"
+              "value": "open"
             }
           ]
         }
@@ -32,7 +32,7 @@
                       },
                       {
                         "type": "str",
-                        "value": "opened"
+                        "value": "closed"
                       }
                     ],
                     "opr": "==="
@@ -66,7 +66,7 @@
           "args": [
             {
               "type": "str_opt",
-              "value": "open"
+              "value": "close"
             }
           ]
         }
@@ -84,7 +84,7 @@
                   },
                   {
                     "type": "str",
-                    "value": "closed"
+                    "value": "opened"
                   }
                 ],
                 "opr": "==="

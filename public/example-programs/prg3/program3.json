@@ -88,7 +88,25 @@
           "id": "case",
           "block": [
             {
+              "id": "LED-1.setLedColor",
+              "args": [
+                {
+                  "type": "str_opt",
+                  "value": "blue"
+                }
+              ]
+            },
+            {
               "id": "buzzerBeep3x"
+            },
+            {
+              "id": "TemperatureDevice-1.setTemperature",
+              "args": [
+                {
+                  "type": "str_opt",
+                  "value": "ideal"
+                }
+              ]
             }
           ],
           "args": [
