@@ -1,3 +1,4 @@
+import { Block } from '..';
 import { baseLanguageStatements } from './base.language';
 
 export class Language {
@@ -26,7 +27,10 @@ export class Language {
           };
         }
 
-        this.deviceList.push(device.deviceName);
+        // Do not include devices with no functions
+        if (device.functions.length > 0) {
+          this.deviceList.push(device.deviceName);
+        }
       }
     }
   }
@@ -56,7 +60,7 @@ export type VariableTypes = 'str' | 'num' | 'bool' | 'bool_expr' | 'device';
 
 export type LanguageStatementType = 'unit' | 'unit_with_args' | 'compound' | 'compound_with_args';
 
-export type LanguageStatementGroup = 'logic' | 'loop' | 'iot' | 'variable' | 'misc';
+export type LanguageStatementGroup = 'logic' | 'loop' | 'iot' | 'variable' | 'misc' | 'internal';
 
 export type Icon = keyof typeof import('@/editor/icons');
 
@@ -65,15 +69,23 @@ export type UnitLanguageStatement = {
   group: LanguageStatementGroup;
   label: string;
   icon: Icon;
+  description?: StatementDescription;
   foregroundColor?: string;
   backgroundColor?: string;
   predecessors?: string[];
-
   successors?: string[];
-
   parents?: string[];
-
   isUserProcedure?: boolean;
+};
+
+export type StatementDescription = {
+  brief: string;
+  example?: StatementExample;
+};
+
+export type StatementExample = {
+  description: string;
+  block: Block;
 };
 
 export type UnitLanguageStatementWithArgs = UnitLanguageStatement & {

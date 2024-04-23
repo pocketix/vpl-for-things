@@ -32,6 +32,7 @@ export class EditorExpressionModal extends LitElement {
   @property() expressionModalCurrentView: ExpressionModalCurrentView = 'expressions';
   @property() selectedAddExpression: any;
   @property() highlightedExpr: HTMLElement;
+  @property() isExample: boolean = false;
 
   expressionModalRef: Ref<HTMLDialogElement> = createRef();
   expressionsWapperRef: Ref<HTMLElement> = createRef();
@@ -77,7 +78,10 @@ export class EditorExpressionModal extends LitElement {
     return html`
       <editor-modal ${ref(this.expressionModalRef)} modalTitle="${'Create Expression'}" class="expression-list-modal">
         <div ${ref(this.expressionsWapperRef)} class="expression-list-modal-content-wrapper">
-          <editor-expression .expression="${this.expression}" .highlightedExpr="${this.highlightedExpr}">
+          <editor-expression
+            .expression="${this.expression}"
+            .highlightedExpr="${this.highlightedExpr}"
+            .isExample="${this.isExample}">
           </editor-expression>
         </div>
       </editor-modal>

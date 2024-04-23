@@ -42,12 +42,14 @@ export class GEStatement extends LitElement {
         display: flex;
         gap: 0.35rem;
         margin-left: auto;
+        height: 100%;
       }
 
       .statement-label-wrapper {
         display: flex;
         align-items: center;
         gap: 0.35rem;
+        position: relative;
         /* width: 100%; */
       }
 
@@ -60,6 +62,7 @@ export class GEStatement extends LitElement {
         padding: 0.5rem;
         border-top-left-radius: 0.5rem;
         border-top-right-radius: 0.5rem;
+        height: 55px;
       }
 
       .nested {
@@ -125,12 +128,75 @@ export class GEStatement extends LitElement {
       .expand-nested-block-button {
         display: flex;
         align-items: center;
+        padding-left: 4px;
+        padding-right: 4px;
+        cursor: pointer;
       }
 
       .statement-arguments-wrapper {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+      }
+
+      .user-proc-wrapper {
+        display: block;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        background: none;
+      }
+
+      .ok-button {
+        display: flex;
+        justify-content: center;
+        color: var(--green-600);
+        gap: 4px;
+      }
+
+      .stmt-brief-desc-wrapper {
+        max-width: 800px;
+        text-align: justify;
+        text-justify: inter-word;
+      }
+
+      .stmt-desc-modal {
+        position: absolute;
+        bottom: -4px;
+      }
+
+      .stmt-icon {
+        cursor: help;
+      }
+
+      .stmt-desc-modal * {
+        outline: none;
+      }
+
+      .stmt-desc-inner-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 500px;
+        overflow: auto;
+      }
+
+      .stmt-desc-item-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stmt-desc-label {
+        font-weight: 600;
+        font-size: 1.125rem;
+      }
+
+      .divider {
+        width: 100%;
+        height: 1px;
+        background: var(--gray-300);
+        margin-bottom: 8px;
       }
 
       @media (min-width: 500px) {
@@ -146,6 +212,9 @@ export class GEStatement extends LitElement {
   @property() statement: ProgramStatement;
   @property() index: number;
   @property() nestedBlockVisible: boolean = true;
+  @property() isProcBody: boolean = false;
+  @property() isExample: boolean = false;
+  @property() exampleBlockIsVisible: boolean = false;
   //#endregion
 
   //#region Context
@@ -163,6 +232,8 @@ export class GEStatement extends LitElement {
   statementNestedBlockRef: Ref<HTMLElement> = createRef();
   statementControlsModalRef: Ref<EditorModal> = createRef();
   multipleArgsModalRef: Ref<EditorModal> = createRef();
+  procModalRef: Ref<EditorModal> = createRef();
+  stmtDescModalRef: Ref<EditorModal> = createRef();
   //#endregion
 
   //#region Lifecycles
@@ -224,7 +295,7 @@ export class GEStatement extends LitElement {
     this.nestedBlockVisible = !this.nestedBlockVisible;
   }
 
-  handleRemoveStatement() {
+  handleRemoveStatement(e: Event) {
     const event = new CustomEvent(statementCustomEvent.REMOVE, {
       bubbles: false,
       composed: true,
@@ -232,9 +303,10 @@ export class GEStatement extends LitElement {
     });
     this.dispatchEvent(event);
     this.handleHideStatementControlsModal();
+    e.stopPropagation();
   }
 
-  handleMoveStatementUp() {
+  handleMoveStatementUp(e: Event) {
     const event = new CustomEvent(statementCustomEvent.MOVE_UP, {
       bubbles: false,
       composed: true,
@@ -242,9 +314,10 @@ export class GEStatement extends LitElement {
     });
     this.dispatchEvent(event);
     this.handleHideStatementControlsModal();
+    e.stopPropagation();
   }
 
-  handleMoveStatementDown() {
+  handleMoveStatementDown(e: Event) {
     const event = new CustomEvent(statementCustomEvent.MOVE_DOWN, {
       bubbles: false,
       composed: true,
@@ -252,14 +325,30 @@ export class GEStatement extends LitElement {
     });
     this.dispatchEvent(event);
     this.handleHideStatementControlsModal();
+    e.stopPropagation();
   }
 
-  handleToggleStatementControlsModal() {
+  handleToggleStatementControlsModal(e: Event) {
     this.statementControlsModalRef.value.toggleModal();
+    e.stopPropagation();
   }
 
   handleHideStatementControlsModal() {
     this.statementControlsModalRef.value.hideModal();
+  }
+
+  handleShowProcDef() {
+    this.procModalRef.value.showModal();
+  }
+
+  handleShowStmtDescModal(e: Event) {
+    if (!this.exampleBlockIsVisible) {
+      this.exampleBlockIsVisible = true;
+    }
+    if (this.stmtDescModalRef.value) {
+      this.stmtDescModalRef.value.showModal();
+    }
+    e.stopPropagation();
   }
   //#endregion
 
@@ -288,6 +377,10 @@ export class GEStatement extends LitElement {
                 </ge-statement-argument>
               `
           )}
+          <editor-button class="ok-button" @click="${() => this.multipleArgsModalRef.value.hideModal()}">
+            <editor-icon .icon="${icons.checkLg}"></editor-icon>
+            <span>OK</span>
+          </editor-button>
         </div>
       </editor-modal>
     `;
@@ -297,18 +390,65 @@ export class GEStatement extends LitElement {
     return html`
       <div
         ${ref(this.statementHeaderRef)}
-        class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''}">
+        class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''} ${this.language
+          .statements[this.statement.id].isUserProcedure
+          ? 'user-proc'
+          : ''}">
         <div class="statement-label-wrapper">
           ${this.language.statements[this.statement.id].icon
             ? html`
                 <editor-icon
+                  class="stmt-icon"
+                  title="Show Help"
+                  @click="${this.handleShowStmtDescModal}"
                   .icon="${icons[this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].icon]}"
                   .color="${this.language.statements[this.statement.id].foregroundColor}"
                   .width="${24}"
                   .height="${24}">
                 </editor-icon>
+                ${this.language.statements[this.statement.id].description
+                  ? html`
+                      <editor-modal
+                        class="stmt-desc-modal"
+                        .modalTitle="${`Help for "${this.language.statements[this.statement.id].label}" statement`}"
+                        .modalIcon="${icons.questionCircle}"
+                        ${ref(this.stmtDescModalRef)}>
+                        <div class="stmt-desc-inner-wrapper">
+                          <div class="stmt-desc-item-wrapper">
+                            <div class="stmt-desc-label">Description</div>
+                            <div class="stmt-brief-desc-wrapper">
+                              ${this.language.statements[this.statement.id].description.brief}
+                            </div>
+                          </div>
+                          ${this.language.statements[this.statement.id].description.example
+                            ? html`
+                                <div class="stmt-desc-item-wrapper">
+                                  <div class="stmt-desc-label">Example</div>
+                                  <div class="stmt-brief-desc-wrapper">
+                                    ${this.language.statements[this.statement.id].description.example.description}
+                                  </div>
+                                </div>
+                                <div>
+                                  ${this.exampleBlockIsVisible
+                                    ? html`
+                                        <div class="divider"></div>
+                                        <ge-block
+                                          .isExample="${true}"
+                                          .block="${this.language.statements[this.statement.id].description.example
+                                            .block}">
+                                        </ge-block>
+                                      `
+                                    : nothing}
+                                </div>
+                              `
+                            : nothing}
+                        </div>
+                      </editor-modal>
+                    `
+                  : nothing}
               `
             : nothing}
+
           <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
         </div>
         ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
@@ -318,7 +458,8 @@ export class GEStatement extends LitElement {
                   ?disabled="${this.statement.isInvalid ? true : false}"
                   .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0]}"
                   .argPosition="${0}"
-                  .stmtId="${this.statement.id}">
+                  .stmtId="${this.statement.id}"
+                  .isExample="${this.isExample}">
                 </ge-statement-argument>
               `
             : this.multipleArgumentTemplate(
@@ -327,36 +468,40 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            <editor-button
-              @click="${this.handleToggleStatementControlsModal}"
-              title="Statement Controls"
-              class="statement-controls-expand-button">
-              <editor-icon .icon="${icons.list}"></editor-icon>
-            </editor-button>
-            <editor-modal
-              class="statement-controls-modal"
-              .displayType="${'dialog'}"
-              .titleIsVisible="${false}"
-              .closeButtonIsVisible="${false}"
-              ${ref(this.statementControlsModalRef)}>
-              <div class="statement-controls-buttons">
-                <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">
-                  <editor-icon .icon="${icons.arrowUp}"></editor-icon>
-                  Move Up
-                </editor-button>
-                <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down">
-                  <editor-icon .icon="${icons.arrowDown}"></editor-icon>
-                  Move Down
-                </editor-button>
-                <editor-button
-                  @click="${this.handleRemoveStatement}"
-                  title="Remove Statement"
-                  class="remove-statement-button">
-                  <editor-icon .icon="${icons.trash}"></editor-icon>
-                  Delete
-                </editor-button>
-              </div>
-            </editor-modal>
+            ${!this.isExample
+              ? html`
+                  <editor-button
+                    @click="${this.handleToggleStatementControlsModal}"
+                    title="Statement Controls"
+                    class="statement-controls-expand-button">
+                    <editor-icon .icon="${icons.list}"></editor-icon>
+                  </editor-button>
+                  <editor-modal
+                    class="statement-controls-modal"
+                    .displayType="${'dialog'}"
+                    .titleIsVisible="${false}"
+                    .closeButtonIsVisible="${false}"
+                    ${ref(this.statementControlsModalRef)}>
+                    <div class="statement-controls-buttons">
+                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">
+                        <editor-icon .icon="${icons.arrowUp}"></editor-icon>
+                        Move Up
+                      </editor-button>
+                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down">
+                        <editor-icon .icon="${icons.arrowDown}"></editor-icon>
+                        Move Down
+                      </editor-button>
+                      <editor-button
+                        @click="${this.handleRemoveStatement}"
+                        title="Remove Statement"
+                        class="remove-statement-button">
+                        <editor-icon .icon="${icons.trash}"></editor-icon>
+                        Delete
+                      </editor-button>
+                    </div>
+                  </editor-modal>
+                `
+              : nothing}
           </div>
           ${(this.statement as CompoundStatement).block
             ? html`
@@ -386,7 +531,28 @@ export class GEStatement extends LitElement {
               style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
               class="nested ${this.nestedBlockVisible ? '' : 'hidden'}"
               .block="${(this.statement as CompoundStatement).block}"
-              .parentStmt="${this.statement}"></ge-block>
+              .parentStmt="${this.statement}"
+              .isProcBody="${this.isProcBody}"
+              .isExample="${this.isExample}"></ge-block>
+          `
+        : this.language.statements[this.statement.id].isUserProcedure && !this.isProcBody
+        ? html`
+            <editor-button @click="${this.handleShowProcDef}" class="user-proc-wrapper">
+              ${this.statementTemplate(false)}
+            </editor-button>
+            <editor-modal
+              ${ref(this.procModalRef)}
+              .modalTitle="${this.language.statements[this.statement.id].label}"
+              .modalIcon="${icons[this.language.statements[this.statement.id].icon]}"
+              .backgroundColor="${this.language.statements[this.statement.id].backgroundColor}"
+              .foregroundColor="${this.language.statements[this.statement.id].foregroundColor}"
+              .isFullWidth="${true}"
+              .isFullHeight="${true}">
+              <ge-block
+                .isProcBody="${true}"
+                .isExample="${this.isExample}"
+                .block="${this.program.header.userProcedures[this.statement.id]}"></ge-block>
+            </editor-modal>
           `
         : this.statementTemplate(false)}
     `;

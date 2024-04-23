@@ -45,6 +45,10 @@ export class EditorExpressionOperand extends LitElement {
         padding-right: 0;
       }
 
+      .operand-button {
+        opacity: 100 !important;
+      }
+
       .add-operand-modal-wrapper {
         display: flex;
         flex-direction: column;
@@ -101,6 +105,7 @@ export class EditorExpressionOperand extends LitElement {
   ];
   @property() operandValueIsMissing: boolean = false;
   @property() visibleOnRender: boolean = false;
+  @property() isExample: boolean = false;
 
   exprAddOperandModalRef: Ref<EditorModal> = createRef();
   variablesModalRef: Ref<EditorVariablesModal> = createRef();
@@ -156,7 +161,7 @@ export class EditorExpressionOperand extends LitElement {
   }
 
   handleCancelOperand() {
-    if (this.operand.value === null) {
+    if (this.operand.value === null || this.operand.value === '') {
       const event = new CustomEvent(editorExpressionOperandCustomEvent.CANCEL_ADD_OPD, {
         bubbles: true,
         composed: true,
@@ -310,7 +315,7 @@ export class EditorExpressionOperand extends LitElement {
 
   render() {
     return html`
-      <editor-button @click="${this.handleAddExpressionOperand}" class="operand-button">
+      <editor-button ?disabled="${this.isExample}" @click="${this.handleAddExpressionOperand}" class="operand-button">
         ${this.operand.value !== null
           ? typeof this.operand.value === 'string' && this.operand.type === 'str'
             ? `"${this.operand.value.toString()}"`
@@ -365,14 +370,14 @@ export class EditorExpressionOperand extends LitElement {
           <div style="display: flex; gap: 4px;">
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--green-600); width: 100%;"
+              style="color: var(--green-600); width: 100%; gap: 4px;"
               @click="${this.handleConfirmOperand}">
               <editor-icon .icon="${checkLg}"></editor-icon>
               <div>OK</div>
             </editor-button>
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--red-600); width: 100%;"
+              style="color: var(--red-600); width: 100%; gap: 4px;"
               @click="${this.handleCancelOperand}">
               <editor-icon .icon="${xLg}"></editor-icon>
               <div>Cancel</div>

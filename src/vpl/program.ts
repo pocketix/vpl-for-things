@@ -1,6 +1,43 @@
 import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
 
+export function parseOperandToString(operand: ExpressionOperand, negated: boolean = false) {
+  let valueString =
+    operand.type === 'bool_expr' ? parseExpressionToString(operand.value as Expression) : `${operand.value}`;
+  return negated ? `NOT ${valueString}` : valueString;
+}
+
+export function parseExpressionToString(expression: Expression) {
+  let operandsStrings: string[] = expression.opds.map((operand) => {
+    if ((operand as Expression).opds) {
+      return parseExpressionToString(operand as Expression);
+    } else {
+      return parseOperandToString(operand as ExpressionOperand, expression.opr === '!');
+    }
+  });
+
+  if (expression.opr) {
+    return `(${operandsStrings.join(
+      ` ${convertOprToDisplayOpr(expression.opr as CompareOperator | BoolOperator | NumericOperator)} `
+    )})`;
+  } else {
+    return operandsStrings.join(' ');
+  }
+}
+
+export function convertOprToDisplayOpr(opr: ExpressionOperator) {
+  switch (opr) {
+    case '&&':
+      return 'AND';
+    case '||':
+      return 'OR';
+    case '!':
+      return 'NOT';
+    default:
+      return opr;
+  }
+}
+
 export function initDefaultArgumentType(argumentType: ArgumentType) {
   switch (argumentType) {
     case 'bool':
@@ -24,6 +61,11 @@ export function analyzeBlock(block: Block, langStmts: Statements, parentStmt: Pr
     let nextPrgStmt: ProgramStatement;
     let currentPrgStmt = block[i];
     let currentLangStmt = langStmts[currentPrgStmt.id];
+
+    if (currentLangStmt === undefined) {
+      block.splice(i, 1);
+      continue;
+    }
 
     if ((currentPrgStmt as CompoundStatement).block) {
       analyzeBlock((currentPrgStmt as CompoundStatement).block, langStmts, currentPrgStmt);
@@ -84,19 +126,19 @@ export function assignUuidToExprOperands(expr: Expression) {
   }
 }
 
-export function assignUuidToBlock(block) {
+export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
     stmt._uuid = uuidv4();
-    if (stmt.args) {
-      for (let arg of stmt.args) {
+    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
+      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
         if (arg.type === 'bool_expr') {
-          assignUuidToExprOperands(arg.value);
+          assignUuidToExprOperands(arg.value as Expression);
         }
       }
     }
 
-    if (stmt.block) {
-      assignUuidToBlock(stmt.block);
+    if ((stmt as CompoundStatement).block) {
+      assignUuidToBlock((stmt as CompoundStatement).block);
     }
   }
 }
@@ -141,22 +183,22 @@ export class Program {
       }
     }
 
-    function removeUuidFromBlock(block) {
+    function removeUuidFromBlock(block: Block) {
       for (let stmt of block) {
         delete stmt._uuid;
         if (stmt.isInvalid) {
           delete stmt.isInvalid;
         }
-        if (stmt.args) {
-          for (let arg of stmt.args) {
+        if ((stmt as AbstractStatementWithArgs).args) {
+          for (let arg of (stmt as AbstractStatementWithArgs).args) {
             if (arg.type === 'bool_expr') {
-              removeUuidFromExprOperands(arg.value);
+              removeUuidFromExprOperands(arg.value as Expression);
             }
           }
         }
 
-        if (stmt.block) {
-          removeUuidFromBlock(stmt.block);
+        if ((stmt as CompoundStatement).block) {
+          removeUuidFromBlock((stmt as CompoundStatement).block);
         }
       }
     }
@@ -233,28 +275,6 @@ export class Program {
     }
 
     block.push(resultStatement);
-  }
-
-  operatorIsUnary(opr: CompareOperator | NumericOperator | BoolOperator) {
-    switch (opr) {
-      case '!':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  convertOprToDisplayOpr(opr: ExpressionOperator) {
-    switch (opr) {
-      case '&&':
-        return 'AND';
-      case '||':
-        return 'OR';
-      case '!':
-        return 'NOT';
-      default:
-        return opr;
-    }
   }
 }
 

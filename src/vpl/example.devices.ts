@@ -3,7 +3,7 @@ import { Device } from './language';
 export const exampleDevices: Device[] = [
   {
     deviceName: 'DistanceSensor-1',
-    attributes: ['waterLevel'],
+    attributes: ['waterLevel', 'distance'],
     functions: [],
   },
   {
@@ -104,6 +104,58 @@ export const exampleDevices: Device[] = [
         label: 'beep',
         icon: 'volumeUp',
         group: 'iot',
+      },
+    ],
+  },
+  {
+    deviceName: 'CoffeeMachine',
+    attributes: [],
+    functions: [
+      {
+        type: 'unit_with_args',
+        backgroundColor: '#795548',
+        foregroundColor: '#ffffff',
+        label: 'makeCoffee',
+        icon: 'coffe',
+        group: 'iot',
+        args: [
+          {
+            type: 'str_opt',
+            options: [
+              { id: 'espresso', label: 'Espresso' },
+              { id: 'late', label: 'Latte Macchiato' },
+              { id: 'cappuccino', label: 'Cappuccino' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    deviceName: 'LightSensor',
+    attributes: ['isDark'],
+    functions: [],
+  },
+  {
+    deviceName: 'OutDoorLight',
+    attributes: [],
+    functions: [
+      {
+        type: 'unit_with_args',
+        backgroundColor: '#eab308',
+        foregroundColor: '#ffffff',
+        label: 'state',
+        icon: 'lightbulb',
+        group: 'iot',
+        args: [
+          {
+            type: 'str_opt',
+            options: [
+              { id: 'on', label: 'On' },
+              { id: 'off', label: 'Off' },
+            ],
+          },
+        ],
       },
     ],
   },

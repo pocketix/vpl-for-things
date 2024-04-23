@@ -7,6 +7,7 @@ import {
   Program,
   boolOperators,
   compareOperators,
+  convertOprToDisplayOpr,
   numericOperators,
 } from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
@@ -180,6 +181,7 @@ export class EditorExpressionOperandList extends LitElement {
   @property() groupModeIsActive: boolean = false;
   @property() selectedExpressions: (Expression | ExpressionOperand)[] = [];
   @property() selectedOprType: string = 'bool';
+  @property() isExample: boolean = false;
 
   @consume({ context: programContext })
   @property()
@@ -198,6 +200,9 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   handleAddNewOpd() {
+    if (this.parentExpr.opr === '!' && this.operands.length > 0) {
+      return;
+    }
     this.operands.push({ type: 'unknown', value: null, _uuid: uuidv4() });
     this.opdModalVisibleOnRender = true;
 
@@ -209,8 +214,6 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   handleCancelAddOpd() {
-    console.log('removing last added opd');
-
     this.operands.pop();
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -265,6 +268,9 @@ export class EditorExpressionOperandList extends LitElement {
 
   handleGroupExpressions(groupOpr) {
     if (this.selectedExpressions.length < 1) {
+      return;
+    }
+    if (this.selectedExpressions.length > 1 && groupOpr === '!') {
       return;
     }
 
@@ -349,7 +355,7 @@ export class EditorExpressionOperandList extends LitElement {
       (opr) =>
         html`
           <editor-button @click="${() => this.handleGroupExpressions(opr)}" class="opr-list-item"
-            >${this.program.convertOprToDisplayOpr(opr)}
+            >${convertOprToDisplayOpr(opr)}
           </editor-button>
         `
     )}`;
@@ -388,6 +394,7 @@ export class EditorExpressionOperandList extends LitElement {
                               .highlightedExpr="${this.highlightedExpr}"
                               .exprIsSelected="${this.exprIsSelected}"
                               .groupModeIsActive="${this.groupModeIsActive}"
+                              .isExample="${this.isExample}"
                               class="${this.nestedLevel > 0 ? 'nested' : ''}">
                             </editor-expression>
                           `
@@ -395,12 +402,14 @@ export class EditorExpressionOperandList extends LitElement {
                             <editor-expression-operand
                               ${ref(this.exprOpdRef)}
                               .operand="${operand}"
+                              .isExample="${this.isExample}"
                               .visibleOnRender="${this.opdModalVisibleOnRender}">
                             </editor-expression-operand>
                           `}
                       ${!(operand as Expression).opds &&
                       !this.groupModeIsActive &&
-                      (this.exprIsSelected || this.nestedLevel === 0)
+                      (this.exprIsSelected || this.nestedLevel === 0) &&
+                      !this.isExample
                         ? html`
                             <div class="move-opd-button" @click="${() => this.handleMoveOpdUp(i)}">
                               <editor-icon .icon="${arrowUp}"></editor-icon>
@@ -473,7 +482,8 @@ export class EditorExpressionOperandList extends LitElement {
                           </editor-button>
                         </div>
                       `
-                    : html`
+                    : !this.isExample
+                    ? html`
                         <editor-button class="expr-control-button" @click="${this.handleAddNewOpd}">
                           <editor-icon .icon="${plusLg}"></editor-icon>
                           <span>Add Operand</span>
@@ -485,7 +495,8 @@ export class EditorExpressionOperandList extends LitElement {
                           <editor-icon .icon="${check2square}"></editor-icon>
                           <span>Select ...</span>
                         </editor-button>
-                      `}
+                      `
+                    : nothing}
                 </div>
               </div>
             `
