@@ -34,7 +34,7 @@ Include the library from `node_modules` folder into your page:
   <head>
     ...
     <script type="module" src="./node_modules/@podvojsky/vpl-for-things/dist/vpl-for-things.js"></script>
-    <script type="module" src="./node_modules/@podvojsky/vpl-for-things/dist/style.css"></script>
+    <link rel="stylesheet" href="./node_modules/@podvojsky/vpl-for-things/dist/style.css" />
   </head>
 </html>
 
