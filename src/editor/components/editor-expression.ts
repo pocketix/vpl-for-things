@@ -270,8 +270,6 @@ export class EditorExpression extends LitElement {
   }
 
   render() {
-    console.log(this.isExample, this.expression);
-
     return html`
       <div ${ref(this.exprWrapperRef)} class="expr-wrapper">
         ${this.expression.opr
