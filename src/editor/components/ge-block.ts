@@ -116,6 +116,8 @@ export class GeBlock extends LitElement {
   @property() renderBasicStatements: boolean = true;
   @property() selectedDevice: string;
   @property() parentStmt: ProgramStatement;
+  @property() isProcBody: boolean = false;
+  @property() isExample: boolean = false;
   //#endregion
 
   //#region Refs
@@ -146,7 +148,7 @@ export class GeBlock extends LitElement {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
-      if (stmt.key.startsWith('_')) {
+      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
         return false;
       }
 
@@ -340,7 +342,15 @@ export class GeBlock extends LitElement {
       ${repeat(
         this.block,
         (stmt) => stmt._uuid,
-        (stmt, i) => html` <ge-statement .statement="${stmt}" .index="${i}"></ge-statement> `
+        (stmt, i) =>
+          html`
+            <ge-statement
+              .isProcBody="${this.isProcBody}"
+              .statement="${stmt}"
+              .index="${i}"
+              .isExample="${this.isExample}">
+            </ge-statement>
+          `
       )}
     `;
   }
@@ -449,7 +459,9 @@ export class GeBlock extends LitElement {
   //#region Render
   render() {
     return html`
-      ${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}
+      ${this.isExample
+        ? html`${this.statementsTemplate()}`
+        : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
     `;
   }
   //#endregion

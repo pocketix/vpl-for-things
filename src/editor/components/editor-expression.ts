@@ -1,7 +1,19 @@
-import { EditorExpressionOperandList, Expression, Program } from '@/index';
+import {
+  BoolOperator,
+  CompareOperator,
+  EditorExpressionOperandList,
+  EditorModal,
+  Expression,
+  NumericOperator,
+  Program,
+  boolOperators,
+  compareOperators,
+  convertOprToDisplayOpr,
+  numericOperators,
+} from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { editorExpressionCustomEvent } from '../editor-custom-events';
+import { editorExpressionCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '@/editor/icons';
@@ -112,6 +124,29 @@ export class EditorExpression extends LitElement {
         height: 100%;
         width: 8px;
       }
+
+      .edit-opr-button {
+        margin-left: auto;
+        padding: 4px;
+        padding-right: 8px;
+      }
+
+      .opr-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .opr-list-item {
+        justify-content: center;
+        font-family: var(--mono-font);
+      }
+
+      .select-opr-modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
     `,
   ];
 
@@ -120,6 +155,8 @@ export class EditorExpression extends LitElement {
   @property() nestedLevel: number = 0;
   @property() exprIsSelected: boolean;
   @property() highlightedExpr: HTMLElement;
+  @property() selectedOprType: string = 'bool';
+  @property() isExample: boolean = false;
 
   @consume({ context: programContext })
   @property()
@@ -127,6 +164,7 @@ export class EditorExpression extends LitElement {
 
   exprWrapperRef: Ref<HTMLElement> = createRef();
   nestedExprListWrapperRef: Ref<EditorExpressionOperandList> = createRef();
+  changeOprModalRef: Ref<EditorModal> = createRef();
 
   handleOprButtonClicked(e: Event) {
     if (!this.nestedExprListIsVisible) {
@@ -190,7 +228,50 @@ export class EditorExpression extends LitElement {
     e.stopPropagation();
   }
 
+  handleSelectOprType(e: Event) {
+    this.selectedOprType = (e.currentTarget as HTMLSelectElement).value;
+  }
+
+  handleChangeOpr(opr: NumericOperator | BoolOperator | CompareOperator) {
+    this.expression.opr = opr;
+
+    this.changeOprModalRef.value.hideModal();
+
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
+  operatorListTemplate(oprType) {
+    let operatorList;
+
+    switch (oprType) {
+      case 'bool':
+        operatorList = boolOperators;
+        break;
+      case 'compare':
+        operatorList = compareOperators;
+        break;
+      case 'numeric':
+        operatorList = numericOperators;
+        break;
+    }
+
+    return html`${operatorList.map(
+      (opr) =>
+        html`
+          <editor-button @click="${() => this.handleChangeOpr(opr)}" class="opr-list-item"
+            >${convertOprToDisplayOpr(opr)}
+          </editor-button>
+        `
+    )}`;
+  }
+
   render() {
+    console.log(this.isExample, this.expression);
+
     return html`
       <div ${ref(this.exprWrapperRef)} class="expr-wrapper">
         ${this.expression.opr
@@ -205,7 +286,7 @@ export class EditorExpression extends LitElement {
                     : this.expression.opr === '||'
                     ? 'or-group'
                     : ''}">
-                  <span> ${this.program.convertOprToDisplayOpr(this.expression.opr)} </span>
+                  <span> ${convertOprToDisplayOpr(this.expression.opr)} </span>
                   ${!this.nestedExprListIsVisible
                     ? html`
                         <span>
@@ -213,10 +294,38 @@ export class EditorExpression extends LitElement {
                         </span>
                       `
                     : nothing}
+                  ${this.highlightedExpr === this.exprWrapperRef.value && !this.isExample
+                    ? html`
+                        <editor-icon
+                          @click="${(e: Event) => {
+                            this.changeOprModalRef.value.showModal();
+                            e.stopPropagation();
+                          }}"
+                          class="edit-opr-button"
+                          .icon="${icons.pencilSquare}"></editor-icon>
+                      `
+                    : nothing}
                 </div>
               </div>
             `
           : nothing}
+        <editor-modal ${ref(this.changeOprModalRef)} .modalTitle="${'Change operator'}">
+          <div class="select-opr-modal-content">
+            <div>
+              <label for="opr-type-select">Operator Type</label>
+              <select
+                name="opr-type-select"
+                id="opr-type-select"
+                .value="${this.selectedOprType}"
+                @change="${this.handleSelectOprType}">
+                <option value="bool">Logical</option>
+                <option value="compare">Compare</option>
+                <option value="numeric">Numeric</option>
+              </select>
+            </div>
+            <div class="opr-list">${this.operatorListTemplate(this.selectedOprType)}</div>
+          </div>
+        </editor-modal>
         <div class="indent-wrapper">
           ${this.nestedLevel > 0 ? html`<div class="indent"></div>` : nothing}
           <editor-expression-operand-list
@@ -225,6 +334,7 @@ export class EditorExpression extends LitElement {
             .operands="${this.expression.opds}"
             .nestedLevel="${this.nestedLevel}"
             .highlightedExpr="${this.highlightedExpr}"
+            .isExample="${this.isExample}"
             .exprIsSelected="${this.highlightedExpr &&
             this.exprWrapperRef.value &&
             this.highlightedExpr === this.exprWrapperRef.value}"

@@ -8,6 +8,7 @@ import {
   ProgramStatementArgument,
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
+  parseExpressionToString,
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -33,8 +34,9 @@ export class GeStatementArgument extends LitElement {
 
       .expr-arg {
         white-space: nowrap;
-        overflow-x: auto;
+        min-width: 0;
         width: 100%;
+        font-family: var(--mono-font);
       }
 
       .variables-icon {
@@ -68,6 +70,17 @@ export class GeStatementArgument extends LitElement {
         width: 100%;
         gap: 2px;
       }
+
+      *:disabled {
+        opacity: 100% !important;
+        color: black;
+      }
+
+      .disabled {
+        opacity: 100% !important;
+        color: black;
+        pointer-events: none;
+      }
     `,
   ];
 
@@ -78,6 +91,7 @@ export class GeStatementArgument extends LitElement {
   @property() showLabel: boolean = false;
   @property() originalArgumentType: ArgumentType;
   @property() variableKey: string;
+  @property() isExample: boolean = false;
 
   @consume({ context: languageContext })
   @property()
@@ -210,16 +224,22 @@ export class GeStatementArgument extends LitElement {
     return html`
       <div class="${this.argument.type === 'var' && this.argument.value ? 'argument-var-wrapper' : ''}">
         <editor-button
-          class="${this.argument.type === 'var' && this.argument.value ? 'expr-arg' : ''}"
+          class="${this.argument.type === 'var' && this.argument.value ? 'expr-arg' : ''} ${this.isExample
+            ? 'disabled'
+            : ''}"
           style="height: 100%;"
           @click="${this.handleShowSelectArgumentVariableModal}">
           ${this.argument.type === 'var' && this.argument.value
-            ? `$${this.argument.value}`
+            ? html`
+                <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+                  <div style="text-overflow: ellipsis; overflow: hidden;">${`$${this.argument.value}`}</div>
+                </div>
+              `
             : html`<div class="variables-icon">𝑥</div>`}
         </editor-button>
-        ${this.argument.type === 'var' && this.argument.value && this.stmtId !== 'setvar'
+        ${this.argument.type === 'var' && this.argument.value && this.stmtId !== 'setvar' && !this.isExample
           ? html`
-              <editor-button @click="${this.handleDeselectUserVariable}">
+              <editor-button class="${this.isExample ? 'disabled' : ''}" @click="${this.handleDeselectUserVariable}">
                 <div class="variables-icon">𝑥-</div>
               </editor-button>
             `
@@ -259,19 +279,23 @@ export class GeStatementArgument extends LitElement {
               <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
                 ${(this.argument.value as Expression).opds.length === 0
                   ? html`
-                      <div style="display: flex; gap: 4px; align-items: center;">
+                      <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <editor-icon .icon="${plusLg}"></editor-icon>
-                        Enter Expression
+                        <div style="text-overflow: ellipsis; overflow: hidden;">Enter Expression</div>
                       </div>
                     `
                   : html`
-                      <div style="display: flex; gap: 4px; align-items: center;">
-                        <editor-icon .icon="${pencilSquare}"></editor-icon>
-                        Edit Expression
+                      <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+                        <div style="text-overflow: ellipsis; overflow: hidden;">
+                          ${parseExpressionToString(this.argument.value as Expression)}
+                        </div>
                       </div>
                     `}
               </editor-button>
-              <editor-expression-modal ${ref(this.expressionModalRef)} .expression="${this.argument.value}">
+              <editor-expression-modal
+                ${ref(this.expressionModalRef)}
+                .expression="${this.argument.value}"
+                .isExample="${this.isExample}">
               </editor-expression-modal>
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
@@ -283,6 +307,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 type="number"
                 placeholder="123"
@@ -319,6 +344,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 placeholder="abc"
                 type="text"
@@ -334,6 +360,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                ?disabled="${this.isExample}"
                 style="width: 100%;"
                 id="${argumentElementId}"
                 .value="${this.argument.value}"

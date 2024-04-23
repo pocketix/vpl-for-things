@@ -6,7 +6,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { EditorModal, Language, Program } from '@/index';
 import * as icons from '@/editor/icons';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
-import { graphicalEditorCustomEvent } from '../editor-custom-events';
+import { graphicalEditorCustomEvent, statementCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedure-modal')
 export class EditorUserProcedureModal extends LitElement {
@@ -56,6 +56,8 @@ export class EditorUserProcedureModal extends LitElement {
       delete this.language.statements[this.stmtKey];
       delete this.program.header.userProcedures[this.stmtKey];
 
+      this.userProcedureBodyModalRef.value.hideModal();
+
       const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
         bubbles: true,
         composed: true,
@@ -87,7 +89,7 @@ export class EditorUserProcedureModal extends LitElement {
         <editor-button class="delete-proc-button" @click="${this.handleDeleteProcedure}">
           <editor-icon .icon="${icons['trash']}" .color="${'var(--red-600)'}"></editor-icon>
         </editor-button>
-        <ge-block .block="${this.program.header.userProcedures[this.stmtKey]}"></ge-block>
+        <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}"></ge-block>
       </editor-modal>
     `;
   }

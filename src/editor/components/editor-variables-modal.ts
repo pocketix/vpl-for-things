@@ -167,7 +167,7 @@ export class EditorVariablesModal extends LitElement {
           : nothing}
         ${this.filteredDeviceVariables.map((varKey) => {
           return html`
-            <editor-button @click="${() => this.handleSelectUserVariable(varKey)}">${varKey}</editor-button>
+            <editor-button @click="${() => this.handleSelectUserVariable(varKey)}"> ${varKey} </editor-button>
           `;
         })}
       </div>

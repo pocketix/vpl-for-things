@@ -19,10 +19,15 @@ import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
 import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userVariableTypes } from '@/vpl/program';
-import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
+import {
+  editorControlsCustomEvent,
+  graphicalEditorCustomEvent,
+  statementCustomEvent,
+  textEditorCustomEvent,
+} from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
-import { Language } from '@/index';
+import { EditorButton, Language } from '@/index';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -49,7 +54,7 @@ export class EditorControls extends LitElement {
         flex-wrap: wrap;
         column-gap: 1.5rem;
         row-gap: 0.25rem;
-        justify-content: center;
+        justify-content: flex-start;
         width: 100%;
         padding-bottom: 0.5rem;
       }

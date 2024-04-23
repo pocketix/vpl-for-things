@@ -4,12 +4,18 @@ import { provide } from '@lit/context';
 import { Language, Statement, Statements } from '@/vpl/language';
 import { Block, CompoundStatement, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { editorControlsCustomEvent, graphicalEditorCustomEvent, textEditorCustomEvent } from '../editor-custom-events';
+import {
+  editorControlsCustomEvent,
+  graphicalEditorCustomEvent,
+  statementCustomEvent,
+  textEditorCustomEvent,
+} from '../editor-custom-events';
 import { TextEditor } from './text-editor';
 import { GraphicalEditor } from './graphical-editor';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
+import { EditorControls } from './editor-controls';
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -102,6 +108,7 @@ export class VplEditor extends LitElement {
   }
 
   handleGraphicalEditorProgramUpdated() {
+    // Source for deepQuerySelectorAll function: https://gist.github.com/Haprog/848fc451c25da00b540e6d34c301e96a#file-deepqueryselectorall-js-L7
     function deepQuerySelectorAll(selector, root) {
       root = root || document;
       const results = Array.from(root.querySelectorAll(selector));
