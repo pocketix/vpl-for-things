@@ -9,7 +9,7 @@ import {
   boolOperators,
   compareOperators,
   convertOprToDisplayOpr,
-  numericOperators,
+  numericOperators, ExpressionOperator
 } from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
@@ -220,7 +220,7 @@ export class EditorExpression extends LitElement {
       composed: true,
       detail: {
         exprToHighlight: this.exprWrapperRef.value,
-        exprGroupRelation: this.expression.opr,
+        exprGroupRelation: this.expression.value,
       },
     });
     this.dispatchEvent(evnt);
@@ -232,8 +232,8 @@ export class EditorExpression extends LitElement {
     this.selectedOprType = (e.currentTarget as HTMLSelectElement).value;
   }
 
-  handleChangeOpr(opr: NumericOperator | BoolOperator | CompareOperator) {
-    this.expression.opr = opr;
+  handleChangeOpr(type: NumericOperator | BoolOperator | CompareOperator) {
+    this.expression.type = type;
 
     this.changeOprModalRef.value.hideModal();
 
@@ -272,19 +272,19 @@ export class EditorExpression extends LitElement {
   render() {
     return html`
       <div ${ref(this.exprWrapperRef)} class="expr-wrapper">
-        ${this.expression.opr
+        ${this.expression.type
           ? html`
               <div
                 @click="${this.handleOprButtonClicked}"
                 class="opr-button-wrapper"
                 style="${`top: ${(this.nestedLevel - 1) * 37}px; z-index: ${300 - (this.nestedLevel + 4)}`}">
                 <div
-                  class="opr-button ${this.expression.opr === '&&'
+                  class="opr-button ${this.expression.type === '&&'
                     ? 'and-group'
-                    : this.expression.opr === '||'
+                    : this.expression.type === '||'
                     ? 'or-group'
                     : ''}">
-                  <span> ${convertOprToDisplayOpr(this.expression.opr)} </span>
+                  <span> ${convertOprToDisplayOpr(this.expression.type as ExpressionOperator)} </span>
                   ${!this.nestedExprListIsVisible
                     ? html`
                         <span>
@@ -329,14 +329,14 @@ export class EditorExpression extends LitElement {
           <editor-expression-operand-list
             ${ref(this.nestedExprListWrapperRef)}
             .parentExpr="${this.expression}"
-            .operands="${this.expression.opds}"
+            .operands="${this.expression.value}"
             .nestedLevel="${this.nestedLevel}"
             .highlightedExpr="${this.highlightedExpr}"
             .isExample="${this.isExample}"
             .exprIsSelected="${this.highlightedExpr &&
             this.exprWrapperRef.value &&
             this.highlightedExpr === this.exprWrapperRef.value}"
-            class="expr-opd-list ${this.expression.opr ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
+            class="expr-opd-list ${this.expression.type ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
             this.nestedLevel > 0
               ? 'hidden'
               : 'block'} ${this.nestedLevel > 0 ? 'bottom-line' : ''}"

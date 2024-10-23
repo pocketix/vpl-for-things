@@ -28,6 +28,7 @@ import {
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
 import { EditorButton, Language } from '@/index';
+import Types from '@vpl/types.ts';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -265,9 +266,9 @@ export class EditorControls extends LitElement {
 
   @property() selectedEditorView: SelectedEditorView = 'split';
   @property() variablesTableMode: VariableTableMode = 'display';
-  @property() selectedAddVariableType: UserVariableType = 'str';
+  @property() selectedAddVariableType: UserVariableType = Types.string;
   @property() selectedAddVariableInitialValueBool: any = true;
-  @property() selectedAddVariableInitialValueBoolExpr: any = initDefaultArgumentType('bool_expr');
+  @property() selectedAddVariableInitialValueBoolExpr: any = initDefaultArgumentType(Types.boolean_expression);
   @property() selectedAddVariableInitialValueStr: any = '';
   @property() selectedAddVariableInitialValueNum: any = '0';
   @property() selectedAddVariableInitialValueNumExpr: any = [];
@@ -314,14 +315,14 @@ export class EditorControls extends LitElement {
 
   convertVariableTypeToDisplayVariableType(varType: UserVariableType, short?: boolean) {
     switch (varType) {
-      case 'bool':
-        return short ? 'Bool' : 'Boolean';
-      case 'bool_expr':
+      case Types.boolean:
+        return short ? Types.boolean : Types.boolean;
+      case Types.boolean_expression:
         return short ? 'Expr' : 'Expression';
-      case 'num':
-        return short ? 'Num' : 'Number';
-      case 'str':
-        return short ? 'Str' : 'String';
+      case Types.number:
+        return short ? Types.number : 'Number';
+      case Types.string:
+        return short ? Types.string : Types.string;
       default:
         return 'UNKNOWN';
     }
@@ -329,13 +330,13 @@ export class EditorControls extends LitElement {
 
   convertVariableTypeToDisplayColor(varType: UserVariableType) {
     switch (varType) {
-      case 'bool':
+      case Types.boolean:
         return 'var(--blue-500)';
-      case 'bool_expr':
+      case Types.boolean_expression:
         return 'var(--violet-500)';
-      case 'num':
+      case Types.number:
         return 'var(--yellow-500)';
-      case 'str':
+      case Types.string:
         return 'var(--emerald-500)';
       default:
         return '#000000';
@@ -344,13 +345,13 @@ export class EditorControls extends LitElement {
 
   convertVariableTypeToIcon(varType: UserVariableType) {
     switch (varType) {
-      case 'bool':
+      case Types.boolean:
         return 'toggles';
-      case 'bool_expr':
+      case Types.boolean_expression:
         return 'codeSlash';
-      case 'num':
+      case Types.number:
         return 'numbers';
-      case 'str':
+      case Types.string:
         return 'text';
     }
   }
@@ -397,16 +398,16 @@ export class EditorControls extends LitElement {
     this.addVariableInitialValueIsMissing = false;
 
     switch (this.selectedAddVariableType) {
-      case 'bool':
+      case Types.boolean:
         this.selectedAddVariableInitialValueBool = (e.currentTarget as HTMLInputElement).value;
         break;
-      case 'bool_expr':
+      case Types.boolean_expression:
         this.selectedAddVariableInitialValueBoolExpr = (e.currentTarget as HTMLInputElement).value;
         break;
-      case 'num':
+      case Types.number:
         this.selectedAddVariableInitialValueNum = (e.currentTarget as HTMLInputElement).value;
         break;
-      case 'str':
+      case Types.string:
         this.selectedAddVariableInitialValueStr = (e.currentTarget as HTMLInputElement).value;
         break;
     }
@@ -427,19 +428,19 @@ export class EditorControls extends LitElement {
     }
 
     switch (this.selectedAddVariableType) {
-      case 'str':
+      case Types.string:
         if (!this.selectedAddVariableInitialValueStr) {
           this.addVariableInitialValueIsMissing = true;
           return;
         }
         break;
-      case 'num':
+      case Types.number:
         if (!this.selectedAddVariableInitialValueNum) {
           this.addVariableInitialValueIsMissing = true;
           return;
         }
         break;
-      case 'bool_expr':
+      case Types.boolean_expression:
         if (this.selectedAddVariableInitialValueBoolExpr.length === 0) {
           this.addVariableInitialValueIsMissing = true;
           return;
@@ -449,24 +450,24 @@ export class EditorControls extends LitElement {
 
     if (fromIsValid) {
       this.program.header.userVariables[this.addVariableName] = {
-        type: 'bool',
+        type: Types.boolean,
         value: true,
       };
       this.program.header.userVariables[this.addVariableName].type = this.selectedAddVariableType;
       switch (this.selectedAddVariableType) {
-        case 'str':
+        case Types.string:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueStr;
           this.selectedAddVariableInitialValueStr = initDefaultArgumentType(this.selectedAddVariableType);
           break;
-        case 'bool':
+        case Types.boolean:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBool;
           this.selectedAddVariableInitialValueBool = initDefaultArgumentType(this.selectedAddVariableType);
           break;
-        case 'bool_expr':
+        case Types.boolean_expression:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
           this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
           break;
-        case 'num':
+        case Types.number:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNum;
           this.selectedAddVariableInitialValueNum = initDefaultArgumentType(this.selectedAddVariableType);
           break;
@@ -678,7 +679,7 @@ export class EditorControls extends LitElement {
 
   addUserVariableInitialValueTemplate(varType: UserVariableType) {
     switch (varType) {
-      case 'bool':
+      case Types.boolean:
         return html`
           <select
             id="add-variable-init-value-input"
@@ -688,7 +689,7 @@ export class EditorControls extends LitElement {
             <option value="false">False</option>
           </select>
         `;
-      case 'bool_expr':
+      case Types.boolean_expression:
         return html`
           <editor-button
             @click="${this.handleShowAddVariableExpressionModal}"
@@ -703,7 +704,7 @@ export class EditorControls extends LitElement {
             .expression="${this.selectedAddVariableInitialValueBoolExpr}">
           </editor-expression-modal>
         `;
-      case 'num':
+      case Types.number:
         return html`
           <input
             id="add-variable-init-value-input"
@@ -716,7 +717,7 @@ export class EditorControls extends LitElement {
             @input="${this.handleAddVariableInitialInputChange}"
             .value="${this.selectedAddVariableInitialValueNum}" />
         `;
-      case 'str':
+      case Types.string:
         return html`
           <input
             id="add-variable-init-value-input"
@@ -825,11 +826,11 @@ export class EditorControls extends LitElement {
 
   userVaribleInitialValueTemplate(varKey: string) {
     switch (this.program.header.userVariables[varKey].type) {
-      case 'bool':
+      case Types.boolean:
         return html`<span style="text-transform: capitalize;"
           >${this.program.header.userVariables[varKey].value}</span
         >`;
-      case 'bool_expr':
+      case Types.boolean_expression:
         return html`
           <div style="word-break: break-all;">
             <div style="display: flex; gap: 4px; align-items: center;">
@@ -838,16 +839,16 @@ export class EditorControls extends LitElement {
             </div>
           </div>
         `;
-      case 'num':
+      case Types.number:
         return html` <div style="word-break: break-all;">${this.program.header.userVariables[varKey].value}</div> `;
-      case 'str':
+      case Types.string:
         return html` <div style="word-break: break-all;">${this.program.header.userVariables[varKey].value}</div> `;
     }
   }
 
   userVaribleModifyInitialValueTemplate(varKey: string) {
     switch (this.program.header.userVariables[varKey].type) {
-      case 'bool':
+      case Types.boolean:
         return html`
           <select
             class="mono-font"
@@ -857,9 +858,9 @@ export class EditorControls extends LitElement {
             <option value="false">False</option>
           </select>
         `;
-      case 'bool_expr':
+      case Types.boolean_expression:
         return html`<editor-user-var-expr-modal .varKey="${varKey}"></editor-user-var-expr-modal> `;
-      case 'num':
+      case Types.number:
         return html`
           <input
             type="number"
@@ -870,7 +871,7 @@ export class EditorControls extends LitElement {
             .value="${this.program.header.userVariables[varKey].value}"
             @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
-      case 'str':
+      case Types.string:
         return html`
           <input
             type="text"

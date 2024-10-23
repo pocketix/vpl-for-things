@@ -35,7 +35,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
     description: {
       brief:
         'This statement allows the program to make decisions based on certain conditions. If a condition is true, the program executes statements inside it.',
@@ -49,26 +49,24 @@ export const baseLanguageStatements: Statements = {
                 id: '_heaterOn',
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      opds: [
-                        {
-                          type: 'var',
-                          value: 'TemperatureDevice-1.temperatureLevel',
-                        },
-                        {
-                          type: 'num',
-                          value: 19,
-                        },
-                      ],
-                      opr: '<',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value: [
+                  {
+                    value: [
+                      {
+                        type: 'variable',
+                        value: 'TemperatureDevice-1.temperatureLevel',
+                      },
+                      {
+                        type: 'number',
+                        value: 19,
+                      },
+                    ],
+                    type: '<',
+                  },
+                ],
               },
             ],
           },
@@ -83,7 +81,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
     predecessors: ['if'],
     description: {
       brief:
@@ -97,34 +95,32 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                value: [
                   {
-                    type: 'str_opt',
+                    type: 'string',
                     value: 'red',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      opds: [
-                        {
-                          type: 'var',
-                          value: 'DistanceSensor-1.distance',
-                        },
-                        {
-                          type: 'num',
-                          value: 5,
-                        },
-                      ],
-                      opr: '<=',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value: [
+                  {
+                    value: [
+                      {
+                        type: 'variable',
+                        value: 'DistanceSensor-1.distance',
+                      },
+                      {
+                        type: 'number',
+                        value: 5,
+                      },
+                    ],
+                    type: '<=',
+                  },
+                ],
               },
             ],
           },
@@ -133,52 +129,50 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                value: [
                   {
-                    type: 'str_opt',
+                    type: 'string_options',
                     value: 'blue',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      opds: [
-                        {
-                          opds: [
-                            {
-                              type: 'var',
-                              value: 'DistanceSensor-1.distance',
-                            },
-                            {
-                              type: 'num',
-                              value: 5,
-                            },
-                          ],
-                          opr: '>',
-                        },
-                        {
-                          opds: [
-                            {
-                              type: 'var',
-                              value: 'DistanceSensor-1.distance',
-                            },
-                            {
-                              type: 'num',
-                              value: 10,
-                            },
-                          ],
-                          opr: '<',
-                        },
-                      ],
-                      opr: '&&',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value: [
+                  {
+                    value: [
+                      {
+                        value: [
+                          {
+                            type: 'variable',
+                            value: 'DistanceSensor-1.distance',
+                          },
+                          {
+                            type: 'number',
+                            value: 5,
+                          },
+                        ],
+                        type: '>',
+                      },
+                      {
+                        value: [
+                          {
+                            type: 'variable',
+                            value: 'DistanceSensor-1.distance',
+                          },
+                          {
+                            type: 'number',
+                            value: 10,
+                          },
+                        ],
+                        type: '<',
+                      },
+                    ],
+                    type: '&&',
+                  },
+                ],
               },
             ],
           },
@@ -187,9 +181,9 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                value: [
                   {
-                    type: 'str_opt',
+                    type: 'string_options',
                     value: 'green',
                   },
                 ],
@@ -221,26 +215,24 @@ export const baseLanguageStatements: Statements = {
                 id: '_heaterOn',
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      opds: [
-                        {
-                          type: 'var',
-                          value: 'TemperatureDevice-1.temperatureLevel',
-                        },
-                        {
-                          type: 'num',
-                          value: 19,
-                        },
-                      ],
-                      opr: '<',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value:  [
+                  {
+                    value: [
+                      {
+                        type: 'variable',
+                        value: 'TemperatureDevice-1.temperatureLevel',
+                      },
+                      {
+                        type: 'number',
+                        value: 19,
+                      },
+                    ],
+                    type: '<',
+                  },
+                ],
               },
             ],
           },
@@ -264,7 +256,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     nestedStatements: ['case'],
-    args: [{ type: 'str' }],
+    arguments: [{ type: 'string' }],
     description: {
       brief:
         'This statement is useful when you have multiple states to check against a single variable. It provides a cleaner way to write multiple "Else If" statements.',
@@ -279,17 +271,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'red',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'high',
                   },
                 ],
@@ -299,17 +291,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'orange',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'ideal',
                   },
                 ],
@@ -319,17 +311,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'green',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'low',
                   },
                 ],
@@ -339,25 +331,25 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'blue',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'critical_low',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'var',
+                type: 'variable',
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -374,7 +366,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     parents: ['switch'],
-    args: [{ type: 'str' }],
+    arguments: [{ type: 'string' }],
     description: {
       brief:
         'Within a switch statement, each state is called a case. The program checks each case and executes the block of statements associated with the first matching case.',
@@ -389,17 +381,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'red',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'high',
                   },
                 ],
@@ -409,17 +401,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'orange',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'ideal',
                   },
                 ],
@@ -429,17 +421,17 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'green',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'low',
                   },
                 ],
@@ -449,25 +441,25 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    value: [
                       {
-                        type: 'str_opt',
+                        type: 'string_options',
                         value: 'blue',
                       },
                     ],
                   },
                 ],
-                args: [
+                value: [
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'critical_low',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'var',
+                type: 'variable',
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -485,7 +477,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeat1',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: 'num', label: 'Number of Repetitions' }],
+    arguments: [{ type: 'number', label: 'Number of Repetitions' }],
     description: {
       brief: 'Repeat is used, when you want to execute statements multiple times.',
       example: {
@@ -498,9 +490,9 @@ export const baseLanguageStatements: Statements = {
                 id: 'Buzzer-1.beep',
               },
             ],
-            args: [
+            value: [
               {
-                type: 'num',
+                type: 'number',
                 value: 3,
               },
             ],
@@ -516,7 +508,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeatIcon',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
     description: {
       brief: 'A while loop repeatedly executes a block of code as long as a specified condition is true.',
       example: {
@@ -527,25 +519,23 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'OutDoorLight.state',
-                args: [
+                value: [
                   {
-                    type: 'str_opt',
+                    type: 'string_options',
                     value: 'on',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      type: 'var',
-                      value: 'LightSensor.isDark',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value: [
+                  {
+                    type: 'variable',
+                    value: 'LightSensor.isDark',
+                  },
+                ],
               },
             ],
           },
@@ -562,17 +552,17 @@ export const baseLanguageStatements: Statements = {
     icon: 'bell',
     foregroundColor: '#ffffff',
     backgroundColor: '#8b5cf6',
-    args: [
+    arguments: [
       {
-        type: 'str_opt',
+        type: 'string_options',
         label: 'Notification Method',
         options: [
           { id: 'phone_number', label: 'Phone Number' },
           { id: 'email', label: 'Email' },
         ],
       },
-      { type: 'str', label: 'Email or Phone Number' },
-      { type: 'str', label: 'Notification Message' },
+      { type: 'string', label: 'Email or Phone Number' },
+      { type: 'string', label: 'Notification Message' },
     ],
     description: {
       brief: 'Alert can be used for sending notifications to a specified email address or phone number.',
@@ -584,42 +574,40 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'alert',
-                args: [
+                value: [
                   {
-                    type: 'str_opt',
+                    type: 'string_options',
                     value: 'phone_number',
                   },
                   {
-                    type: 'str',
+                    type: 'string',
                     value: '+420123456789',
                   },
                   {
-                    type: 'str',
+                    type: 'string',
                     value: 'Movement detected!',
                   },
                 ],
               },
             ],
-            args: [
+            value: [
               {
-                type: 'bool_expr',
-                value: {
-                  opds: [
-                    {
-                      opds: [
-                        {
-                          type: 'var',
-                          value: 'Doorbell-1.motionSensor',
-                        },
-                        {
-                          type: 'str',
-                          value: 'active',
-                        },
-                      ],
-                      opr: '===',
-                    },
-                  ],
-                },
+                type: 'boolean_expression',
+                value: [
+                  {
+                    value: [
+                      {
+                        type: 'variable',
+                        value: 'Doorbell-1.motionSensor',
+                      },
+                      {
+                        type: 'string',
+                        value: 'active',
+                      },
+                    ],
+                    type: '===',
+                  },
+                ],
               },
             ],
           },
@@ -636,8 +624,8 @@ export const baseLanguageStatements: Statements = {
     icon: 'bracesAsterisk',
     foregroundColor: '#ffffff',
     backgroundColor: '#d97706',
-    args: [
-      { type: 'var', label: 'Variable' },
+    arguments: [
+      { type: 'variable', label: 'Variable' },
       { type: 'unknown', label: 'Value' },
     ],
     description: {

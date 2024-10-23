@@ -19,6 +19,7 @@ import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
 } from '../editor-custom-events';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression-operand')
 export class EditorExpressionOperand extends LitElement {
@@ -99,9 +100,9 @@ export class EditorExpressionOperand extends LitElement {
 
   @property() operand: ExpressionOperand;
   @property() operandTypes = [
-    { id: 'str', label: 'String' },
-    { id: 'num', label: 'Number' },
-    { id: 'bool', label: 'Boolean' },
+    { id: Types.string, label: 'String' },
+    { id: Types.number, label: 'Number' },
+    { id: Types.boolean, label: 'Boolean' },
   ];
   @property() operandValueIsMissing: boolean = false;
   @property() visibleOnRender: boolean = false;
@@ -121,7 +122,7 @@ export class EditorExpressionOperand extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     if (this.operand.type === 'unknown') {
-      this.operand.type = 'str';
+      this.operand.type = Types.string;
     }
   }
 
@@ -142,7 +143,7 @@ export class EditorExpressionOperand extends LitElement {
   }
 
   handleVariableSelected(e: CustomEvent) {
-    this.operand.type = 'var';
+    this.operand.type = Types.variable;
     this.operand.value = e.detail.varKey;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -184,7 +185,7 @@ export class EditorExpressionOperand extends LitElement {
   handleDeselectUserVariable() {
     this.operand.type = this.program.header.userVariables[this.operand.value as string]
       ? this.program.header.userVariables[this.operand.value as string].type
-      : 'str';
+      : Types.string;
     this.operand.value = this.initOperandValue(this.operand.type);
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -196,13 +197,13 @@ export class EditorExpressionOperand extends LitElement {
 
   convertVariableTypeToDisplayVariableType(varType: UserVariableType, short?: boolean) {
     switch (varType) {
-      case 'bool':
+      case Types.boolean:
         return short ? 'Bool' : 'Boolean';
-      case 'bool_expr':
+      case Types.boolean_expression:
         return short ? 'Expr' : 'Expression';
-      case 'num':
+      case Types.number:
         return short ? 'Num' : 'Number';
-      case 'str':
+      case Types.string:
         return short ? 'Str' : 'String';
       default:
         return 'Device';
@@ -285,16 +286,16 @@ export class EditorExpressionOperand extends LitElement {
 
   variableModalTemplate() {
     return html`
-      <div class="${this.operand.type === 'var' && this.operand.value ? 'operand-value-wrapper' : ''}">
+      <div class="${this.operand.type === Types.variable && this.operand.value ? 'operand-value-wrapper' : ''}">
         <editor-button
-          class="${this.operand.type === 'var' && this.operand.value ? 'operand-var-input' : ''}"
+          class="${this.operand.type === Types.variable && this.operand.value ? 'operand-var-input' : ''}"
           style="height: 100%; width: 100%;"
           @click="${() => this.variablesModalRef.value.showModal()}">
-          ${this.operand.type === 'var' && this.operand.value
+          ${this.operand.type === Types.variable && this.operand.value
             ? this.operand.value
             : html`<div class="variables-icon">𝑥</div>`}
         </editor-button>
-        ${this.operand.type === 'var' && this.operand.value
+        ${this.operand.type === Types.variable && this.operand.value
           ? html`
               <editor-button @click="${this.handleDeselectUserVariable}">
                 <div class="variables-icon">𝑥-</div>
@@ -304,7 +305,7 @@ export class EditorExpressionOperand extends LitElement {
       </div>
       <editor-variables-modal
         ${ref(this.variablesModalRef)}
-        .permittedVarType="${this.operand.type === 'var'
+        .permittedVarType="${this.operand.type === Types.variable
           ? this.program.header.userVariables[this.operand.value as string]
             ? this.program.header.userVariables[this.operand.value as string].type
             : this.language.variables[this.operand.value as string].type
@@ -317,9 +318,9 @@ export class EditorExpressionOperand extends LitElement {
     return html`
       <editor-button ?disabled="${this.isExample}" @click="${this.handleAddExpressionOperand}" class="operand-button">
         ${this.operand.value !== null
-          ? typeof this.operand.value === 'string' && this.operand.type === 'str'
+          ? typeof this.operand.value === 'string' && this.operand.type === Types.string
             ? `"${this.operand.value.toString()}"`
-            : this.operand.type === 'var'
+            : this.operand.type === Types.variable
             ? `$${this.operand.value.toString()}`
             : this.operand.value.toString()
           : html`
@@ -337,7 +338,7 @@ export class EditorExpressionOperand extends LitElement {
         <div class="add-operand-modal-wrapper">
           <div class="add-operand-modal-item-wrapper">
             <label for="opd-type-select">Type</label>
-            ${this.operand.type === 'var'
+            ${this.operand.type === Types.variable
               ? html`
                   <editor-button disabled>
                     ${this.program.header.userVariables[this.operand.value as string]

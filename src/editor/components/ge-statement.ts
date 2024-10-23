@@ -20,6 +20,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
 import { EditorModal } from './editor-modal';
+import Types from '@vpl/types.ts';
 
 @customElement('ge-statement')
 export class GEStatement extends LitElement {
@@ -242,21 +243,21 @@ export class GEStatement extends LitElement {
     super();
     this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
-        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type = this.program.header
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[1].type = this.program.header
           .userVariables[
-          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[0].value as string
         ]
           ? this.program.header.userVariables[
-              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[0].value as string
             ].type
           : this.language.variables[
-              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[0].value as string
             ]
           ? 'device'
           : 'invalid';
-        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].value =
-          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type === 'bool_expr'
-            ? initDefaultArgumentType('bool_expr')
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[1].value =
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[1].type === Types.boolean_expression
+            ? initDefaultArgumentType(Types.boolean_expression)
             : null;
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -372,7 +373,7 @@ export class GEStatement extends LitElement {
                   .stmtId="${this.statement.id}"
                   .showLabel="${true}"
                   .variableKey="${this.statement.id === 'setvar' && arg.type === 'unknown'
-                    ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value
+                    ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[0].value
                     : null}">
                 </ge-statement-argument>
               `
@@ -451,19 +452,19 @@ export class GEStatement extends LitElement {
 
           <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
         </div>
-        ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
-          ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args.length === 1
+        ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value
+          ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value.length === 1
             ? html`
                 <ge-statement-argument
                   ?disabled="${this.statement.isInvalid ? true : false}"
-                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0]}"
+                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}"
                   .isExample="${this.isExample}">
                 </ge-statement-argument>
               `
             : this.multipleArgumentTemplate(
-                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
+                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).value
               )
           : nothing}
         <div class="statement-controls">

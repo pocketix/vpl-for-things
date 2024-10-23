@@ -1,5 +1,6 @@
 import { Block } from '..';
 import { baseLanguageStatements } from './base.language';
+import Types from '@vpl/types.ts';
 
 export class Language {
   variables: Variables;
@@ -56,7 +57,7 @@ export type Variable = {
   label: string;
 };
 
-export type VariableTypes = 'str' | 'num' | 'bool' | 'bool_expr' | 'device';
+export type VariableTypes = Types.string | Types.number | Types.boolean | Types.boolean_expression | 'device';
 
 export type LanguageStatementType = 'unit' | 'unit_with_args' | 'compound' | 'compound_with_args';
 
@@ -89,7 +90,7 @@ export type StatementExample = {
 };
 
 export type UnitLanguageStatementWithArgs = UnitLanguageStatement & {
-  args: Argument[];
+  arguments: Argument[];
 };
 
 export type CompoundLanguageStatement = UnitLanguageStatement & {
@@ -105,13 +106,13 @@ export type Argument = {
 };
 
 export type ArgumentType =
-  | 'str'
-  | 'num'
-  | 'bool'
-  | 'bool_expr'
-  | 'str_opt'
-  | 'num_opt'
-  | 'var'
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'boolean_expression'
+  | 'string_options'
+  | 'numeric_options'
+  | 'variable'
   | 'unknown'
   | 'device'
   | 'invalid';
