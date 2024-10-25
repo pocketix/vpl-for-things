@@ -133,7 +133,7 @@ export function assignUuidToBlock(block: Block) {
     stmt._uuid = uuidv4();
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).value) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).value) {
-        if (arg.type === 'boolean_expression') {
+        if (arg.type === Types.boolean_expression) {
           assignUuidToExprOperands(arg.value as unknown as Expression);
         }
       }
@@ -196,7 +196,7 @@ export class Program {
         }
         if ((stmt as AbstractStatementWithArgs).value) {
           for (let arg of (stmt as AbstractStatementWithArgs).value) {
-            if (arg.type === 'boolean_expression') {
+            if (arg.type === Types.boolean_expression) {
               removeUuidFromExprOperands(arg.value as unknown as Expression);
             }
           }
@@ -234,23 +234,22 @@ export class Program {
     let resultStatement: any = {};
 
     function initArgs() {
-      console.log(statement);
       for (let arg of statement.value) {
         resultStatement.value.push({
           type: arg.type,
         });
 
         switch (arg.type) {
-          case 'boolean':
-            resultStatement.value[resultStatement.value.length - 1].value = true;
+          case Types.boolean:
+            resultStatement.value[resultStatement.value?.length - 1].value = true;
             break;
-          case 'boolean_expression':
+          case Types.boolean_expression:
             resultStatement.value[resultStatement.value.length - 1].value = [];
             break;
-          case 'number':
+          case Types.number:
             resultStatement.value[resultStatement.value.length - 1].value = 0;
             break;
-          case 'string':
+          case Types.string:
             resultStatement.value[resultStatement.value.length - 1].value = '';
             break;
           default:
@@ -350,6 +349,10 @@ export type Expression = ProgramStatementArgument & {
 export type ExpressionOperands = (ExpressionOperand | Expression)[];
 
 export type ExpressionOperator = CompareOperator | BoolOperator | NumericOperator;
+
+export const isExpressionOperator = (possibleOperator: string) => {
+  return possibleOperator in compareOperators || possibleOperator in boolOperators || possibleOperator in numericOperators;
+}
 
 export type ExpressionOperand = {
   type: ExpressionOperandType;

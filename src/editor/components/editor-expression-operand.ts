@@ -172,7 +172,7 @@ export class EditorExpressionOperand extends LitElement {
     this.exprAddOperandModalRef.value.hideModal();
   }
 
-  handleOperandValueChange(e: Event) {
+  handleOperandValueChange(e: InputEvent) {
     this.operandValueIsMissing = false;
     this.operand.value = this.convertOperandInputValue(this.operand.type, (e.currentTarget as HTMLSelectElement).value);
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -210,31 +210,31 @@ export class EditorExpressionOperand extends LitElement {
     }
   }
 
-  convertOperandInputValue(opdType, opdValue) {
+  convertOperandInputValue(opdType: Types, opdValue: string) {
     switch (opdType) {
-      case 'num':
+      case Types.number:
         return Number(opdValue);
-      case 'bool':
+      case Types.boolean:
         return opdValue.toLowerCase() === 'true';
-      case 'str':
+      case Types.string:
         return opdValue;
     }
   }
 
-  initOperandValue(opdType) {
+  initOperandValue(opdType: Types) {
     switch (opdType) {
-      case 'num':
+      case Types.number:
         return 0;
-      case 'str':
+      case Types.string:
         return '';
-      case 'bool':
+      case Types.boolean:
         return false;
     }
   }
 
-  operandValueTemplate(opdType) {
+  operandValueTemplate(opdType: Types) {
     switch (opdType) {
-      case 'bool':
+      case Types.boolean:
         return html`
           <div class="operand-value-wrapper">
             <select
@@ -248,14 +248,13 @@ export class EditorExpressionOperand extends LitElement {
             ${this.variableModalTemplate()}
           </div>
         `;
-      case 'num':
+      case Types.number:
         return html`
           <div class="operand-value-wrapper">
             <input
               id="add-opd-input"
               type="number"
               name=""
-              id=""
               inputmode="decimal"
               placeholder="123"
               style="width: 100%; ${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
@@ -264,14 +263,13 @@ export class EditorExpressionOperand extends LitElement {
             ${this.variableModalTemplate()}
           </div>
         `;
-      case 'str':
+      case Types.string:
         return html`
           <div class="operand-value-wrapper">
             <input
               id="add-opd-input"
               type="text"
               name=""
-              id=""
               placeholder="abc"
               style="width: 100%; ${this.operandValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}"
               .value="${this.operand.value}"
@@ -279,7 +277,7 @@ export class EditorExpressionOperand extends LitElement {
             ${this.variableModalTemplate()}
           </div>
         `;
-      case 'var':
+      case Types.variable:
         return html`${this.variableModalTemplate()}`;
     }
   }
@@ -321,8 +319,8 @@ export class EditorExpressionOperand extends LitElement {
           ? typeof this.operand.value === 'string' && this.operand.type === Types.string
             ? `"${this.operand.value.toString()}"`
             : this.operand.type === Types.variable
-            ? `$${this.operand.value.toString()}`
-            : this.operand.value.toString()
+            ? `$${this.operand.value?.toString()}`
+            : this.operand.value?.toString()
           : html`
               <div style="display: flex; gap: 4px; color: var(--red-600); align-items: center;">
                 <editor-icon .icon="${plusLg}"></editor-icon>

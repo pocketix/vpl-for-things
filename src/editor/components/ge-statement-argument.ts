@@ -3,22 +3,23 @@ import {
   CompoundLanguageStatementWithArgs,
   EditorModal,
   Expression,
+  ExpressionOperands,
+  initDefaultArgumentType,
   Language,
+  parseExpressionToString,
   Program,
   ProgramStatementArgument,
-  UnitLanguageStatementWithArgs,
-  initDefaultArgumentType,
-  parseExpressionToString, ExpressionOperands
+  UnitLanguageStatementWithArgs
 } from '@/index';
 import { consume } from '@lit/context';
-import { LitElement, html, css, nothing } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Ref, createRef, ref } from 'lit/directives/ref.js';
+import { createRef, Ref, ref } from 'lit/directives/ref.js';
 import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
-import { pencilSquare, plusLg, threeDots } from '../icons';
+import { plusLg } from '../icons';
 import Types from '@vpl/types.ts';
 
 @customElement('ge-statement-argument')
@@ -185,7 +186,7 @@ export class GeStatementArgument extends LitElement {
         this.argument.type = this.program.header.userVariables[this.variableKey].type;
       } else {
         if (this.language.variables[this.variableKey]) {
-          this.argument.type = 'unknown';
+          this.argument.type = Types.unknown;
         }
       }
     }
@@ -255,7 +256,7 @@ export class GeStatementArgument extends LitElement {
     let argumentElementId = uuidv4();
 
     switch (this.argument.type as ArgumentType | 'device') {
-      case 'boolean':
+      case Types.boolean:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
@@ -272,13 +273,13 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'boolean_expression':
+      case Types.boolean_expression:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
               <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
-                ${((this.argument.value as unknown as Expression).value as ExpressionOperands).length === 0
+                ${(this.argument.value as ExpressionOperands).length === 0 || !Array.isArray(this.argument.value)
                   ? html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <editor-icon .icon="${plusLg}"></editor-icon>
@@ -288,7 +289,7 @@ export class GeStatementArgument extends LitElement {
                   : html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <div style="text-overflow: ellipsis; overflow: hidden;">
-                          ${parseExpressionToString(this.argument.value as unknown as Expression)}
+                          ${parseExpressionToString(this.argument)}
                         </div>
                       </div>
                     `}

@@ -9,7 +9,7 @@ import {
   boolOperators,
   compareOperators,
   convertOprToDisplayOpr,
-  numericOperators, ExpressionOperator
+  numericOperators, ExpressionOperator, isExpressionOperator
 } from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';

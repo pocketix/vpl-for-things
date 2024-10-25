@@ -106,14 +106,14 @@ export type Argument = {
 };
 
 export type ArgumentType =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'boolean_expression'
+  | Types.string
+  | Types.number
+  | Types.boolean
+  | Types.boolean_expression
   | 'string_options'
   | 'numeric_options'
-  | 'variable'
-  | 'unknown'
+  | Types.variable
+  | Types.unknown
   | 'device'
   | 'invalid';
 

@@ -20,6 +20,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression-operand-list')
 export class EditorExpressionOperandList extends LitElement {
@@ -203,7 +204,8 @@ export class EditorExpressionOperandList extends LitElement {
     if (this.parentExpr.type === '!' && this.operands.length > 0) {
       return;
     }
-    this.operands.push({ type: 'unknown', value: null, _uuid: uuidv4() });
+
+    this.operands.push({ type: Types.unknown, value: null, _uuid: uuidv4() });
     this.opdModalVisibleOnRender = true;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -364,7 +366,7 @@ export class EditorExpressionOperandList extends LitElement {
   render() {
     return html`
       <div class="expr-opd-list-wrapper">
-        ${this.operands.length < 1
+        ${!this.operands || !this.operands.length || this.operands.length < 1
           ? html`
               <div class="no-opd-message" style="${this.nestedLevel > 0 ? 'padding-top: 10px;' : ''}">
                 <div>Click on "+ Add Operand"</div>
@@ -389,7 +391,7 @@ export class EditorExpressionOperandList extends LitElement {
                       ${(operand as Expression).value
                         ? html`
                             <editor-expression
-                              .expression="${operand}"
+                              .expression="${this.parentExpr}"
                               .nestedLevel="${this.nestedLevel + 1}"
                               .highlightedExpr="${this.highlightedExpr}"
                               .exprIsSelected="${this.exprIsSelected}"
@@ -491,7 +493,7 @@ export class EditorExpressionOperandList extends LitElement {
                         <editor-button
                           class="expr-control-button"
                           @click="${this.handleEnterGroupMode}"
-                          ?disabled="${this.operands.length < 1}">
+                          ?disabled="${!this.operands || !this.operands.length || this.operands.length < 1}">
                           <editor-icon .icon="${check2square}"></editor-icon>
                           <span>Select ...</span>
                         </editor-button>

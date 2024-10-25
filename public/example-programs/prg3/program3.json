@@ -10,7 +10,7 @@
               "id": "Buzzer-1.beep"
             }
           ],
-          "args": [
+          "arguments": [
             {
               "type": "num",
               "value": 3
@@ -29,17 +29,17 @@
           "block": [
             {
               "id": "LED-1.setLedColor",
-              "args": [
+              "arguments": [
                 {
-                  "type": "str_opt",
+                  "type": "string_options",
                   "value": "red"
                 }
               ]
             }
           ],
-          "args": [
+          "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "high"
             }
           ]
@@ -49,17 +49,17 @@
           "block": [
             {
               "id": "LED-1.setLedColor",
-              "args": [
+              "arguments": [
                 {
-                  "type": "str_opt",
+                  "type": "string_options",
                   "value": "orange"
                 }
               ]
             }
           ],
-          "args": [
+          "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "ideal"
             }
           ]
@@ -69,17 +69,17 @@
           "block": [
             {
               "id": "LED-1.setLedColor",
-              "args": [
+              "arguments": [
                 {
-                  "type": "str_opt",
+                  "type": "string_options",
                   "value": "green"
                 }
               ]
             }
           ],
-          "args": [
+          "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "low"
             }
           ]
@@ -91,7 +91,7 @@
               "id": "LED-1.setLedColor",
               "args": [
                 {
-                  "type": "str_opt",
+                  "type": "string_options",
                   "value": "blue"
                 }
               ]
@@ -103,23 +103,23 @@
               "id": "TemperatureDevice-1.setTemperature",
               "args": [
                 {
-                  "type": "str_opt",
+                  "type": "string_options",
                   "value": "ideal"
                 }
               ]
             }
           ],
-          "args": [
+          "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "critical_low"
             }
           ]
         }
       ],
-      "args": [
+      "arguments": [
         {
-          "type": "var",
+          "type": "variable",
           "value": "TemperatureDevice-1.temperatureLevel"
         }
       ]

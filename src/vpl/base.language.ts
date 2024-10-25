@@ -1,4 +1,5 @@
 import { Statements } from './language';
+import Types from '@vpl/types.ts';
 
 export const baseLanguageStatements: Statements = {
   // Internal
@@ -35,7 +36,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief:
         'This statement allows the program to make decisions based on certain conditions. If a condition is true, the program executes statements inside it.',
@@ -51,16 +52,16 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value: [
                   {
                     value: [
                       {
-                        type: 'variable',
+                        type: Types.variable,
                         value: 'TemperatureDevice-1.temperatureLevel',
                       },
                       {
-                        type: 'number',
+                        type: Types.number,
                         value: 19,
                       },
                     ],
@@ -81,7 +82,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     predecessors: ['if'],
     description: {
       brief:
@@ -97,7 +98,7 @@ export const baseLanguageStatements: Statements = {
                 id: 'LED-1.setLedColor',
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'red',
                   },
                 ],
@@ -105,16 +106,16 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value: [
                   {
                     value: [
                       {
-                        type: 'variable',
+                        type: Types.variable,
                         value: 'DistanceSensor-1.distance',
                       },
                       {
-                        type: 'number',
+                        type: Types.number,
                         value: 5,
                       },
                     ],
@@ -139,18 +140,18 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value: [
                   {
                     value: [
                       {
                         value: [
                           {
-                            type: 'variable',
+                            type: Types.variable,
                             value: 'DistanceSensor-1.distance',
                           },
                           {
-                            type: 'number',
+                            type: Types.number,
                             value: 5,
                           },
                         ],
@@ -159,11 +160,11 @@ export const baseLanguageStatements: Statements = {
                       {
                         value: [
                           {
-                            type: 'variable',
+                            type: Types.variable,
                             value: 'DistanceSensor-1.distance',
                           },
                           {
-                            type: 'number',
+                            type: Types.number,
                             value: 10,
                           },
                         ],
@@ -217,16 +218,16 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value:  [
                   {
                     value: [
                       {
-                        type: 'variable',
+                        type: Types.variable,
                         value: 'TemperatureDevice-1.temperatureLevel',
                       },
                       {
-                        type: 'number',
+                        type: Types.number,
                         value: 19,
                       },
                     ],
@@ -256,7 +257,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     nestedStatements: ['case'],
-    arguments: [{ type: 'string' }],
+    arguments: [{ type: Types.string }],
     description: {
       brief:
         'This statement is useful when you have multiple states to check against a single variable. It provides a cleaner way to write multiple "Else If" statements.',
@@ -281,7 +282,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'high',
                   },
                 ],
@@ -301,7 +302,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'ideal',
                   },
                 ],
@@ -321,7 +322,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'low',
                   },
                 ],
@@ -341,7 +342,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'critical_low',
                   },
                 ],
@@ -349,7 +350,7 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'variable',
+                type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -366,7 +367,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     parents: ['switch'],
-    arguments: [{ type: 'string' }],
+    arguments: [{ type: Types.string }],
     description: {
       brief:
         'Within a switch statement, each state is called a case. The program checks each case and executes the block of statements associated with the first matching case.',
@@ -391,7 +392,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'high',
                   },
                 ],
@@ -411,7 +412,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'ideal',
                   },
                 ],
@@ -431,7 +432,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'low',
                   },
                 ],
@@ -451,7 +452,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 value: [
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'critical_low',
                   },
                 ],
@@ -459,7 +460,7 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'variable',
+                type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -477,7 +478,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeat1',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    arguments: [{ type: 'number', label: 'Number of Repetitions' }],
+    arguments: [{ type: Types.number, label: 'Number of Repetitions' }],
     description: {
       brief: 'Repeat is used, when you want to execute statements multiple times.',
       example: {
@@ -492,7 +493,7 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'number',
+                type: Types.number,
                 value: 3,
               },
             ],
@@ -508,7 +509,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeatIcon',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    arguments: [{ type: 'boolean_expression', label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief: 'A while loop repeatedly executes a block of code as long as a specified condition is true.',
       example: {
@@ -529,10 +530,10 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value: [
                   {
-                    type: 'variable',
+                    type: Types.variable,
                     value: 'LightSensor.isDark',
                   },
                 ],
@@ -561,8 +562,8 @@ export const baseLanguageStatements: Statements = {
           { id: 'email', label: 'Email' },
         ],
       },
-      { type: 'string', label: 'Email or Phone Number' },
-      { type: 'string', label: 'Notification Message' },
+      { type: Types.string, label: 'Email or Phone Number' },
+      { type: Types.string, label: 'Notification Message' },
     ],
     description: {
       brief: 'Alert can be used for sending notifications to a specified email address or phone number.',
@@ -580,11 +581,11 @@ export const baseLanguageStatements: Statements = {
                     value: 'phone_number',
                   },
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: '+420123456789',
                   },
                   {
-                    type: 'string',
+                    type: Types.string,
                     value: 'Movement detected!',
                   },
                 ],
@@ -592,16 +593,16 @@ export const baseLanguageStatements: Statements = {
             ],
             value: [
               {
-                type: 'boolean_expression',
+                type: Types.boolean_expression,
                 value: [
                   {
                     value: [
                       {
-                        type: 'variable',
+                        type: Types.variable,
                         value: 'Doorbell-1.motionSensor',
                       },
                       {
-                        type: 'string',
+                        type: Types.string,
                         value: 'active',
                       },
                     ],
@@ -619,14 +620,14 @@ export const baseLanguageStatements: Statements = {
   // Variables
   setvar: {
     type: 'unit_with_args',
-    group: 'variable',
+    group: Types.variable,
     label: 'Set Variable',
     icon: 'bracesAsterisk',
     foregroundColor: '#ffffff',
     backgroundColor: '#d97706',
     arguments: [
-      { type: 'variable', label: 'Variable' },
-      { type: 'unknown', label: 'Value' },
+      { type: Types.variable, label: Types.variable },
+      { type: Types.unknown, label: 'Value' },
     ],
     description: {
       brief: 'Using this statement, you can set values to your variables.',

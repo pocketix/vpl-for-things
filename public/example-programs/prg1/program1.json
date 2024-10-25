@@ -2,11 +2,11 @@
   "header": {
     "userVariables": {
       "myPhoneNumber": {
-        "type": "str",
+        "type": "string",
         "value": "+420123456789"
       },
       "alertMessage": {
-        "type": "str",
+        "type": "string",
         "value": "Movement detected!"
       }
     },
@@ -18,17 +18,17 @@
       "block": [
         {
           "id": "alert",
-          "args": [
+          "value": [
             {
-              "type": "str_opt",
+              "type": "string_option",
               "value": "phone_number"
             },
             {
-              "type": "var",
+              "type": "variable",
               "value": "myPhoneNumber"
             },
             {
-              "type": "var",
+              "type": "variable",
               "value": "alertMessage"
             }
           ]
@@ -37,26 +37,24 @@
           "id": "Doorbell-1.takePicture"
         }
       ],
-      "args": [
+      "value": [
         {
-          "type": "bool_expr",
-          "value": {
-            "opds": [
-              {
-                "opds": [
-                  {
-                    "type": "var",
-                    "value": "Doorbell-1.motionSensor"
-                  },
-                  {
-                    "type": "str",
-                    "value": "active"
-                  }
-                ],
-                "opr": "==="
-              }
-            ]
-          }
+          "type": "boolean_expression",
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "variable",
+                  "value": "Doorbell-1.motionSensor"
+                },
+                {
+                  "type": "string",
+                  "value": "active"
+                }
+              ],
+              "type": "==="
+            }
+          ]
         }
       ]
     }
