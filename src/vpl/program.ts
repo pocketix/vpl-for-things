@@ -48,7 +48,7 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
     case Types.boolean_expression:
       return {
         value: [],
-      };
+      } as Expression;
     case Types.number:
       return 0;
     case Types.string:
