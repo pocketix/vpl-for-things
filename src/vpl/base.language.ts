@@ -54,9 +54,9 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
-                      opds: [
+                      value: [
                         {
                           type: Types.variable,
                           value: 'TemperatureDevice-1.temperatureLevel',
@@ -66,7 +66,7 @@ export const baseLanguageStatements: Statements = {
                           value: 19,
                         },
                       ],
-                      opr: '<',
+                      type: '<',
                     },
                   ],
                 },
@@ -110,9 +110,9 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
-                      opds: [
+                      value: [
                         {
                           type: Types.variable,
                           value: 'DistanceSensor-1.distance',
@@ -122,7 +122,7 @@ export const baseLanguageStatements: Statements = {
                           value: 5,
                         },
                       ],
-                      opr: '<=',
+                      type: '<=',
                     },
                   ],
                 },
@@ -146,11 +146,11 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
-                      opds: [
+                      value: [
                         {
-                          opds: [
+                          value: [
                             {
                               type: Types.variable,
                               value: 'DistanceSensor-1.distance',
@@ -160,10 +160,10 @@ export const baseLanguageStatements: Statements = {
                               value: 5,
                             },
                           ],
-                          opr: '>',
+                          type: '>',
                         },
                         {
-                          opds: [
+                          value: [
                             {
                               type: Types.variable,
                               value: 'DistanceSensor-1.distance',
@@ -173,10 +173,10 @@ export const baseLanguageStatements: Statements = {
                               value: 10,
                             },
                           ],
-                          opr: '<',
+                          type: '<',
                         },
                       ],
-                      opr: '&&',
+                      type: '&&',
                     },
                   ],
                 },
@@ -226,9 +226,9 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
-                      opds: [
+                      value: [
                         {
                           type: Types.variable,
                           value: 'TemperatureDevice-1.temperatureLevel',
@@ -238,7 +238,7 @@ export const baseLanguageStatements: Statements = {
                           value: 19,
                         },
                       ],
-                      opr: '<',
+                      type: '<',
                     },
                   ],
                 },
@@ -540,7 +540,7 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
                       type: Types.variable,
                       value: 'LightSensor.isDark',
@@ -605,9 +605,9 @@ export const baseLanguageStatements: Statements = {
               {
                 type: Types.boolean_expression,
                 value: {
-                  opds: [
+                  value: [
                     {
-                      opds: [
+                      value: [
                         {
                           type: Types.variable,
                           value: 'Doorbell-1.motionSensor',
@@ -617,7 +617,7 @@ export const baseLanguageStatements: Statements = {
                           value: 'active',
                         },
                       ],
-                      opr: '===',
+                      type: '===',
                     },
                   ],
                 },

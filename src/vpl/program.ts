@@ -9,17 +9,19 @@ export function parseOperandToString(operand: ExpressionOperand, negated: boolea
 }
 
 export function parseExpressionToString(expression: Expression) {
-  let operandsStrings: string[] = expression.opds.map((operand) => {
-    if ((operand as Expression).opds) {
+  console.log(expression);
+
+  let operandsStrings: string[] = expression.value.map((operand) => {
+    if (Array.isArray((operand as Expression).value)) {
       return parseExpressionToString(operand as Expression);
     } else {
-      return parseOperandToString(operand as ExpressionOperand, expression.opr === '!');
+      return parseOperandToString(operand as ExpressionOperand, expression.type === '!');
     }
   });
 
-  if (expression.opr) {
+  if (expression.type) {
     return `(${operandsStrings.join(
-      ` ${convertOprToDisplayOpr(expression.opr as CompareOperator | BoolOperator | NumericOperator)} `
+      ` ${convertOprToDisplayOpr(expression.type as CompareOperator | BoolOperator | NumericOperator)} `
     )})`;
   } else {
     return operandsStrings.join(' ');
@@ -45,7 +47,7 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
       return true;
     case Types.boolean_expression:
       return {
-        opds: [],
+        value: [],
       };
     case Types.number:
       return 0;
@@ -119,9 +121,9 @@ export function analyzeBlock(block: Block, langStmts: Statements, parentStmt: Pr
 }
 
 export function assignUuidToExprOperands(expr: Expression) {
-  for (let opd of expr.opds) {
+  for (let opd of expr.value) {
     opd._uuid = uuidv4();
-    if ((opd as Expression).opds) {
+    if (Array.isArray((opd as Expression).value)) {
       assignUuidToExprOperands(opd as Expression);
     }
   }
@@ -176,9 +178,9 @@ export class Program {
     let blockCopy = JSON.parse(JSON.stringify(block));
 
     function removeUuidFromExprOperands(expr: Expression) {
-      for (let opd of expr.opds) {
+      for (let opd of expr.value) {
         delete opd._uuid;
-        if ((opd as Expression).opds) {
+        if (Array.isArray((opd as Expression).value)) {
           removeUuidFromExprOperands(opd as Expression);
         }
       }
@@ -317,8 +319,8 @@ export type ProgramStatementArgument = {
 };
 
 export type Expression = {
-  opds: ExpressionOperands;
-  opr?: ExpressionOperator;
+  value: ExpressionOperands;
+  type?: ExpressionOperator;
   _uuid?: string;
 };
 
@@ -347,3 +349,7 @@ export type BoolOperator = BoolOperatorsTuple[number];
 export const numericOperators = ['+', '-', '*', '/', '%'] as const;
 type NumericOperatorsTuple = typeof numericOperators;
 export type NumericOperator = NumericOperatorsTuple[number];
+
+export const isExpressionOperator = (operator: string) => {
+  return operator in compareOperators || operator in boolOperators || operator in numericOperators;
+}
