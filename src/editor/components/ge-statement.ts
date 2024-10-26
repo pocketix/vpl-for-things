@@ -20,6 +20,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
 import { EditorModal } from './editor-modal';
+import Types from '@vpl/types.ts';
 
 @customElement('ge-statement')
 export class GEStatement extends LitElement {
@@ -255,8 +256,8 @@ export class GEStatement extends LitElement {
           ? 'device'
           : 'invalid';
         (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].value =
-          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type === 'bool_expr'
-            ? initDefaultArgumentType('bool_expr')
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type === Types.boolean_expression
+            ? initDefaultArgumentType(Types.boolean_expression)
             : null;
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -371,7 +372,7 @@ export class GEStatement extends LitElement {
                   .argPosition="${i}"
                   .stmtId="${this.statement.id}"
                   .showLabel="${true}"
-                  .variableKey="${this.statement.id === 'setvar' && arg.type === 'unknown'
+                  .variableKey="${this.statement.id === 'setvar' && arg.type === Types.unknown
                     ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value
                     : null}">
                 </ge-statement-argument>

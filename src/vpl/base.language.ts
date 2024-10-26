@@ -1,4 +1,5 @@
 import { Statements } from './language';
+import Types from '@vpl/types.ts';
 
 export const baseLanguageStatements: Statements = {
   // Internal
@@ -35,7 +36,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    args: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief:
         'This statement allows the program to make decisions based on certain conditions. If a condition is true, the program executes statements inside it.',
@@ -51,17 +52,17 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
                       opds: [
                         {
-                          type: 'var',
+                          type: Types.variable,
                           value: 'TemperatureDevice-1.temperatureLevel',
                         },
                         {
-                          type: 'num',
+                          type: Types.number,
                           value: 19,
                         },
                       ],
@@ -83,7 +84,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    args: [{ type: Types.boolean_expression, label: 'Condition' }],
     predecessors: ['if'],
     description: {
       brief:
@@ -107,17 +108,17 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
                       opds: [
                         {
-                          type: 'var',
+                          type: Types.variable,
                           value: 'DistanceSensor-1.distance',
                         },
                         {
-                          type: 'num',
+                          type: Types.number,
                           value: 5,
                         },
                       ],
@@ -143,7 +144,7 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
@@ -151,11 +152,11 @@ export const baseLanguageStatements: Statements = {
                         {
                           opds: [
                             {
-                              type: 'var',
+                              type: Types.variable,
                               value: 'DistanceSensor-1.distance',
                             },
                             {
-                              type: 'num',
+                              type: Types.number,
                               value: 5,
                             },
                           ],
@@ -164,11 +165,11 @@ export const baseLanguageStatements: Statements = {
                         {
                           opds: [
                             {
-                              type: 'var',
+                              type: Types.variable,
                               value: 'DistanceSensor-1.distance',
                             },
                             {
-                              type: 'num',
+                              type: Types.number,
                               value: 10,
                             },
                           ],
@@ -223,17 +224,17 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
                       opds: [
                         {
-                          type: 'var',
+                          type: Types.variable,
                           value: 'TemperatureDevice-1.temperatureLevel',
                         },
                         {
-                          type: 'num',
+                          type: Types.number,
                           value: 19,
                         },
                       ],
@@ -264,7 +265,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     nestedStatements: ['case'],
-    args: [{ type: 'str' }],
+    args: [{ type: Types.string }],
     description: {
       brief:
         'This statement is useful when you have multiple states to check against a single variable. It provides a cleaner way to write multiple "Else If" statements.',
@@ -289,7 +290,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'high',
                   },
                 ],
@@ -309,7 +310,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'ideal',
                   },
                 ],
@@ -329,7 +330,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'low',
                   },
                 ],
@@ -349,7 +350,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'critical_low',
                   },
                 ],
@@ -357,7 +358,7 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'var',
+                type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -374,7 +375,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     parents: ['switch'],
-    args: [{ type: 'str' }],
+    args: [{ type: Types.string }],
     description: {
       brief:
         'Within a switch statement, each state is called a case. The program checks each case and executes the block of statements associated with the first matching case.',
@@ -399,7 +400,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'high',
                   },
                 ],
@@ -419,7 +420,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'ideal',
                   },
                 ],
@@ -439,7 +440,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'low',
                   },
                 ],
@@ -459,7 +460,7 @@ export const baseLanguageStatements: Statements = {
                 ],
                 args: [
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'critical_low',
                   },
                 ],
@@ -467,7 +468,7 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'var',
+                type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
               },
             ],
@@ -485,7 +486,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeat1',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: 'num', label: 'Number of Repetitions' }],
+    args: [{ type: Types.number, label: 'Number of Repetitions' }],
     description: {
       brief: 'Repeat is used, when you want to execute statements multiple times.',
       example: {
@@ -500,7 +501,7 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'num',
+                type: Types.number,
                 value: 3,
               },
             ],
@@ -516,7 +517,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeatIcon',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: 'bool_expr', label: 'Condition' }],
+    args: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief: 'A while loop repeatedly executes a block of code as long as a specified condition is true.',
       example: {
@@ -537,11 +538,11 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
-                      type: 'var',
+                      type: Types.variable,
                       value: 'LightSensor.isDark',
                     },
                   ],
@@ -571,8 +572,8 @@ export const baseLanguageStatements: Statements = {
           { id: 'email', label: 'Email' },
         ],
       },
-      { type: 'str', label: 'Email or Phone Number' },
-      { type: 'str', label: 'Notification Message' },
+      { type: Types.string, label: 'Email or Phone Number' },
+      { type: Types.string, label: 'Notification Message' },
     ],
     description: {
       brief: 'Alert can be used for sending notifications to a specified email address or phone number.',
@@ -590,11 +591,11 @@ export const baseLanguageStatements: Statements = {
                     value: 'phone_number',
                   },
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: '+420123456789',
                   },
                   {
-                    type: 'str',
+                    type: Types.string,
                     value: 'Movement detected!',
                   },
                 ],
@@ -602,17 +603,17 @@ export const baseLanguageStatements: Statements = {
             ],
             args: [
               {
-                type: 'bool_expr',
+                type: Types.boolean_expression,
                 value: {
                   opds: [
                     {
                       opds: [
                         {
-                          type: 'var',
+                          type: Types.variable,
                           value: 'Doorbell-1.motionSensor',
                         },
                         {
-                          type: 'str',
+                          type: Types.string,
                           value: 'active',
                         },
                       ],
@@ -637,8 +638,8 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#d97706',
     args: [
-      { type: 'var', label: 'Variable' },
-      { type: 'unknown', label: 'Value' },
+      { type: Types.variable, label: 'Variable' },
+      { type: Types.unknown, label: 'Value' },
     ],
     description: {
       brief: 'Using this statement, you can set values to your variables.',

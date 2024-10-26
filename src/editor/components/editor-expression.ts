@@ -19,6 +19,7 @@ import { globalStyles } from '../global-styles';
 import * as icons from '@/editor/icons';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression')
 export class EditorExpression extends LitElement {
@@ -155,7 +156,7 @@ export class EditorExpression extends LitElement {
   @property() nestedLevel: number = 0;
   @property() exprIsSelected: boolean;
   @property() highlightedExpr: HTMLElement;
-  @property() selectedOprType: string = 'bool';
+  @property() selectedOprType: string = Types.boolean;
   @property() isExample: boolean = false;
 
   @consume({ context: programContext })
@@ -248,7 +249,7 @@ export class EditorExpression extends LitElement {
     let operatorList;
 
     switch (oprType) {
-      case 'bool':
+      case Types.boolean:
         operatorList = boolOperators;
         break;
       case 'compare':

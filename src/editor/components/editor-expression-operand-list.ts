@@ -20,6 +20,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression-operand-list')
 export class EditorExpressionOperandList extends LitElement {
@@ -180,7 +181,7 @@ export class EditorExpressionOperandList extends LitElement {
   @property() opdModalVisibleOnRender: boolean = false;
   @property() groupModeIsActive: boolean = false;
   @property() selectedExpressions: (Expression | ExpressionOperand)[] = [];
-  @property() selectedOprType: string = 'bool';
+  @property() selectedOprType: string = Types.boolean;
   @property() isExample: boolean = false;
 
   @consume({ context: programContext })
@@ -203,7 +204,7 @@ export class EditorExpressionOperandList extends LitElement {
     if (this.parentExpr.opr === '!' && this.operands.length > 0) {
       return;
     }
-    this.operands.push({ type: 'unknown', value: null, _uuid: uuidv4() });
+    this.operands.push({ type: Types.unknown, value: null, _uuid: uuidv4() });
     this.opdModalVisibleOnRender = true;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -340,7 +341,7 @@ export class EditorExpressionOperandList extends LitElement {
     let operatorList;
 
     switch (oprType) {
-      case 'bool':
+      case Types.boolean:
         operatorList = boolOperators;
         break;
       case 'compare':

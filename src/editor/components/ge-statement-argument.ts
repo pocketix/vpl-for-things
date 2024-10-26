@@ -19,6 +19,7 @@ import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
 import { pencilSquare, plusLg, threeDots } from '../icons';
+import Types from '@vpl/types.ts';
 
 @customElement('ge-statement-argument')
 export class GeStatementArgument extends LitElement {
@@ -117,7 +118,7 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleValueChange(e: Event) {
-    if (this.argument.type === 'num' || this.argument.type === 'num_opt') {
+    if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
       this.argument.value = Number((e.currentTarget as HTMLSelectElement).value);
     } else {
       this.argument.value = (e.currentTarget as HTMLSelectElement).value;
@@ -147,7 +148,7 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleVariableSelected(e: CustomEvent) {
-    this.argument.type = 'var';
+    this.argument.type = Types.variable;
     this.argument.value = e.detail.varKey;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -184,7 +185,7 @@ export class GeStatementArgument extends LitElement {
         this.argument.type = this.program.header.userVariables[this.variableKey].type;
       } else {
         if (this.language.variables[this.variableKey]) {
-          this.argument.type = 'unknown';
+          this.argument.type = Types.unknown;
         }
       }
     }
@@ -205,7 +206,7 @@ export class GeStatementArgument extends LitElement {
 
   useVariableTemplate() {
     let permittedVarType;
-    if (this.argument.type === 'var' && this.argument.value !== null) {
+    if (this.argument.type === Types.variable && this.argument.value !== null) {
       if (this.program.header.userVariables[this.argument.value as string] === undefined) {
         permittedVarType = (
           this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
@@ -217,19 +218,19 @@ export class GeStatementArgument extends LitElement {
       permittedVarType = this.argument.type;
     }
 
-    if (this.stmtId === 'setvar' && this.argument.type === 'var') {
+    if (this.stmtId === 'setvar' && this.argument.type === Types.variable) {
       permittedVarType = 'all';
     }
 
     return html`
-      <div class="${this.argument.type === 'var' && this.argument.value ? 'argument-var-wrapper' : ''}">
+      <div class="${this.argument.type === Types.variable && this.argument.value ? 'argument-var-wrapper' : ''}">
         <editor-button
-          class="${this.argument.type === 'var' && this.argument.value ? 'expr-arg' : ''} ${this.isExample
+          class="${this.argument.type === Types.variable && this.argument.value ? 'expr-arg' : ''} ${this.isExample
             ? 'disabled'
             : ''}"
           style="height: 100%;"
           @click="${this.handleShowSelectArgumentVariableModal}">
-          ${this.argument.type === 'var' && this.argument.value
+          ${this.argument.type === Types.variable && this.argument.value
             ? html`
                 <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                   <div style="text-overflow: ellipsis; overflow: hidden;">${`$${this.argument.value}`}</div>
@@ -237,7 +238,7 @@ export class GeStatementArgument extends LitElement {
               `
             : html`<div class="variables-icon">𝑥</div>`}
         </editor-button>
-        ${this.argument.type === 'var' && this.argument.value && this.stmtId !== 'setvar' && !this.isExample
+        ${this.argument.type === Types.variable && this.argument.value && this.stmtId !== 'setvar' && !this.isExample
           ? html`
               <editor-button class="${this.isExample ? 'disabled' : ''}" @click="${this.handleDeselectUserVariable}">
                 <div class="variables-icon">𝑥-</div>
@@ -254,7 +255,7 @@ export class GeStatementArgument extends LitElement {
     let argumentElementId = uuidv4();
 
     switch (this.argument.type as ArgumentType | 'device') {
-      case 'bool':
+      case Types.boolean:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
@@ -271,7 +272,7 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'bool_expr':
+      case Types.boolean_expression:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate('')}
@@ -301,7 +302,7 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'num':
+      case Types.number:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
@@ -338,7 +339,7 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'str':
+      case Types.string:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)}
@@ -382,13 +383,13 @@ export class GeStatementArgument extends LitElement {
             </div>
           </div>
         `;
-      case 'var':
+      case Types.variable:
         return html`
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate(argumentElementId)} ${this.useVariableTemplate()}
           </div>
         `;
-      case 'unknown':
+      case Types.unknown:
         return html` <div class="argument-wrapper">
           ${this.argumentLabelTemplate(argumentElementId)}
           <editor-button disabled>Select variable to set</editor-button>
