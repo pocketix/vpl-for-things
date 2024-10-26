@@ -243,20 +243,20 @@ export class GEStatement extends LitElement {
     super();
     this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
-        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type = this.program.header
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].type = this.program.header
           .userVariables[
-          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0].value as string
         ]
           ? this.program.header.userVariables[
-              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0].value as string
             ].type
           : this.language.variables[
-              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value as string
+              (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0].value as string
             ]
           ? 'device'
           : 'invalid';
-        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].value =
-          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[1].type === Types.boolean_expression
+        (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].value =
+          (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].type === Types.boolean_expression
             ? initDefaultArgumentType(Types.boolean_expression)
             : null;
 
@@ -354,7 +354,7 @@ export class GEStatement extends LitElement {
   //#endregion
 
   //#region Templates
-  multipleArgumentTemplate(args: Argument[]) {
+  multipleArgumentTemplate(argumentsArray: Argument[]) {
     return html`
       <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value.showModal()}">
         <div style="display: flex; gap: 4px; align-items: center;">
@@ -364,7 +364,7 @@ export class GEStatement extends LitElement {
       </editor-button>
       <editor-modal ${ref(this.multipleArgsModalRef)} .modalTitle="${'Set Arguments'}">
         <div class="statement-arguments-wrapper">
-          ${args.map(
+          ${argumentsArray.map(
             (arg, i) =>
               html`
                 <ge-statement-argument
@@ -373,7 +373,7 @@ export class GEStatement extends LitElement {
                   .stmtId="${this.statement.id}"
                   .showLabel="${true}"
                   .variableKey="${this.statement.id === 'setvar' && arg.type === Types.unknown
-                    ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0].value
+                    ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0].value
                     : null}">
                 </ge-statement-argument>
               `
@@ -452,19 +452,19 @@ export class GEStatement extends LitElement {
 
           <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
         </div>
-        ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
-          ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args.length === 1
+        ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments
+          ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments.length === 1
             ? html`
                 <ge-statement-argument
                   ?disabled="${this.statement.isInvalid ? true : false}"
-                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args[0]}"
+                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}"
                   .isExample="${this.isExample}">
                 </ge-statement-argument>
               `
             : this.multipleArgumentTemplate(
-                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).args
+                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments
               )
           : nothing}
         <div class="statement-controls">

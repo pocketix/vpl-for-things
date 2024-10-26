@@ -132,8 +132,8 @@ export function assignUuidToExprOperands(expr: Expression) {
 export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
     stmt._uuid = uuidv4();
-    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
-      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
+    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
         if (arg.type === Types.boolean_expression) {
           assignUuidToExprOperands(arg.value as Expression);
         }
@@ -192,8 +192,8 @@ export class Program {
         if (stmt.isInvalid) {
           delete stmt.isInvalid;
         }
-        if ((stmt as AbstractStatementWithArgs).args) {
-          for (let arg of (stmt as AbstractStatementWithArgs).args) {
+        if ((stmt as AbstractStatementWithArgs).arguments) {
+          for (let arg of (stmt as AbstractStatementWithArgs).arguments) {
             if (arg.type === Types.boolean_expression) {
               removeUuidFromExprOperands(arg.value as Expression);
             }
@@ -232,8 +232,8 @@ export class Program {
     let resultStatement: any = {};
 
     function initArgs() {
-      for (let arg of statement.args) {
-        resultStatement['args'].push({
+      for (let arg of statement.arguments) {
+        resultStatement['arguments'].push({
           type: arg.type,
           value: initDefaultArgumentType(arg.type)
         });
@@ -246,7 +246,7 @@ export class Program {
       case 'unit':
         break;
       case 'unit_with_args':
-        resultStatement['args'] = [];
+        resultStatement['arguments'] = [];
         initArgs();
         break;
       case 'compound':
@@ -254,7 +254,7 @@ export class Program {
         break;
       case 'compound_with_args':
         resultStatement['block'] = [];
-        resultStatement['args'] = [];
+        resultStatement['arguments'] = [];
         initArgs();
         break;
     }
@@ -266,7 +266,7 @@ export class Program {
 type stmt = {
   type: LanguageStatementType;
   key: string;
-  args?: Argument[];
+  arguments?: Argument[];
 };
 
 export type Block = ProgramStatement[];
@@ -304,7 +304,7 @@ export type AbstractStatement = {
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
-  args: ProgramStatementArgument[];
+  arguments: ProgramStatementArgument[];
 };
 
 export type CompoundStatement = AbstractStatement & {

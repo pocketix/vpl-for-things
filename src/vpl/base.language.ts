@@ -36,7 +36,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: Types.boolean_expression, label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief:
         'This statement allows the program to make decisions based on certain conditions. If a condition is true, the program executes statements inside it.',
@@ -50,7 +50,7 @@ export const baseLanguageStatements: Statements = {
                 id: '_heaterOn',
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
                 value: {
@@ -84,7 +84,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'diagram2',
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
-    args: [{ type: Types.boolean_expression, label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     predecessors: ['if'],
     description: {
       brief:
@@ -98,7 +98,7 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                arguments: [
                   {
                     type: 'str_opt',
                     value: 'red',
@@ -106,7 +106,7 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
                 value: {
@@ -134,7 +134,7 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                arguments: [
                   {
                     type: 'str_opt',
                     value: 'blue',
@@ -142,7 +142,7 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
                 value: {
@@ -188,7 +188,7 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'LED-1.setLedColor',
-                args: [
+                arguments: [
                   {
                     type: 'str_opt',
                     value: 'green',
@@ -222,7 +222,7 @@ export const baseLanguageStatements: Statements = {
                 id: '_heaterOn',
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
                 value: {
@@ -265,7 +265,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     nestedStatements: ['case'],
-    args: [{ type: Types.string }],
+    arguments: [{ type: Types.string }],
     description: {
       brief:
         'This statement is useful when you have multiple states to check against a single variable. It provides a cleaner way to write multiple "Else If" statements.',
@@ -280,7 +280,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'red',
@@ -288,7 +288,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'high',
@@ -300,7 +300,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'orange',
@@ -308,7 +308,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'ideal',
@@ -320,7 +320,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'green',
@@ -328,7 +328,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'low',
@@ -340,7 +340,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'blue',
@@ -348,7 +348,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'critical_low',
@@ -356,7 +356,7 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
@@ -375,7 +375,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     parents: ['switch'],
-    args: [{ type: Types.string }],
+    arguments: [{ type: Types.string }],
     description: {
       brief:
         'Within a switch statement, each state is called a case. The program checks each case and executes the block of statements associated with the first matching case.',
@@ -390,7 +390,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'red',
@@ -398,7 +398,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'high',
@@ -410,7 +410,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'orange',
@@ -418,7 +418,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'ideal',
@@ -430,7 +430,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'green',
@@ -438,7 +438,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'low',
@@ -450,7 +450,7 @@ export const baseLanguageStatements: Statements = {
                 block: [
                   {
                     id: 'LED-1.setLedColor',
-                    args: [
+                    arguments: [
                       {
                         type: 'str_opt',
                         value: 'blue',
@@ -458,7 +458,7 @@ export const baseLanguageStatements: Statements = {
                     ],
                   },
                 ],
-                args: [
+                arguments: [
                   {
                     type: Types.string,
                     value: 'critical_low',
@@ -466,7 +466,7 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.variable,
                 value: 'TemperatureDevice-1.temperatureLevel',
@@ -486,7 +486,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeat1',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: Types.number, label: 'Number of Repetitions' }],
+    arguments: [{ type: Types.number, label: 'Number of Repetitions' }],
     description: {
       brief: 'Repeat is used, when you want to execute statements multiple times.',
       example: {
@@ -499,7 +499,7 @@ export const baseLanguageStatements: Statements = {
                 id: 'Buzzer-1.beep',
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.number,
                 value: 3,

@@ -136,7 +136,7 @@ export class GeStatementArgument extends LitElement {
     } else {
       this.argument.type = (
         this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-      ).args[this.argPosition].type;
+      ).arguments[this.argPosition].type;
     }
     this.argument.value = initDefaultArgumentType(this.argument.type);
 
@@ -170,7 +170,7 @@ export class GeStatementArgument extends LitElement {
     if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
       this.argument.value = (
         this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-      ).args[this.argPosition].options[0].id;
+      ).arguments[this.argPosition].options[0].id;
       const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
         bubbles: true,
         composed: true,
@@ -193,12 +193,12 @@ export class GeStatementArgument extends LitElement {
 
   argumentLabelTemplate(labelId: string) {
     return (this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
-      .args[this.argPosition].label && this.showLabel
+      .arguments[this.argPosition].label && this.showLabel
       ? html`
           <label for="${labelId}"
             >${(
               this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-            ).args[this.argPosition].label}</label
+            ).arguments[this.argPosition].label}</label
           >
         `
       : nothing;
@@ -210,7 +210,7 @@ export class GeStatementArgument extends LitElement {
       if (this.program.header.userVariables[this.argument.value as string] === undefined) {
         permittedVarType = (
           this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-        ).args[this.argPosition].type;
+        ).arguments[this.argPosition].type;
       } else {
         permittedVarType = this.program.header.userVariables[this.argument.value as string].type;
       }
@@ -332,7 +332,7 @@ export class GeStatementArgument extends LitElement {
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
                     | CompoundLanguageStatementWithArgs
-                ).args[this.argPosition].options.map(
+                ).arguments[this.argPosition].options.map(
                   (option) => html`<option value="${option.id}">${option.label}</option>`
                 )}
               </select>
@@ -371,7 +371,7 @@ export class GeStatementArgument extends LitElement {
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
                     | CompoundLanguageStatementWithArgs
-                ).args[this.argPosition].options.map(
+                ).arguments[this.argPosition].options.map(
                   (option) =>
                     html`
                       <option .value="${option.id}" ?selected="${this.argument.value === option.id}">

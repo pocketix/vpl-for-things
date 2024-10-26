@@ -18,7 +18,7 @@
       "block": [
         {
           "id": "alert",
-          "args": [
+          "arguments": [
             {
               "type": "str_opt",
               "value": "phone_number"
@@ -37,7 +37,7 @@
           "id": "Doorbell-1.takePicture"
         }
       ],
-      "args": [
+      "arguments": [
         {
           "type": "bool_expr",
           "value": {

@@ -9,7 +9,7 @@
       "block": [
         {
           "id": "LT22222-Relay-1.setRelay",
-          "args": [
+          "arguments": [
             {
               "type": "str_opt",
               "value": "open"
@@ -17,7 +17,7 @@
           ]
         }
       ],
-      "args": [
+      "arguments": [
         {
           "type": "bool_expr",
           "value": {
@@ -63,7 +63,7 @@
       "block": [
         {
           "id": "LT22222-Relay-1.setRelay",
-          "args": [
+          "arguments": [
             {
               "type": "str_opt",
               "value": "close"
@@ -71,7 +71,7 @@
           ]
         }
       ],
-      "args": [
+      "arguments": [
         {
           "type": "bool_expr",
           "value": {

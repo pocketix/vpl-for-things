@@ -90,7 +90,7 @@ export type StatementExample = {
 };
 
 export type UnitLanguageStatementWithArgs = UnitLanguageStatement & {
-  args: Argument[];
+  arguments: Argument[];
 };
 
 export type CompoundLanguageStatement = UnitLanguageStatement & {
