@@ -36,6 +36,8 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
       return 'OR';
     case '!':
       return 'NOT';
+    case Types.boolean_expression:
+      return "Expression";
     default:
       return opr;
   }
@@ -46,9 +48,7 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
     case Types.boolean:
       return true;
     case Types.boolean_expression:
-      return {
-        value: [],
-      } as Expression;
+      return [] as Expression[];
     case Types.number:
       return 0;
     case Types.string:
@@ -134,8 +134,8 @@ export function assignUuidToBlock(block: Block) {
     stmt._uuid = uuidv4();
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
-        if (arg.type === Types.boolean_expression) {
-          assignUuidToExprOperands(arg.value as Expression);
+        if (isExpressionArray(arg)) {
+          (arg.value as Expression[]).forEach(item => assignUuidToExprOperands(item));
         }
       }
     }
@@ -178,6 +178,7 @@ export class Program {
     let blockCopy = JSON.parse(JSON.stringify(block));
 
     function removeUuidFromExprOperands(expr: Expression) {
+      delete expr._uuid;
       for (let opd of expr.value) {
         delete opd._uuid;
         if (Array.isArray((opd as Expression).value)) {
@@ -195,7 +196,9 @@ export class Program {
         if ((stmt as AbstractStatementWithArgs).arguments) {
           for (let arg of (stmt as AbstractStatementWithArgs).arguments) {
             if (arg.type === Types.boolean_expression) {
-              removeUuidFromExprOperands(arg.value as Expression);
+              if (isExpressionArray(arg)) {
+                (arg.value as Expression[]).forEach(item => removeUuidFromExprOperands(item));
+              }
             }
           }
         }
@@ -315,7 +318,7 @@ export type CompoundStatementWithArgs = AbstractStatement & CompoundStatement & 
 
 export type ProgramStatementArgument = {
   type: ArgumentType;
-  value: string | number | boolean | Expression;
+  value: string | number | boolean | Expression[];
 };
 
 export type Expression = {
@@ -326,7 +329,7 @@ export type Expression = {
 
 export type ExpressionOperands = (ExpressionOperand | Expression)[];
 
-export type ExpressionOperator = CompareOperator | BoolOperator | NumericOperator;
+export type ExpressionOperator = CompareOperator | BoolOperator | NumericOperator | ExpressionOperandType;
 
 export type ExpressionOperand = {
   type: ExpressionOperandType;
@@ -353,3 +356,5 @@ export type NumericOperator = NumericOperatorsTuple[number];
 export const isExpressionOperator = (operator: string) => {
   return operator in compareOperators || operator in boolOperators || operator in numericOperators;
 }
+
+export const isExpressionArray = (argument: ProgramStatementArgument) => Array.isArray(argument.value);

@@ -278,7 +278,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
               <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
-                ${(this.argument.value as Expression).value.length === 0
+                ${(this.argument as Expression).value.length === 0
                   ? html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <editor-icon .icon="${plusLg}"></editor-icon>
@@ -288,14 +288,14 @@ export class GeStatementArgument extends LitElement {
                   : html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <div style="text-overflow: ellipsis; overflow: hidden;">
-                          ${parseExpressionToString(this.argument.value as Expression)}
+                          ${parseExpressionToString(this.argument as Expression)}
                         </div>
                       </div>
                     `}
               </editor-button>
               <editor-expression-modal
                 ${ref(this.expressionModalRef)}
-                .expression="${this.argument.value}"
+                .expression="${this.argument}"
                 .isExample="${this.isExample}">
               </editor-expression-modal>
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}

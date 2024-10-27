@@ -53,23 +53,21 @@ export const baseLanguageStatements: Statements = {
             arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      value: [
-                        {
-                          type: Types.variable,
-                          value: 'TemperatureDevice-1.temperatureLevel',
-                        },
-                        {
-                          type: Types.number,
-                          value: 19,
-                        },
-                      ],
-                      type: '<',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        type: Types.variable,
+                        value: 'TemperatureDevice-1.temperatureLevel',
+                      },
+                      {
+                        type: Types.number,
+                        value: 19,
+                      },
+                    ],
+                    type: '<',
+                  },
+                ],
               },
             ],
           },
@@ -109,23 +107,21 @@ export const baseLanguageStatements: Statements = {
             arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      value: [
-                        {
-                          type: Types.variable,
-                          value: 'DistanceSensor-1.distance',
-                        },
-                        {
-                          type: Types.number,
-                          value: 5,
-                        },
-                      ],
-                      type: '<=',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        type: Types.variable,
+                        value: 'DistanceSensor-1.distance',
+                      },
+                      {
+                        type: Types.number,
+                        value: 5,
+                      },
+                    ],
+                    type: '<=',
+                  },
+                ],
               },
             ],
           },
@@ -145,41 +141,39 @@ export const baseLanguageStatements: Statements = {
             arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      value: [
-                        {
-                          value: [
-                            {
-                              type: Types.variable,
-                              value: 'DistanceSensor-1.distance',
-                            },
-                            {
-                              type: Types.number,
-                              value: 5,
-                            },
-                          ],
-                          type: '>',
-                        },
-                        {
-                          value: [
-                            {
-                              type: Types.variable,
-                              value: 'DistanceSensor-1.distance',
-                            },
-                            {
-                              type: Types.number,
-                              value: 10,
-                            },
-                          ],
-                          type: '<',
-                        },
-                      ],
-                      type: '&&',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        value: [
+                          {
+                            type: Types.variable,
+                            value: 'DistanceSensor-1.distance',
+                          },
+                          {
+                            type: Types.number,
+                            value: 5,
+                          },
+                        ],
+                        type: '>',
+                      },
+                      {
+                        value: [
+                          {
+                            type: Types.variable,
+                            value: 'DistanceSensor-1.distance',
+                          },
+                          {
+                            type: Types.number,
+                            value: 10,
+                          },
+                        ],
+                        type: '<',
+                      },
+                    ],
+                    type: '&&',
+                  },
+                ],
               },
             ],
           },
@@ -225,23 +219,21 @@ export const baseLanguageStatements: Statements = {
             arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      value: [
-                        {
-                          type: Types.variable,
-                          value: 'TemperatureDevice-1.temperatureLevel',
-                        },
-                        {
-                          type: Types.number,
-                          value: 19,
-                        },
-                      ],
-                      type: '<',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        type: Types.variable,
+                        value: 'TemperatureDevice-1.temperatureLevel',
+                      },
+                      {
+                        type: Types.number,
+                        value: 19,
+                      },
+                    ],
+                    type: '<',
+                  },
+                ],
               },
             ],
           },
@@ -517,7 +509,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'repeatIcon',
     foregroundColor: '#ffffff',
     backgroundColor: '#10b981',
-    args: [{ type: Types.boolean_expression, label: 'Condition' }],
+    arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
     description: {
       brief: 'A while loop repeatedly executes a block of code as long as a specified condition is true.',
       example: {
@@ -528,7 +520,7 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'OutDoorLight.state',
-                args: [
+                arguments: [
                   {
                     type: 'str_opt',
                     value: 'on',
@@ -536,17 +528,19 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      type: Types.variable,
-                      value: 'LightSensor.isDark',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        type: Types.variable,
+                        value: 'LightSensor.isDark',
+                      },
+                    ],
+                  }
+                ],
               },
             ],
           },
@@ -563,7 +557,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'bell',
     foregroundColor: '#ffffff',
     backgroundColor: '#8b5cf6',
-    args: [
+    arguments: [
       {
         type: 'str_opt',
         label: 'Notification Method',
@@ -585,7 +579,7 @@ export const baseLanguageStatements: Statements = {
             block: [
               {
                 id: 'alert',
-                args: [
+                arguments: [
                   {
                     type: 'str_opt',
                     value: 'phone_number',
@@ -601,26 +595,24 @@ export const baseLanguageStatements: Statements = {
                 ],
               },
             ],
-            args: [
+            arguments: [
               {
                 type: Types.boolean_expression,
-                value: {
-                  value: [
-                    {
-                      value: [
-                        {
-                          type: Types.variable,
-                          value: 'Doorbell-1.motionSensor',
-                        },
-                        {
-                          type: Types.string,
-                          value: 'active',
-                        },
-                      ],
-                      type: '===',
-                    },
-                  ],
-                },
+                value: [
+                  {
+                    value: [
+                      {
+                        type: Types.variable,
+                        value: 'Doorbell-1.motionSensor',
+                      },
+                      {
+                        type: Types.string,
+                        value: 'active',
+                      },
+                    ],
+                    type: '===',
+                  },
+                ],
               },
             ],
           },
@@ -637,7 +629,7 @@ export const baseLanguageStatements: Statements = {
     icon: 'bracesAsterisk',
     foregroundColor: '#ffffff',
     backgroundColor: '#d97706',
-    args: [
+    arguments: [
       { type: Types.variable, label: 'Variable' },
       { type: Types.unknown, label: 'Value' },
     ],
