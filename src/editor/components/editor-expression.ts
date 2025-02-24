@@ -19,6 +19,7 @@ import { globalStyles } from '../global-styles';
 import * as icons from '@/editor/icons';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression')
 export class EditorExpression extends LitElement {
@@ -155,7 +156,7 @@ export class EditorExpression extends LitElement {
   @property() nestedLevel: number = 0;
   @property() exprIsSelected: boolean;
   @property() highlightedExpr: HTMLElement;
-  @property() selectedOprType: string = 'bool';
+  @property() selectedOprType: string = Types.boolean;
   @property() isExample: boolean = false;
 
   @consume({ context: programContext })
@@ -220,7 +221,7 @@ export class EditorExpression extends LitElement {
       composed: true,
       detail: {
         exprToHighlight: this.exprWrapperRef.value,
-        exprGroupRelation: this.expression.opr,
+        exprGroupRelation: this.expression.type,
       },
     });
     this.dispatchEvent(evnt);
@@ -233,7 +234,7 @@ export class EditorExpression extends LitElement {
   }
 
   handleChangeOpr(opr: NumericOperator | BoolOperator | CompareOperator) {
-    this.expression.opr = opr;
+    this.expression.type = opr;
 
     this.changeOprModalRef.value.hideModal();
 
@@ -248,7 +249,7 @@ export class EditorExpression extends LitElement {
     let operatorList;
 
     switch (oprType) {
-      case 'bool':
+      case Types.boolean:
         operatorList = boolOperators;
         break;
       case 'compare':
@@ -272,19 +273,19 @@ export class EditorExpression extends LitElement {
   render() {
     return html`
       <div ${ref(this.exprWrapperRef)} class="expr-wrapper">
-        ${this.expression.opr
+        ${this.expression.type
           ? html`
               <div
                 @click="${this.handleOprButtonClicked}"
                 class="opr-button-wrapper"
                 style="${`top: ${(this.nestedLevel - 1) * 37}px; z-index: ${300 - (this.nestedLevel + 4)}`}">
                 <div
-                  class="opr-button ${this.expression.opr === '&&'
+                  class="opr-button ${this.expression.type === '&&'
                     ? 'and-group'
-                    : this.expression.opr === '||'
+                    : this.expression.type === '||'
                     ? 'or-group'
                     : ''}">
-                  <span> ${convertOprToDisplayOpr(this.expression.opr)} </span>
+                  <span> ${convertOprToDisplayOpr(this.expression.type)} </span>
                   ${!this.nestedExprListIsVisible
                     ? html`
                         <span>
@@ -329,14 +330,14 @@ export class EditorExpression extends LitElement {
           <editor-expression-operand-list
             ${ref(this.nestedExprListWrapperRef)}
             .parentExpr="${this.expression}"
-            .operands="${this.expression.opds}"
+            .operands="${this.expression.value}"
             .nestedLevel="${this.nestedLevel}"
             .highlightedExpr="${this.highlightedExpr}"
             .isExample="${this.isExample}"
             .exprIsSelected="${this.highlightedExpr &&
             this.exprWrapperRef.value &&
             this.highlightedExpr === this.exprWrapperRef.value}"
-            class="expr-opd-list ${this.expression.opr ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
+            class="expr-opd-list ${this.expression.type ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
             this.nestedLevel > 0
               ? 'hidden'
               : 'block'} ${this.nestedLevel > 0 ? 'bottom-line' : ''}"

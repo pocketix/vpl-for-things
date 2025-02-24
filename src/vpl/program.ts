@@ -1,24 +1,27 @@
 import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
+import Types from '@vpl/types.ts';
 
 export function parseOperandToString(operand: ExpressionOperand, negated: boolean = false) {
   let valueString =
-    operand.type === 'bool_expr' ? parseExpressionToString(operand.value as Expression) : `${operand.value}`;
+    operand.type === Types.boolean_expression ? parseExpressionToString(operand.value as Expression) : `${operand.value}`;
   return negated ? `NOT ${valueString}` : valueString;
 }
 
 export function parseExpressionToString(expression: Expression) {
-  let operandsStrings: string[] = expression.opds.map((operand) => {
-    if ((operand as Expression).opds) {
+  console.log(expression);
+
+  let operandsStrings: string[] = expression.value.map((operand) => {
+    if (Array.isArray((operand as Expression).value)) {
       return parseExpressionToString(operand as Expression);
     } else {
-      return parseOperandToString(operand as ExpressionOperand, expression.opr === '!');
+      return parseOperandToString(operand as ExpressionOperand, expression.type === '!');
     }
   });
 
-  if (expression.opr) {
+  if (expression.type) {
     return `(${operandsStrings.join(
-      ` ${convertOprToDisplayOpr(expression.opr as CompareOperator | BoolOperator | NumericOperator)} `
+      ` ${convertOprToDisplayOpr(expression.type as CompareOperator | BoolOperator | NumericOperator)} `
     )})`;
   } else {
     return operandsStrings.join(' ');
@@ -33,6 +36,8 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
       return 'OR';
     case '!':
       return 'NOT';
+    case Types.boolean_expression:
+      return "Expression";
     default:
       return opr;
   }
@@ -40,15 +45,13 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
 
 export function initDefaultArgumentType(argumentType: ArgumentType) {
   switch (argumentType) {
-    case 'bool':
+    case Types.boolean:
       return true;
-    case 'bool_expr':
-      return {
-        opds: [],
-      };
-    case 'num':
+    case Types.boolean_expression:
+      return [] as Expression[];
+    case Types.number:
       return 0;
-    case 'str':
+    case Types.string:
       return '';
     default:
       return null;
@@ -118,9 +121,9 @@ export function analyzeBlock(block: Block, langStmts: Statements, parentStmt: Pr
 }
 
 export function assignUuidToExprOperands(expr: Expression) {
-  for (let opd of expr.opds) {
+  for (let opd of expr.value) {
     opd._uuid = uuidv4();
-    if ((opd as Expression).opds) {
+    if (Array.isArray((opd as Expression).value)) {
       assignUuidToExprOperands(opd as Expression);
     }
   }
@@ -129,10 +132,10 @@ export function assignUuidToExprOperands(expr: Expression) {
 export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
     stmt._uuid = uuidv4();
-    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
-      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).args) {
-        if (arg.type === 'bool_expr') {
-          assignUuidToExprOperands(arg.value as Expression);
+    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+        if (isExpressionArray(arg)) {
+          (arg.value as Expression[]).forEach(item => assignUuidToExprOperands(item));
         }
       }
     }
@@ -175,9 +178,10 @@ export class Program {
     let blockCopy = JSON.parse(JSON.stringify(block));
 
     function removeUuidFromExprOperands(expr: Expression) {
-      for (let opd of expr.opds) {
+      delete expr._uuid;
+      for (let opd of expr.value) {
         delete opd._uuid;
-        if ((opd as Expression).opds) {
+        if (Array.isArray((opd as Expression).value)) {
           removeUuidFromExprOperands(opd as Expression);
         }
       }
@@ -189,10 +193,12 @@ export class Program {
         if (stmt.isInvalid) {
           delete stmt.isInvalid;
         }
-        if ((stmt as AbstractStatementWithArgs).args) {
-          for (let arg of (stmt as AbstractStatementWithArgs).args) {
-            if (arg.type === 'bool_expr') {
-              removeUuidFromExprOperands(arg.value as Expression);
+        if ((stmt as AbstractStatementWithArgs).arguments) {
+          for (let arg of (stmt as AbstractStatementWithArgs).arguments) {
+            if (arg.type === Types.boolean_expression) {
+              if (isExpressionArray(arg)) {
+                (arg.value as Expression[]).forEach(item => removeUuidFromExprOperands(item));
+              }
             }
           }
         }
@@ -229,29 +235,11 @@ export class Program {
     let resultStatement: any = {};
 
     function initArgs() {
-      for (let arg of statement.args) {
-        resultStatement['args'].push({
+      for (let arg of statement.arguments) {
+        resultStatement['arguments'].push({
           type: arg.type,
+          value: initDefaultArgumentType(arg.type)
         });
-
-        switch (arg.type) {
-          case 'bool':
-            resultStatement['args'][resultStatement['args'].length - 1]['value'] = true;
-            break;
-          case 'bool_expr':
-            resultStatement['args'][resultStatement['args'].length - 1]['value'] = {
-              opds: [],
-            };
-            break;
-          case 'num':
-            resultStatement['args'][resultStatement['args'].length - 1]['value'] = 0;
-            break;
-          case 'str':
-            resultStatement['args'][resultStatement['args'].length - 1]['value'] = '';
-            break;
-          default:
-            resultStatement['args'][resultStatement['args'].length - 1]['value'] = null;
-        }
       }
     }
 
@@ -261,7 +249,7 @@ export class Program {
       case 'unit':
         break;
       case 'unit_with_args':
-        resultStatement['args'] = [];
+        resultStatement['arguments'] = [];
         initArgs();
         break;
       case 'compound':
@@ -269,7 +257,7 @@ export class Program {
         break;
       case 'compound_with_args':
         resultStatement['block'] = [];
-        resultStatement['args'] = [];
+        resultStatement['arguments'] = [];
         initArgs();
         break;
     }
@@ -281,7 +269,7 @@ export class Program {
 type stmt = {
   type: LanguageStatementType;
   key: string;
-  args?: Argument[];
+  arguments?: Argument[];
 };
 
 export type Block = ProgramStatement[];
@@ -302,7 +290,7 @@ export type UserVariable = {
 
 export type UserVariableValue = string | number | boolean | Expression;
 
-export const userVariableTypes = ['str', 'num', 'bool', 'bool_expr'] as const;
+export const userVariableTypes = [Types.string, Types.number, Types.boolean, Types.boolean_expression] as const;
 type UserVariableTypesTuple = typeof userVariableTypes;
 export type UserVariableType = UserVariableTypesTuple[number];
 
@@ -319,7 +307,7 @@ export type AbstractStatement = {
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
-  args: ProgramStatementArgument[];
+  arguments: ProgramStatementArgument[];
 };
 
 export type CompoundStatement = AbstractStatement & {
@@ -330,18 +318,18 @@ export type CompoundStatementWithArgs = AbstractStatement & CompoundStatement & 
 
 export type ProgramStatementArgument = {
   type: ArgumentType;
-  value: string | number | boolean | Expression;
+  value: string | number | boolean | Expression[];
 };
 
 export type Expression = {
-  opds: ExpressionOperands;
-  opr?: ExpressionOperator;
+  value: ExpressionOperands;
+  type?: ExpressionOperator;
   _uuid?: string;
 };
 
 export type ExpressionOperands = (ExpressionOperand | Expression)[];
 
-export type ExpressionOperator = CompareOperator | BoolOperator | NumericOperator;
+export type ExpressionOperator = CompareOperator | BoolOperator | NumericOperator | ExpressionOperandType;
 
 export type ExpressionOperand = {
   type: ExpressionOperandType;
@@ -349,7 +337,7 @@ export type ExpressionOperand = {
   _uuid?: string;
 };
 
-export const expressionOperandTypes = ['str', 'num', 'bool', 'bool_expr', 'var', 'unknown'] as const;
+export const expressionOperandTypes = [Types.string, Types.number, Types.boolean, Types.boolean_expression, Types.variable, Types.unknown] as const;
 type ExpressionOperandTypesTuple = typeof expressionOperandTypes;
 export type ExpressionOperandType = ExpressionOperandTypesTuple[number];
 
@@ -364,3 +352,9 @@ export type BoolOperator = BoolOperatorsTuple[number];
 export const numericOperators = ['+', '-', '*', '/', '%'] as const;
 type NumericOperatorsTuple = typeof numericOperators;
 export type NumericOperator = NumericOperatorsTuple[number];
+
+export const isExpressionOperator = (operator: string) => {
+  return operator in compareOperators || operator in boolOperators || operator in numericOperators;
+}
+
+export const isExpressionArray = (argument: ProgramStatementArgument) => Array.isArray(argument.value);

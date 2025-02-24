@@ -20,6 +20,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
+import Types from '@vpl/types.ts';
 
 @customElement('editor-expression-operand-list')
 export class EditorExpressionOperandList extends LitElement {
@@ -180,7 +181,7 @@ export class EditorExpressionOperandList extends LitElement {
   @property() opdModalVisibleOnRender: boolean = false;
   @property() groupModeIsActive: boolean = false;
   @property() selectedExpressions: (Expression | ExpressionOperand)[] = [];
-  @property() selectedOprType: string = 'bool';
+  @property() selectedOprType: string = Types.boolean;
   @property() isExample: boolean = false;
 
   @consume({ context: programContext })
@@ -200,10 +201,10 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   handleAddNewOpd() {
-    if (this.parentExpr.opr === '!' && this.operands.length > 0) {
+    if (this.parentExpr.type === '!' && this.operands.length > 0) {
       return;
     }
-    this.operands.push({ type: 'unknown', value: null, _uuid: uuidv4() });
+    this.operands.push({ type: Types.unknown, value: null, _uuid: uuidv4() });
     this.opdModalVisibleOnRender = true;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -275,10 +276,10 @@ export class EditorExpressionOperandList extends LitElement {
     }
 
     let newGroup = {
-      opds: [...this.selectedExpressions],
-      opr: groupOpr,
+      value: [...this.selectedExpressions],
+      type: groupOpr,
       _uuid: uuidv4(),
-    };
+    } as Expression;
 
     for (let i = this.operands.length - 1; i >= 0; i--) {
       const opd = this.operands[i];
@@ -340,7 +341,7 @@ export class EditorExpressionOperandList extends LitElement {
     let operatorList;
 
     switch (oprType) {
-      case 'bool':
+      case Types.boolean:
         operatorList = boolOperators;
         break;
       case 'compare':
@@ -377,16 +378,16 @@ export class EditorExpressionOperandList extends LitElement {
                 (opd) => opd['_uuid'],
                 (operand, i) =>
                   html`
-                    <div class="${(operand as Expression).opds ? 'nested-expr-wrapper' : 'opd-wrapper'}">
+                    <div class="${(operand as Expression).value ? 'nested-expr-wrapper' : 'opd-wrapper'}">
                       ${this.nestedLevel > 0
                         ? html`
                             <div
-                              class="${(operand as Expression).opds
+                              class="${(operand as Expression).value
                                 ? 'expr-indent-line indent-line'
                                 : 'indent-line'}"></div>
                           `
                         : nothing}
-                      ${(operand as Expression).opds
+                      ${Array.isArray((operand as Expression).value)
                         ? html`
                             <editor-expression
                               .expression="${operand}"
@@ -406,7 +407,7 @@ export class EditorExpressionOperandList extends LitElement {
                               .visibleOnRender="${this.opdModalVisibleOnRender}">
                             </editor-expression-operand>
                           `}
-                      ${!(operand as Expression).opds &&
+                      ${!(operand as Expression).value &&
                       !this.groupModeIsActive &&
                       (this.exprIsSelected || this.nestedLevel === 0) &&
                       !this.isExample
@@ -426,8 +427,8 @@ export class EditorExpressionOperandList extends LitElement {
                               name=""
                               id=""
                               style="${`position: sticky; top: ${
-                                (operand as Expression).opds ? this.nestedLevel * 37 + 9 : this.nestedLevel * 37
-                              }px; z-index: ${200 - (this.nestedLevel + 4)};`} ${(operand as Expression).opds
+                                (operand as Expression).value ? this.nestedLevel * 37 + 9 : this.nestedLevel * 37
+                              }px; z-index: ${200 - (this.nestedLevel + 4)};`} ${(operand as Expression).value
                                 ? 'margin-top: 9px; margin-left: 6px; margin-right: 6px;'
                                 : ''}"
                               @change="${(e) => this.handleSelectExpr(e, i, operand)}" />

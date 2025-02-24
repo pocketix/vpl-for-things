@@ -12,7 +12,7 @@ export const exampleDevices: Device[] = [
     functions: [
       {
         type: 'unit_with_args',
-        args: [
+        arguments: [
           {
             type: 'str_opt',
             options: [
@@ -49,7 +49,7 @@ export const exampleDevices: Device[] = [
     functions: [
       {
         type: 'unit_with_args',
-        args: [
+        arguments: [
           {
             type: 'str_opt',
             options: [
@@ -74,7 +74,7 @@ export const exampleDevices: Device[] = [
     functions: [
       {
         type: 'unit_with_args',
-        args: [
+        arguments: [
           {
             type: 'str_opt',
             options: [
@@ -118,7 +118,7 @@ export const exampleDevices: Device[] = [
         label: 'makeCoffee',
         icon: 'coffe',
         group: 'iot',
-        args: [
+        arguments: [
           {
             type: 'str_opt',
             options: [
@@ -147,7 +147,7 @@ export const exampleDevices: Device[] = [
         label: 'state',
         icon: 'lightbulb',
         group: 'iot',
-        args: [
+        arguments: [
           {
             type: 'str_opt',
             options: [
