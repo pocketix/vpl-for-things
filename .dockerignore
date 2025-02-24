@@ -1,0 +1,24 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore node_modules if present (in case you're using Node.js)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Ignore Git repository files
+.git
+.gitignore
+
+# Ignore Docker-related files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Ignore editor and temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+*.log
