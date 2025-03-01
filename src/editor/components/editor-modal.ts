@@ -98,7 +98,7 @@ export class EditorModal extends LitElement {
   @property() displayType: DisplayType = 'modal';
   @property() isVisible: boolean = false;
   @property() titleIsVisible: boolean = true;
-  @property() closeButtonIsVisible: boolean = true;
+  @property({type: Boolean}) hideCloseButton: boolean = false;
   @property() backgroundColor: string;
   @property() foregroundColor: string;
   @property() isFullWidth?: boolean = false;
@@ -203,7 +203,7 @@ export class EditorModal extends LitElement {
                   </div>
                 `
               : nothing}
-            ${this.closeButtonIsVisible
+            ${!this.hideCloseButton
               ? html`
                   <editor-button @click="${this.hideModal}" type="reset" class="close-btn">
                     <editor-icon .icon="${xLg}" .width="${18}" .height="${18}"></editor-icon>

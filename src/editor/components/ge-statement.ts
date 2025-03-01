@@ -481,7 +481,7 @@ export class GEStatement extends LitElement {
                     class="statement-controls-modal"
                     .displayType="${'dialog'}"
                     .titleIsVisible="${false}"
-                    .closeButtonIsVisible="${false}"
+                    ?hideCloseButton="${true}"
                     ${ref(this.statementControlsModalRef)}>
                     <div class="statement-controls-buttons">
                       <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">

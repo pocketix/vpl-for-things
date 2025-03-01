@@ -270,7 +270,7 @@ export class EditorUserProceduresModal extends LitElement {
                     ${ref(this.iconListModalRef)}
                     .displayType="${'dialog'}"
                     .titleIsVisible="${false}"
-                    .closeButtonIsVisible="${false}">
+                    ?hideCloseButton="${true}">
                     <div class="icon-list-wrapper">
                       ${Object.keys(icons).map(
                         (iconKey) =>

@@ -333,7 +333,7 @@ export class EditorExpressionOperand extends LitElement {
       <editor-modal
         ${ref(this.exprAddOperandModalRef)}
         .modalTitle="${'Add operand'}"
-        .closeButtonIsVisible="${false}"
+        ?hideCloseButton="${true}"
         .isVisible="${this.operand.value === null ? this.visibleOnRender : false}">
         <div class="add-operand-modal-wrapper">
           <div class="add-operand-modal-item-wrapper">

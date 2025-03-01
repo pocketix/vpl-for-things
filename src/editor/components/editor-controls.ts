@@ -747,7 +747,7 @@ export class EditorControls extends LitElement {
               ${ref(this.variableTypesLegendModalRef)}
               .displayType="${'dialog'}"
               .titleIsVisible="${false}"
-              .closeButtonIsVisible="${false}">
+              ?hideCloseButton="${true}">
               <div class="variable-types-legend">
                 ${userVariableTypes.map((varType: UserVariableType) => {
                   return html`
