@@ -48,8 +48,7 @@ export class EditorUserProceduresModal extends LitElement {
         align-items: center;
       }
 
-      .procedure-icon-button {
-        display: flex;
+      .procedure-icon-button::part(btn) {
         justify-content: center;
         width: 43px;
         height: 39px;
@@ -93,20 +92,19 @@ export class EditorUserProceduresModal extends LitElement {
 
       .action-button {
         width: 100%;
-        justify-content: center;
-        gap: 0.25rem;
       }
 
-      .confirm-button {
+      .action-button::part(btn) {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .confirm-button::part(btn) {
         color: var(--green-600);
       }
 
-      .cancel-button {
+      .cancel-button::part(btn) {
         color: var(--red-600);
-      }
-
-      .procedure-button {
-        gap: 0.25rem;
       }
 
       .name-is-missing::placeholder {

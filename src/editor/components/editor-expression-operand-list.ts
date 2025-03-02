@@ -86,19 +86,18 @@ export class EditorExpressionOperandList extends LitElement {
         margin-right: 12px;
       }
 
-      .expr-control-button {
-        width: 100%;
+      .expr-control-button::part(btn) {
         justify-content: center;
         gap: 2px;
       }
 
-      .remove-button {
+      .remove-button::part(btn) {
         color: var(--red-600);
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
       }
 
-      .group-button {
+      .group-button::part(btn) {
         color: var(--green-600);
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
@@ -116,7 +115,7 @@ export class EditorExpressionOperandList extends LitElement {
         width: 100%;
       }
 
-      .go-back-button {
+      .go-back-button::part(btn) {
         justify-content: center;
         gap: 4px;
       }
@@ -155,7 +154,7 @@ export class EditorExpressionOperandList extends LitElement {
         gap: 8px;
       }
 
-      .opr-list-item {
+      .opr-list-item::part(btn) {
         justify-content: center;
         font-family: var(--mono-font);
       }
@@ -447,12 +446,14 @@ export class EditorExpressionOperandList extends LitElement {
                         <div class="expr-group-controls">
                           <div class="expr-group-actions">
                             <editor-button
+                              style="width: 100%;"
                               class="expr-control-button remove-button"
                               @click="${this.handleDeleteSelectedExpressions}">
                               <editor-icon .icon="${trash}"></editor-icon>
                               <span>Remove</span>
                             </editor-button>
                             <editor-button
+                              style="width: 100%;"
                               class="expr-control-button group-button"
                               @click="${this.handleShowSelectOprModal}">
                               <editor-icon .icon="${stack}"></editor-icon>

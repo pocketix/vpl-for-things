@@ -36,7 +36,7 @@ export class EditorVariablesModal extends LitElement {
         display: flex;
       }
 
-      .variable-type-button {
+      .variable-type-button::part(btn) {
         background-color: white;
         border: none;
         box-shadow: none;
@@ -187,7 +187,7 @@ export class EditorVariablesModal extends LitElement {
             @input="${this.handleVariableSearchInputChange}" />
           <div class="tabs">
             <editor-button
-              class="variable-type-button user-variables-button"
+              class="variable-type-button"
               @click="${this.handleRenderUserVariables}"
               style="${this.renderUserVariables
                 ? 'border-bottom: 2px solid var(--blue-500)'

@@ -35,13 +35,16 @@ export class EditorModal extends LitElement {
 
       .close-btn {
         margin-left: auto;
+      }
+
+      .close-btn::part(btn) {
         background-color: rgba(255, 255, 255, 0.8);
         border: none;
         box-shadow: none;
         padding: 0.25rem;
       }
 
-      .close-btn:hover {
+      .close-btn::part(btn):hover {
         background-color: var(--gray-100);
       }
 

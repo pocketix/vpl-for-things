@@ -16,6 +16,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+import { classMap } from 'lit/directives/class-map.js';
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
@@ -29,9 +30,8 @@ export class GeBlock extends LitElement {
         gap: 0.5rem;
       }
 
-      .add-new-statement-btn {
+      .add-new-statement-btn::part(btn) {
         width: fit-content;
-        align-self: flex-end;
       }
 
       .add-statement-tabs {
@@ -44,7 +44,7 @@ export class GeBlock extends LitElement {
         height: 500px;
       }
 
-      .statement-type-button {
+      .statement-type-button::part(btn) {
         background-color: white;
         border: none;
         box-shadow: none;
@@ -329,8 +329,10 @@ export class GeBlock extends LitElement {
   addStatementButtonTemplate() {
     return html`
       <editor-button
+        ?autofocus=${this.isProcBody}
         @click="${this.handleShowAddNewStatementDialog}"
         title="Add Statement"
+        style="align-self: flex-end;"
         class="add-new-statement-btn">
         <editor-icon .icon="${icons['plusLg']}"></editor-icon>
       </editor-button>
@@ -431,7 +433,7 @@ export class GeBlock extends LitElement {
             </div>
             <div class="add-statement-tabs">
               <editor-button
-                class="statement-type-button basic-statement-button"
+                class="statement-type-button"
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'

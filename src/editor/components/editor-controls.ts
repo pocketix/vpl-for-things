@@ -96,15 +96,8 @@ export class EditorControls extends LitElement {
         padding-left: 3px;
       }
 
-      .add-variable-button {
-        display: flex;
-        gap: 0.25rem;
-        white-space: nowrap;
-      }
 
       .edit-variable-button {
-        display: flex;
-        gap: 0.25rem;
         white-space: nowrap;
       }
 
@@ -163,9 +156,10 @@ export class EditorControls extends LitElement {
       }
 
       .add-variable-modal-save-button {
-        display: flex;
-        gap: 0.25rem;
         width: 100%;
+      }
+
+      .add-variable-modal-save-button::part(btn) {
         justify-content: center;
       }
 
@@ -173,9 +167,6 @@ export class EditorControls extends LitElement {
         display: flex;
         justify-content: space-between;
         gap: 0.5rem;
-      }
-
-      #add-variable-type-select {
       }
 
       .variable-types-legend {
@@ -218,8 +209,7 @@ export class EditorControls extends LitElement {
         color: var(--gray-500);
       }
 
-      .control-button {
-        gap: 0.25rem;
+      .control-button::part(btn) {
         font-weight: 400;
       }
 
@@ -585,7 +575,7 @@ export class EditorControls extends LitElement {
                 .value="${this.variableSearchInput}"
                 @input="${this.handleVariablesSearch}" />
               <div class="variables-buttons-wrapper">
-                <editor-button class="edit-variable-button" @click="${this.handleVariablesTableChangeMode}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleVariablesTableChangeMode}">
                   ${this.variablesTableMode === 'display'
                     ? html`
                         <editor-icon .icon="${pencilSquare}"></editor-icon>
@@ -596,7 +586,7 @@ export class EditorControls extends LitElement {
                         <div>Save</div>
                       `}
                 </editor-button>
-                <editor-button class="add-variable-button" @click="${this.handleShowAddVariableModal}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleShowAddVariableModal}">
                   <editor-icon .icon="${plusLg}"></editor-icon>
                   <div>New</div>
                 </editor-button>
@@ -652,15 +642,15 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-save">
                       <editor-button
                         class="add-variable-modal-save-button"
-                        style="color: var(--green-600);"
+                        btnStyle="color: var(--green-600);"
                         @click="${this.handleAddNewVariable}">
-                        <editor-icon .icon="${checkLg}"></editor-icon>
-                        <div>Add</div>
+                          <editor-icon .icon="${checkLg}"></editor-icon>
+                          <div>Add</div>
                       </editor-button>
                       <editor-button
                         @click="${this.handleCloseAddVariableModal}"
                         class="add-variable-modal-save-button"
-                        style="color: var(--red-600);">
+                        btnStyle="color: var(--red-600);">
                         <editor-icon .icon="${xLg}"></editor-icon>
                         <div>Cancel</div>
                       </editor-button>
@@ -695,7 +685,7 @@ export class EditorControls extends LitElement {
         return html`
           <editor-button
             @click="${this.handleShowAddVariableExpressionModal}"
-            style="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
+            btnStyle="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
             <div style="display: flex; gap: 4px; align-items: center;">
               <editor-icon .icon="${icons.threeDots}"></editor-icon>
               Expression

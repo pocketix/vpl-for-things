@@ -32,21 +32,21 @@ export class EditorExpressionOperand extends LitElement {
       }
 
       .operand-button {
+        flex: 1;
+        width: 95%;
+      }
+
+      .operand-button::part(btn) {
         font-family: var(--mono-font);
         white-space: normal;
         word-break: break-all;
         overflow-x: auto;
-        flex: 1;
-        width: 95%;
         justify-content: flex-start;
         border: none;
         box-shadow: none;
         background: none;
         padding-left: 0;
         padding-right: 0;
-      }
-
-      .operand-button {
         opacity: 100 !important;
       }
 
@@ -84,7 +84,7 @@ export class EditorExpressionOperand extends LitElement {
         width: 200px;
       }
 
-      .add-operand-confirm-button {
+      .add-operand-confirm-button::part(btn) {
         justify-content: center;
       }
     `,
@@ -371,14 +371,16 @@ export class EditorExpressionOperand extends LitElement {
           <div style="display: flex; gap: 4px;">
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--green-600); width: 100%; gap: 4px;"
+              btnStyle="color: var(--green-600);"
+              style="width: 100%;"
               @click="${this.handleConfirmOperand}">
               <editor-icon .icon="${checkLg}"></editor-icon>
               <div>OK</div>
             </editor-button>
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--red-600); width: 100%; gap: 4px;"
+              btnStyle="color: var(--red-600);"
+              style="width: 100%;"
               @click="${this.handleCancelOperand}">
               <editor-icon .icon="${xLg}"></editor-icon>
               <div>Cancel</div>
