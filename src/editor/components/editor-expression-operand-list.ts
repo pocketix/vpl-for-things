@@ -468,7 +468,7 @@ export class EditorExpressionOperandList extends LitElement {
                                     id="opr-type-select"
                                     .value="${this.selectedOprType}"
                                     @change="${this.handleSelectOprType}">
-                                    <option value="bool">Logical</option>
+                                    <option value="boolean">Logical</option>
                                     <option value="compare">Compare</option>
                                     <option value="numeric">Numeric</option>
                                   </select>
