@@ -578,6 +578,7 @@ export class EditorControls extends LitElement {
           <div class="user-variables-header">
             <div class="user-variables-header-search">
               <input
+                autofocus
                 type="text"
                 placeholder="Search"
                 id="variable-search-field"
@@ -604,6 +605,7 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-item">
                       <label for="add-variable-type-select">Type</label>
                       <select
+                        autofocus
                         name=""
                         id="add-variable-type-select"
                         .value="${this.selectedAddVariableType}"

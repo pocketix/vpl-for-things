@@ -242,6 +242,7 @@ export class EditorUserProceduresModal extends LitElement {
         <div class="procedure-modal-wrapper">
           <div class="procedure-search-wrapper">
             <input
+              autofocus
               type="text"
               placeholder="Search"
               id="variable-search-field"
@@ -287,6 +288,7 @@ export class EditorUserProceduresModal extends LitElement {
                     </div>
                   </editor-modal>
                   <input
+                    autofocus
                     type="text"
                     placeholder="${this.addProcNameIsMissing ? 'Name is required' : 'Name'}"
                     .value="${this.addProcName}"

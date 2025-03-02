@@ -179,6 +179,7 @@ export class EditorVariablesModal extends LitElement {
       <editor-modal ${ref(this.variablesModalRef)} .modalTitle="${'Select Variable'}" class="user-variables-modal">
         <div class="user-variables-modal-wrapper">
           <input
+            autofocus
             type="text"
             placeholder="Search"
             class="var-search-input"

@@ -261,6 +261,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
@@ -308,6 +309,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                autofocus
                 ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 type="number"
@@ -324,6 +326,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
@@ -345,6 +348,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                autofocus
                 ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 placeholder="abc"
@@ -361,6 +365,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 ?disabled="${this.isExample}"
                 style="width: 100%;"
                 id="${argumentElementId}"

@@ -422,6 +422,7 @@ export class GeBlock extends LitElement {
           <div class="add-statement-search-wrapper">
             <div class="add-statement-search-input-wrapper">
               <input
+                autofocus
                 type="text"
                 placeholder="Search"
                 .value="${this.addStatementOptionsFilter}"
