@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { modalCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
@@ -97,7 +97,7 @@ export class EditorModal extends LitElement {
 
   //#region Props
   @property() modalTitle: string = 'Default title';
-  @property() modalIcon?: string;
+  @property({type: Object}) modalIcon?: TemplateResult<1>;
   @property() displayType: DisplayType = 'modal';
   @property() isVisible: boolean = false;
   @property() titleIsVisible: boolean = true;
