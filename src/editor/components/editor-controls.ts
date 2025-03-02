@@ -22,12 +22,11 @@ import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userV
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
-  statementCustomEvent,
   textEditorCustomEvent,
 } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
-import { EditorButton, Language } from '@/index';
+import { Language } from '@/index';
 import Types from '@vpl/types.ts';
 
 export type VariableTableMode = 'display' | 'edit';
@@ -195,9 +194,6 @@ export class EditorControls extends LitElement {
 
       #add-variable-name-input {
         font-family: var(--main-font);
-      }
-
-      .user-variables-modal::part(dialog) {
       }
 
       .no-variables-phrase {
@@ -765,7 +761,7 @@ export class EditorControls extends LitElement {
         ${repeat(
           this.filteredVariables,
           (key) => key,
-          (key, i) => {
+          (key) => {
             return html`
               <tr>
                 <td>
@@ -792,7 +788,7 @@ export class EditorControls extends LitElement {
                         name=""
                         id=""
                         .value="${key}"
-                        @change="${(e) => this.handleModifyVariableName(e, key)}" />`}
+                        @change="${(e: Event) => this.handleModifyVariableName(e, key)}" />`}
                 </td>
                 <td>
                   ${this.variablesTableMode === 'display'
@@ -839,13 +835,16 @@ export class EditorControls extends LitElement {
   }
 
   userVaribleModifyInitialValueTemplate(varKey: string) {
+    console.assert(typeof this.program.header.userVariables[varKey].value === "string", "user variable value is of type string");
+    const value = this.program.header.userVariables[varKey].value as string; // TODO(filip): rework types
+
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`
           <select
             class="mono-font"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}">
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}">
             <option value="true">True</option>
             <option value="false">False</option>
           </select>
@@ -860,8 +859,8 @@ export class EditorControls extends LitElement {
             id=""
             inputmode="decimal"
             placeholder="123"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
       case Types.string:
         return html`
@@ -870,8 +869,8 @@ export class EditorControls extends LitElement {
             name=""
             id=""
             placeholder="abc"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
     }
   }
