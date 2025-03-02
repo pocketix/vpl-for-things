@@ -19,42 +19,40 @@
       ],
       "arguments": [
         {
-          "type": "bool_expr",
-          "value": {
-            "opds": [
-              {
-                "opds": [
-                  {
-                    "opds": [
-                      {
-                        "type": "var",
-                        "value": "LT22222-Relay-1.relayState"
-                      },
-                      {
-                        "type": "str",
-                        "value": "closed"
-                      }
-                    ],
-                    "opr": "==="
-                  },
-                  {
-                    "opds": [
-                      {
-                        "type": "var",
-                        "value": "DistanceSensor-1.waterLevel"
-                      },
-                      {
-                        "type": "num",
-                        "value": 80
-                      }
-                    ],
-                    "opr": ">"
-                  }
-                ],
-                "opr": "&&"
-              }
-            ]
-          }
+          "type": "boolean_expression",
+          "value": [
+            {
+              "value": [
+                {
+                  "value": [
+                    {
+                      "type": "variable",
+                      "value": "DistanceSensor-1.waterLevel"
+                    },
+                    {
+                      "type": "number",
+                      "value": 80
+                    }
+                  ],
+                  "type": ">"
+                },
+                {
+                  "value": [
+                    {
+                      "type": "variable",
+                      "value": "LT22222-Relay-1.relayState"
+                    },
+                    {
+                      "type": "string",
+                      "value": "closed"
+                    }
+                  ],
+                  "type": "==="
+                }
+              ],
+              "type": "&&"
+            }
+          ]
         }
       ]
     },
@@ -73,24 +71,22 @@
       ],
       "arguments": [
         {
-          "type": "bool_expr",
-          "value": {
-            "opds": [
-              {
-                "opds": [
-                  {
-                    "type": "var",
-                    "value": "LT22222-Relay-1.relayState"
-                  },
-                  {
-                    "type": "str",
-                    "value": "opened"
-                  }
-                ],
-                "opr": "==="
-              }
-            ]
-          }
+          "type": "boolean_expression",
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "variable",
+                  "value": "LT22222-Relay-1.relayState"
+                },
+                {
+                  "type": "string",
+                  "value": "opened"
+                }
+              ],
+              "type": "==="
+            }
+          ]
         }
       ]
     }
