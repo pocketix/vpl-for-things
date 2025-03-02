@@ -33,6 +33,9 @@ export class EditorIcon extends LitElement {
 
   updated() {
     const svg = this.shadowRoot.querySelector('svg');
+    if (!svg) {
+      return;
+    }
     svg.style.fill = this.color ? this.color : 'currentColor';
     svg.style.width = this.width ? `${this.width}px` : svg.style.width;
     svg.style.height = this.height ? `${this.height}px` : svg.style.height;
