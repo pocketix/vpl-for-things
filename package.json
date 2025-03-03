@@ -1,0 +1,41 @@
+{
+  "name": "@podvojsky/vpl-for-things",
+  "type": "module",
+  "version": "1.0.5",
+  "author": "Lukáš Podvojský",
+  "license": "MIT",
+  "private": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/vpl-for-things.umd.cjs",
+  "module": "./dist/lit-project.js",
+  "exports": {
+    ".": {
+      "import": "./dist/vpl-for-things.js",
+      "require": "./dist/vpl-for-things.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "release": "standard-version && git push --follow-tags && npm publish"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": "https://github.com/podvojsky/vpl-for-things",
+  "dependencies": {
+    "@lit/context": "^1.1.0",
+    "lit": "^3.1.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "standard-version": "^9.5.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0",
+    "vite-plugin-dts": "^3.7.3"
+  }
+}

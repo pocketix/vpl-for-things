@@ -1,0 +1,128 @@
+ {
+  "header": {
+    "userVariables": {},
+    "userProcedures": {
+      "buzzerBeep3x": [
+        {
+          "id": "repeat",
+          "block": [
+            {
+              "id": "Buzzer-1.beep"
+            }
+          ],
+          "arguments": [
+            {
+              "type": "num",
+              "value": 3
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "block": [
+    {
+      "id": "switch",
+      "block": [
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "arguments": [
+                {
+                  "type": "str_opt",
+                  "value": "red"
+                }
+              ]
+            }
+          ],
+          "arguments": [
+            {
+              "type": "str",
+              "value": "high"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "arguments": [
+                {
+                  "type": "str_opt",
+                  "value": "orange"
+                }
+              ]
+            }
+          ],
+          "arguments": [
+            {
+              "type": "str",
+              "value": "ideal"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "arguments": [
+                {
+                  "type": "str_opt",
+                  "value": "green"
+                }
+              ]
+            }
+          ],
+          "arguments": [
+            {
+              "type": "str",
+              "value": "low"
+            }
+          ]
+        },
+        {
+          "id": "case",
+          "block": [
+            {
+              "id": "LED-1.setLedColor",
+              "arguments": [
+                {
+                  "type": "str_opt",
+                  "value": "blue"
+                }
+              ]
+            },
+            {
+              "id": "buzzerBeep3x"
+            },
+            {
+              "id": "TemperatureDevice-1.setTemperature",
+              "arguments": [
+                {
+                  "type": "str_opt",
+                  "value": "ideal"
+                }
+              ]
+            }
+          ],
+          "arguments": [
+            {
+              "type": "str",
+              "value": "critical_low"
+            }
+          ]
+        }
+      ],
+      "arguments": [
+        {
+          "type": "var",
+          "value": "TemperatureDevice-1.temperatureLevel"
+        }
+      ]
+    }
+  ]
+}
