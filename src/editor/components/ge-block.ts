@@ -13,7 +13,6 @@ import {
   Statement,
   UnitLanguageStatementWithArgs,
 } from '@/index';
-import { EditorMode } from './editor-controls';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
@@ -106,16 +105,6 @@ export class GeBlock extends LitElement {
         padding-top: 2rem;
         text-align: center;
         color: var(--gray-500);
-      }
-
-      .statement {
-        position: relative;
-        margin-bottom: 0.5rem;
-      }
-
-      .statement.selected {
-        outline: 2px solid var(--yellow-400);
-        outline-offset: 2px;
       }
     `,
   ];//}}}

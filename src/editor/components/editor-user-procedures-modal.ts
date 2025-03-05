@@ -6,10 +6,10 @@ import { EditorModal } from './editor-modal';
 import { plusLg } from '../icons';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { Icon, Language, Program, ProgramStatement } from '@/index';
+import { Icon, Language, Program } from '@/index';
 import * as icons from '@/editor/icons';
 import { v4 as uuidv4 } from 'uuid';
-import { graphicalEditorCustomEvent, statementCustomEvent } from '../editor-custom-events';
+import { graphicalEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
@@ -145,7 +145,6 @@ export class EditorUserProceduresModal extends LitElement {
   @property() addProcNameIsMissing: boolean = false;
   @property() addProcName: string = '';
   @property() addProcNameIsTaken: boolean = false;
-  @property() selectedStatements: ProgramStatement[] = [];
 
   userProceduresModalRef: Ref<EditorModal> = createRef();
   addProcedureModalRef: Ref<EditorModal> = createRef();
@@ -220,6 +219,7 @@ export class EditorUserProceduresModal extends LitElement {
 
     // If we have selected statements, use them as the procedure body
     if (this.selectedStatements.length > 0) {
+      console.log('Creating procedure with selected blocks:', this.selectedStatements);
       // Deep copy the selected statements to create the procedure body
       this.program.header.userProcedures[newProcId] = this.selectedStatements.map(stmt => ({
         ...stmt,
@@ -229,6 +229,7 @@ export class EditorUserProceduresModal extends LitElement {
       // Clear selection
       this.selectedStatements = [];
     } else {
+      // Create empty procedure if no blocks selected
       this.program.header.userProcedures[newProcId] = [];
     }
 
