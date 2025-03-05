@@ -135,7 +135,6 @@ export class GeBlock extends LitElement {
 
   //#region Refs
   addStatementModalRef: Ref<EditorModal> = createRef();
-  addProcedureModalRef: Ref<EditorModal> = createRef();
   //#endregion
 
   //#region Context
