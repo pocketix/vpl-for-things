@@ -563,12 +563,21 @@ export class EditorControls extends LitElement {
   }
 
   handleExportProgram() {
-    let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
-      JSON.stringify(this.program.exportProgram(), null, '  ')
-    )}`;
-    this.exportProgramLinkRef.value.setAttribute('href', programStrData);
-    this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
-    this.exportProgramLinkRef.value.click();
+    const programExport = this.program?.exportProgram();
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
+    const downloadAnchorNode = this.exportProgramLinkRef.value;
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute('download', 'program.json');
+    downloadAnchorNode.click();
+  }
+
+  handleLinearizeProgram() {
+    const programExport = this.program?.exportLinearizedProgram();
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
+    const downloadAnchorNode = this.exportProgramLinkRef.value;
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute('download', 'program.linearized.json');
+    downloadAnchorNode.click();
   }
 
   userVariablesModalTemplate() {
@@ -906,6 +915,10 @@ export class EditorControls extends LitElement {
           <editor-button @click="${this.handleExportProgram}" class="control-button">
             <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
             <span>Export Program</span>
+          </editor-button>
+          <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
+            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
+            <span>Export Linearized</span>
           </editor-button>
           <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
         </div>
