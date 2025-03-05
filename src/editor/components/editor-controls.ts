@@ -618,39 +618,28 @@ export class EditorControls extends LitElement {
         composed: true,
       });
       this.dispatchEvent(event);
-      
-      const selectionEvent = new CustomEvent(graphicalEditorCustomEvent.STATEMENT_SELECTION_CHANGED, {
-        detail: { selectedStatements: [] },
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(selectionEvent);
     }
   }
 
   handleCreateProcedureFromSelection() {
     if (this.selectedBlocks.length > 0) {
-      const proceduresModal = this.userProceduresModalRef.value;
-      if (proceduresModal) {
-        // First show the procedures modal
-        proceduresModal.showModal();
-        
-        // Set the selected blocks directly on the modal
-        proceduresModal.selectedStatements = this.selectedBlocks;
-        
-        // Show the add procedure modal
-        proceduresModal.handleShowAddProcedureModal();
-        
-        // Reset editor mode and selection
-        this.editorMode = 'normal';
-        this.selectedBlocks = [];
-        const modeEvent = new CustomEvent(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, {
-          detail: { mode: 'normal' },
-          bubbles: true,
-          composed: true,
-        });
-        this.dispatchEvent(modeEvent);
-      }
+      this.userProceduresModalRef.value.showModal();
+      
+      const event = new CustomEvent(graphicalEditorCustomEvent.CREATE_PROCEDURE_FROM_SELECTION, {
+        detail: { blocks: this.selectedBlocks },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+      
+      this.editorMode = 'normal';
+      this.selectedBlocks = [];
+      const modeEvent = new CustomEvent(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, {
+        detail: { mode: 'normal' },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(modeEvent);
     }
   }
 
@@ -1021,16 +1010,6 @@ export class EditorControls extends LitElement {
             <editor-icon .icon="${icons.lightningChargeFill}"></editor-icon>
             Skeletonize Mode
           </editor-button>
-          ${this.editorMode === 'skeletonize' && this.selectedBlocks.length > 0
-            ? html`
-                <editor-button
-                  class="control-button"
-                  @click="${this.handleCreateProcedureFromSelection}">
-                  <editor-icon .icon="${icons.plusLg}"></editor-icon>
-                  <span>Create Procedure</span>
-                </editor-button>
-              `
-            : nothing}
         </div>
       </div>
       <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">

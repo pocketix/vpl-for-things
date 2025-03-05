@@ -16,19 +16,9 @@ export class EditorUserProceduresModal extends LitElement {
   constructor() {
     super();
     this.addEventListener(graphicalEditorCustomEvent.CREATE_PROCEDURE_FROM_SELECTION, ((e: CustomEvent) => {
-      console.log('Received CREATE_PROCEDURE_FROM_SELECTION event', e.detail);
       this.selectedStatements = e.detail.blocks;
-      
-      // Show the add procedure modal directly
-      if (this.addProcedureModalRef.value) {
-        this.handleShowAddProcedureModal();
-      }
+      this.showModal();
     }) as EventListener);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    console.log('Procedures modal connected to DOM');
   }
 
   static styles = [
@@ -188,9 +178,7 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   showModal() {
-    if (this.userProceduresModalRef.value) {
-      this.userProceduresModalRef.value.showModal();
-    }
+    this.userProceduresModalRef.value.showModal();
   }
 
   handleProcedureSearch(e: Event) {
@@ -198,18 +186,7 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   handleShowAddProcedureModal() {
-    // Reset the form state
-    this.addProcName = '';
-    this.addProcNameIsMissing = false;
-    this.addProcNameIsTaken = false;
-    this.selectedBgColor = '#2dd4bf';
-    this.selectedFgColor = '#ffffff';
-    this.selectedProcIconKey = 'lightningChargeFill';
-    
-    // Show the add procedure modal
-    if (this.addProcedureModalRef.value) {
-      this.addProcedureModalRef.value.showModal();
-    }
+    this.addProcedureModalRef.value.showModal();
   }
 
   handleSelectProcIcon(iconKey: Icon) {
@@ -241,7 +218,6 @@ export class EditorUserProceduresModal extends LitElement {
 
     let newProcId = this.addProcName;
 
-    // Create the procedure definition
     this.language.statements[newProcId] = {
       type: 'unit',
       group: 'misc',
@@ -254,7 +230,6 @@ export class EditorUserProceduresModal extends LitElement {
 
     // If we have selected statements, use them as the procedure body
     if (this.selectedStatements.length > 0) {
-      console.log('Creating procedure with selected blocks:', this.selectedStatements);
       // Deep copy the selected statements to create the procedure body
       this.program.header.userProcedures[newProcId] = this.selectedStatements.map(stmt => ({
         ...stmt,
@@ -264,15 +239,12 @@ export class EditorUserProceduresModal extends LitElement {
       // Clear selection
       this.selectedStatements = [];
     } else {
-      // Create empty procedure if no blocks selected
       this.program.header.userProcedures[newProcId] = [];
     }
 
-    // Reset form and close modal
     this.addProcName = '';
     this.addProcedureModalRef.value.hideModal();
 
-    // Notify that program was updated
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
@@ -363,7 +335,7 @@ export class EditorUserProceduresModal extends LitElement {
                     @change="${this.handleFgColorChange}" />
                 </div>
                 <div class="action-buttons-wrapper">
-                  <editor-button class="action-button confirm-button" @click="${() => this.handleAddNewProc()}">
+                  <editor-button class="action-button confirm-button" @click="${this.handleAddNewProc}">
                     <editor-icon .icon="${icons['checkLg']}"></editor-icon>
                     Create
                   </editor-button>
