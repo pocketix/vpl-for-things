@@ -5,7 +5,6 @@ import { html, css, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { globalStyles } from '../global-styles';
-import { EditorMode } from './editor-controls';
 
 @customElement('graphical-editor')
 export class GraphicalEditor extends LitElement {
@@ -47,15 +46,12 @@ export class GraphicalEditor extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
-
-  @property()
-  editorMode: EditorMode = 'normal';
   //#endregion
 
   //#region Render
   render() {
     return html`
-      <ge-block .block="${this.program.block}" .editorMode="${this.editorMode}"></ge-block>
+      <ge-block .block="${this.program.block}"></ge-block>
       ${this.program.block.length < 1
         ? html` <div class="help-message">Click on "+" button to add new statement</div> `
         : nothing}
