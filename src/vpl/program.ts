@@ -9,8 +9,6 @@ export function parseOperandToString(operand: ExpressionOperand, negated: boolea
 }
 
 export function parseExpressionToString(expression: Expression) {
-  console.log(expression);
-
   let operandsStrings: string[] = expression.value.map((operand) => {
     if (Array.isArray((operand as Expression).value)) {
       return parseExpressionToString(operand as Expression);
@@ -179,6 +177,11 @@ export class Program {
 
     function removeUuidFromExprOperands(expr: Expression) {
       delete expr._uuid;
+
+      if (!expr.value) {
+        return;
+      }
+
       for (let opd of expr.value) {
         delete opd._uuid;
         if (Array.isArray((opd as Expression).value)) {
