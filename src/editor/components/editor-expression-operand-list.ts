@@ -365,7 +365,7 @@ export class EditorExpressionOperandList extends LitElement {
   render() {
     return html`
       <div class="expr-opd-list-wrapper">
-        ${this.operands.length < 1
+        ${!this.operands || this.operands.length < 1
           ? html`
               <div class="no-opd-message" style="${this.nestedLevel > 0 ? 'padding-top: 10px;' : ''}">
                 <div>Click on "+ Add Operand"</div>
@@ -407,7 +407,7 @@ export class EditorExpressionOperandList extends LitElement {
                               .visibleOnRender="${this.opdModalVisibleOnRender}">
                             </editor-expression-operand>
                           `}
-                      ${!(operand as Expression).value &&
+                      ${this.operands.length > 1 &&
                       !this.groupModeIsActive &&
                       (this.exprIsSelected || this.nestedLevel === 0) &&
                       !this.isExample
@@ -492,7 +492,7 @@ export class EditorExpressionOperandList extends LitElement {
                         <editor-button
                           class="expr-control-button"
                           @click="${this.handleEnterGroupMode}"
-                          ?disabled="${this.operands.length < 1}">
+                          ?disabled="${this.operands?.length < 1}">
                           <editor-icon .icon="${check2square}"></editor-icon>
                           <span>Select ...</span>
                         </editor-button>
