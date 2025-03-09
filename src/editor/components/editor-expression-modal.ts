@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { editorExpressionCustomEvent } from '../editor-custom-events';
 import { globalStyles } from '../global-styles';
-import { ExpressionOperator } from '@/index';
+import { Expression, ExpressionOperator } from '@/index';
 
 type ExpressionModalCurrentView = 'expressions' | 'addOperand';
 
@@ -28,7 +28,7 @@ export class EditorExpressionModal extends LitElement {
     `,
   ];
 
-  @property() expression: any;
+  @property() expression: Expression;
   @property() expressionModalCurrentView: ExpressionModalCurrentView = 'expressions';
   @property() selectedAddExpression: any;
   @property() highlightedExpr: HTMLElement;
