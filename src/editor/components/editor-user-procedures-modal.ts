@@ -208,11 +208,17 @@ export class EditorUserProceduresModal extends LitElement {
     }
 
     let newProcId = this.addProcName;
+    const procName = this.addProcName;
 
+    // Clear form state first
+    this.addProcName = '';
+    this.addProcedureModalRef.value.hideModal();
+
+    // Create the new procedure
     this.language.statements[newProcId] = {
       type: 'unit',
       group: 'misc',
-      label: this.addProcName,
+      label: procName,
       icon: this.selectedProcIconKey,
       foregroundColor: this.selectedFgColor,
       backgroundColor: this.selectedBgColor,
@@ -220,14 +226,32 @@ export class EditorUserProceduresModal extends LitElement {
     };
     this.program.header.userProcedures[newProcId] = [];
 
-    this.addProcName = '';
-    this.addProcedureModalRef.value.hideModal();
-
+    // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(event);
+
+    // Wait for next render cycle and then find and open the new procedure modal
+    requestAnimationFrame(() => {
+      this.updateComplete.then(() => {
+        requestAnimationFrame(() => {
+          // Find the newly created procedure's modal
+          console.log('Looking for procedure modal with key:', newProcId);
+          const newProcModal = this.shadowRoot.querySelector(`editor-user-procedure-modal[stmtKey="${newProcId}"]`);
+          console.log('Found modal:', newProcModal);
+          if (newProcModal) {
+            // Call the handleChangeProcedureBody method to open the editing modal
+            (newProcModal as any).handleChangeProcedureBody();
+          } else {
+            console.error('Could not find procedure modal for:', newProcId);
+            // Try to force a re-render
+            this.requestUpdate();
+          }
+        });
+      });
+    });
   }
 
   handleAddProcNameChange(e: Event) {
@@ -315,13 +339,13 @@ export class EditorUserProceduresModal extends LitElement {
                 <div class="action-buttons-wrapper">
                   <editor-button class="action-button confirm-button" @click="${this.handleAddNewProc}">
                     <editor-icon .icon="${icons['checkLg']}"></editor-icon>
-                    Create
+                    <span>Create</span>
                   </editor-button>
                   <editor-button
                     class="action-button cancel-button"
                     @click="${() => this.addProcedureModalRef.value.hideModal()}">
                     <editor-icon .icon="${icons['xLg']}"></editor-icon>
-                    Cancel
+                    <span>Cancel</span>
                   </editor-button>
                 </div>
               </div>
@@ -330,7 +354,7 @@ export class EditorUserProceduresModal extends LitElement {
           <div class="user-procedures-list-wrapper">
             ${this.filteredUserProcedureKeys.length > 0
               ? html`${this.filteredUserProcedureKeys.map(
-                  (stmtKey) => html`<editor-user-procedure-modal .stmtKey="${stmtKey}"></editor-user-procedure-modal>`
+                  (stmtKey) => html`<editor-user-procedure-modal stmtKey="${stmtKey}" .stmtKey="${stmtKey}"></editor-user-procedure-modal>`
                 )}`
               : html` <div class="no-procedures">Click on "+ Add" to add new procedure</div> `}
           </div>
@@ -339,3 +363,4 @@ export class EditorUserProceduresModal extends LitElement {
     `;
   }
 }
+
