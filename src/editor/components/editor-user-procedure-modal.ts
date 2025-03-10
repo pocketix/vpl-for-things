@@ -42,7 +42,17 @@ export class EditorUserProcedureModal extends LitElement {
   userProcedureBodyModalRef: Ref<EditorModal> = createRef();
 
   handleChangeProcedureBody() {
-    this.userProcedureBodyModalRef.value.showModal();
+    // Wait for next render cycle to ensure modal is ready
+    this.updateComplete.then(() => {
+      console.log('Opening modal for procedure:', this.stmtKey);
+      console.log('Modal reference:', this.userProcedureBodyModalRef.value);
+      
+      if (this.userProcedureBodyModalRef.value) {
+        this.userProcedureBodyModalRef.value.showModal();
+      } else {
+        console.error('Modal reference not found');
+      }
+    });
   }
 
   handleDeleteProcedure() {
@@ -63,6 +73,13 @@ export class EditorUserProcedureModal extends LitElement {
   }
 
   render() {
+    // Early return if language or statement is not ready
+    if (!this.language?.statements || !this.language.statements[this.stmtKey]) {
+      return html``;
+    }
+
+    const statement = this.language.statements[this.stmtKey];
+
     return html`
       <editor-button
         @click="${() => this.handleChangeProcedureBody()}"
@@ -75,10 +92,10 @@ export class EditorUserProcedureModal extends LitElement {
       <editor-modal
         class="procedure-body-modal"
         ${ref(this.userProcedureBodyModalRef)}
-        .modalTitle="${this.language.statements[this.stmtKey].label}"
-        .modalIcon="${icons[this.language.statements[this.stmtKey].icon]}"
-        .backgroundColor="${this.language.statements[this.stmtKey].backgroundColor}"
-        .foregroundColor="${this.language.statements[this.stmtKey].foregroundColor}"
+        .modalTitle="${statement.label}"
+        .modalIcon="${icons[statement.icon]}"
+        .backgroundColor="${statement.backgroundColor}"
+        .foregroundColor="${statement.foregroundColor}"
         .isFullWidth="${true}"
         .isFullHeight="${true}">
         <editor-button class="delete-proc-button" @click="${this.handleDeleteProcedure}">
