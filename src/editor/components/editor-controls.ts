@@ -68,7 +68,8 @@ export class EditorControls extends LitElement {
       .controls-group-user {
         display: flex;
         gap: 0.25rem;
-        width: 100%;
+        align-items: center;
+        flex-wrap: nowrap;
       }
 
       .controls-group-user editor-button {
@@ -253,6 +254,67 @@ export class EditorControls extends LitElement {
           padding-bottom: 0;
         }
       }
+
+      .skeletonize-description {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: var(--blue-50);
+        border-radius: 0.375rem;
+        border: 1px solid var(--blue-200);
+        color: var(--blue-900);
+      }
+
+      .skeletonize-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+        color: var(--blue-700);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .skeletonize-text {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+      }
+
+      .control-button.active {
+        border-color: var(--blue-500);
+      }
+
+      .create-procedure {
+        order: -1;
+      }
+
+      .editor-controls-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .skeletonize-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+
+      .skeletonize-description {
+        flex: 1;
+        padding: 0.75rem;
+        background-color: var(--blue-50);
+        border-radius: 0.375rem;
+        border: 1px solid var(--blue-200);
+        color: var(--blue-900);
+      }
+
+      .create-procedure {
+        white-space: nowrap;
+        height: fit-content;
+        flex-shrink: 0;
+      }
     `,
   ];
 
@@ -279,6 +341,7 @@ export class EditorControls extends LitElement {
 
   @property() addVariableName: string = '';
   @property() tempNewVariable: UserVariable;
+  @property() skeletonizeMode: boolean = false;
 
   userVariablesModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
@@ -578,6 +641,16 @@ export class EditorControls extends LitElement {
     downloadAnchorNode.setAttribute('href', dataStr);
     downloadAnchorNode.setAttribute('download', 'program.linearized.json');
     downloadAnchorNode.click();
+  }
+
+  handleSkeletonize() {
+    this.skeletonizeMode = !this.skeletonizeMode;
+    const event = new CustomEvent('skeletonize-mode-changed', {
+      bubbles: true,
+      composed: true,
+      detail: { active: this.skeletonizeMode }
+    });
+    this.dispatchEvent(event);
   }
 
   userVariablesModalTemplate() {
@@ -895,42 +968,63 @@ export class EditorControls extends LitElement {
 
   render() {
     return html`
-      <div class="controls">
-        <div class="controls-group-export">
-          <label for="program-file-input">
-            <input
-              ${ref(this.inputProgramFileRef)}
-              type="file"
-              name="program-file-input"
-              id="program-file-input"
-              style="display: none;"
-              accept="application/json"
-              @input="${this.handleImportProgram}" />
-            <editor-button @click="${this.handleImportProgram}" class="control-button">
-              <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
-              </editor-icon>
-              <span>Import Program</span>
+      <div class="editor-controls-wrapper">
+        ${this.skeletonizeMode ? html`
+          <div class="skeletonize-header">
+            <div class="skeletonize-description">
+              <div class="skeletonize-title">Skeletonize Mode Active</div>
+              <div class="skeletonize-text">Click on blocks to create a procedure template. Select the blocks you want to include in your procedure.</div>
+            </div>
+            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button create-procedure">
+              <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
+              <span>Create Procedure</span>
             </editor-button>
-          </label>
-          <editor-button @click="${this.handleExportProgram}" class="control-button">
-            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
-            <span>Export Program</span>
-          </editor-button>
-          <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
-            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
-            <span>Export Linearized</span>
-          </editor-button>
-          <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
-        </div>
-        <div class="controls-group-user">
-          <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
-            <div class="variables-icon">𝑥</div>
-            <div>Variables</div>
-          </editor-button>
-          <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
-            <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
-            <span>Procedures</span>
-          </editor-button>
+          </div>
+        ` : nothing}
+        <div class="controls">
+          <div class="controls-group-export">
+            <label for="program-file-input">
+              <input
+                ${ref(this.inputProgramFileRef)}
+                type="file"
+                name="program-file-input"
+                id="program-file-input"
+                style="display: none;"
+                accept="application/json"
+                @input="${this.handleImportProgram}" />
+              <editor-button @click="${this.handleImportProgram}" class="control-button">
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+                </editor-icon>
+                <span>Import Program</span>
+              </editor-button>
+            </label>
+            <editor-button @click="${this.handleExportProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+              <span>Export Program</span>
+            </editor-button>
+            <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
+              <span>Export Linearized</span>
+            </editor-button>
+            <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
+          </div>
+          <div class="controls-group-user">
+            <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
+              <div class="variables-icon">𝑥</div>
+              <div>Variables</div>
+            </editor-button>
+            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
+              <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+              <span>Procedures</span>
+            </editor-button>
+            <editor-button 
+              @click="${this.handleSkeletonize}" 
+              class="control-button ${this.skeletonizeMode ? 'active' : ''}"
+              style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
+              <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
+              <span>Skeletonize</span>
+            </editor-button>
+          </div>
         </div>
       </div>
       <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
