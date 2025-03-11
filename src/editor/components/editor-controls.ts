@@ -303,17 +303,39 @@ export class EditorControls extends LitElement {
 
       .skeletonize-description {
         flex: 1;
-        padding: 0.75rem;
+        padding: 1rem;
         background-color: var(--blue-50);
-        border-radius: 0.375rem;
+        border-radius: 0.5rem;
         border: 1px solid var(--blue-200);
         color: var(--blue-900);
+      }
+
+      .skeletonize-title {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        color: var(--blue-700);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .skeletonize-text {
+        font-size: 0.875rem;
+        line-height: 1.5;
       }
 
       .create-procedure {
         white-space: nowrap;
         height: fit-content;
         flex-shrink: 0;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+      }
+
+      .create-procedure:hover {
+        background-color: var(--blue-600) !important;
+        transform: translateY(-1px);
       }
     `,
   ];
@@ -972,10 +994,27 @@ export class EditorControls extends LitElement {
         ${this.skeletonizeMode ? html`
           <div class="skeletonize-header">
             <div class="skeletonize-description">
-              <div class="skeletonize-title">Skeletonize Mode Active</div>
-              <div class="skeletonize-text">Click on blocks to create a procedure template. Select the blocks you want to include in your procedure.</div>
+              <div class="skeletonize-title">
+                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
+                <span>Create a New Procedure</span>
+              </div>
+              <div class="skeletonize-text">
+                1. Click on blocks in your program to select them
+                2. Selected blocks will be included in your new procedure
+                3. Click "Create Procedure" when you're ready
+              </div>
             </div>
-            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button create-procedure">
+            <editor-button 
+              @click="${() => {
+                const proceduresModal = this.userProceduresModalRef.value;
+                proceduresModal.showModal();
+                // Wait for modal to be fully shown before calling handleShowAddProcedureModal
+                requestAnimationFrame(() => {
+                  proceduresModal.handleShowAddProcedureModal();
+                });
+              }}" 
+              class="control-button create-procedure"
+              style="background-color: var(--blue-500); color: white; font-weight: 500;">
               <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
               <span>Create Procedure</span>
             </editor-button>
