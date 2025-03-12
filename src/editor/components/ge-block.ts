@@ -359,6 +359,14 @@ export class GeBlock extends LitElement {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
+  toggleStatementSelection(stmtUuid: string) {
+    if (this.selectedStatements.has(stmtUuid)) {
+      this.selectedStatements.delete(stmtUuid);
+    } else {
+      this.selectedStatements.add(stmtUuid);
+    }
+    this.requestUpdate();
+  }
   //#endregion
 
   //#region Templates
@@ -377,6 +385,22 @@ export class GeBlock extends LitElement {
 
   statementsTemplate() {
     return html`
+      ${repeat(
+        this.block,
+        (stmt) => stmt._uuid,
+        (stmt, i) =>
+          html`
+            <ge-statement
+              .isProcBody="${this.isProcBody}"
+              .statement="${stmt}"
+              .index="${i}"
+              .isExample="${this.isExample}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
+              @click="${() => this.toggleStatementSelection(stmt._uuid)}"
+            >
+            </ge-statement>
+          `
+      )}
       ${repeat(
         this.block,
         (stmt) => stmt._uuid,
