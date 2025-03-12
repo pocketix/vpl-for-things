@@ -29,6 +29,7 @@ import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
 import { EditorButton, Language } from '@/index';
 import Types from '@vpl/types.ts';
+import { GeBlock } from './ge-block';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';

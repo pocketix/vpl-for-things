@@ -124,6 +124,7 @@ export class GeBlock extends LitElement {
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
+  @property() skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -330,12 +331,20 @@ export class GeBlock extends LitElement {
   }
 
   toggleStatementSelection(stmtUuid: string) {
+    if (!this.skeletonizeMode) return;
     if (this.selectedStatements.has(stmtUuid)) {
       this.selectedStatements.delete(stmtUuid);
     } else {
       this.selectedStatements.add(stmtUuid);
     }
     this.requestUpdate();
+  }
+
+  updated(changedProperties: Map<string, any>) {
+    if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
+      this.selectedStatements.clear();
+      this.requestUpdate();
+    }
   }
   //#endregion
 
