@@ -319,7 +319,13 @@ export function getBlockDependencies(block: Block, langStmts: Statements): Set<s
   const addDependencies = (stmt: ProgramStatement) => {
     const langStmt = langStmts[stmt.id];
     if (langStmt && langStmt.predecessors) {
-      langStmt.predecessors.forEach((pred) => dependencies.add(pred));
+      langStmt.predecessors.forEach((pred) => {
+        dependencies.add(pred);
+        const predStmt = block.find((s) => s.id === pred);
+        if (predStmt) {
+          addDependencies(predStmt);
+        }
+      });
     }
     if ((stmt as CompoundStatement).block) {
       (stmt as CompoundStatement).block.forEach(addDependencies);
@@ -336,7 +342,13 @@ export function getBlockDependents(block: Block, langStmts: Statements): Set<str
   const addDependents = (stmt: ProgramStatement) => {
     const langStmt = langStmts[stmt.id];
     if (langStmt && langStmt.successors) {
-      langStmt.successors.forEach((succ) => dependents.add(succ));
+      langStmt.successors.forEach((succ) => {
+        dependents.add(succ);
+        const succStmt = block.find((s) => s.id === succ);
+        if (succStmt) {
+          addDependents(succStmt);
+        }
+      });
     }
     if ((stmt as CompoundStatement).block) {
       (stmt as CompoundStatement).block.forEach(addDependents);

@@ -359,12 +359,22 @@ export class GeBlock extends LitElement {
 
     if (this.selectedStatements.has(stmtUuid)) {
       this.selectedStatements.delete(stmtUuid);
-      Array.from(dependents).map((dep) => this.block.find((s) => s._uuid === dep)).forEach((dep) => this.selectedStatements.delete(dep._uuid));
-      deselectDependents(stmt);
+      Array.from(dependents).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.delete(depStmt._uuid);
+          deselectDependents(depStmt);
+        }
+      });
     } else {
       this.selectedStatements.add(stmtUuid);
-      Array.from(dependencies).map((dep) => this.block.find((s) => s._uuid === dep)).forEach((dep) => this.selectedStatements.add(dep._uuid));
-      selectDependencies(stmt);
+      Array.from(dependencies).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.add(depStmt._uuid);
+          selectDependencies(depStmt);
+        }
+      });
     }
 
     this.requestUpdate();
