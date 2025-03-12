@@ -29,6 +29,11 @@ export class GeBlock extends LitElement {
         gap: 0.5rem;
       }
 
+      .highlighted {
+        border: 2px solid var(--blue-500);
+        background-color: var(--blue-100);
+      }
+
       .add-new-statement-btn {
         width: fit-content;
         align-self: flex-end;
@@ -118,6 +123,7 @@ export class GeBlock extends LitElement {
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
+  @property() selectedStatements: Set<string> = new Set();
   //#endregion
 
   //#region Refs
@@ -323,6 +329,14 @@ export class GeBlock extends LitElement {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
+  toggleStatementSelection(stmtUuid: string) {
+    if (this.selectedStatements.has(stmtUuid)) {
+      this.selectedStatements.delete(stmtUuid);
+    } else {
+      this.selectedStatements.add(stmtUuid);
+    }
+    this.requestUpdate();
+  }
   //#endregion
 
   //#region Templates
@@ -348,7 +362,10 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .statement="${stmt}"
               .index="${i}"
-              .isExample="${this.isExample}">
+              .isExample="${this.isExample}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
+              @click="${() => this.toggleStatementSelection(stmt._uuid)}"
+            >
             </ge-statement>
           `
       )}
