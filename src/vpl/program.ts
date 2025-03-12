@@ -313,6 +313,40 @@ export class Program {
   }
 }
 
+export function getBlockDependencies(block: Block, langStmts: Statements): Set<string> {
+  const dependencies = new Set<string>();
+
+  const addDependencies = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.predecessors) {
+      langStmt.predecessors.forEach((pred) => dependencies.add(pred));
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependencies);
+    }
+  };
+
+  block.forEach(addDependencies);
+  return dependencies;
+}
+
+export function getBlockDependents(block: Block, langStmts: Statements): Set<string> {
+  const dependents = new Set<string>();
+
+  const addDependents = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.successors) {
+      langStmt.successors.forEach((succ) => dependents.add(succ));
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependents);
+    }
+  };
+
+  block.forEach(addDependents);
+  return dependents;
+}
+
 type stmt = {
   type: LanguageStatementType;
   key: string;
@@ -356,7 +390,6 @@ export type AbstractStatement = {
 export type AbstractStatementWithArgs = AbstractStatement & {
   arguments: ProgramStatementArgument[];
 };
-
 export type CompoundStatement = AbstractStatement & {
   block: Block;
 };

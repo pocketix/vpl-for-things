@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement } from '@/vpl/program';
+import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -332,11 +332,41 @@ export class GeBlock extends LitElement {
 
   toggleStatementSelection(stmtUuid: string) {
     if (!this.skeletonizeMode) return;
+
+    const stmt = this.block.find((s) => s._uuid === stmtUuid);
+    if (!stmt) return;
+
+    const dependencies = getBlockDependencies([stmt], this.language.statements);
+    const dependents = getBlockDependents([stmt], this.language.statements);
+
+    const selectDependencies = (stmt: ProgramStatement) => {
+      if (!this.selectedStatements.has(stmt._uuid)) {
+        this.selectedStatements.add(stmt._uuid);
+        if ((stmt as CompoundStatement).block) {
+          (stmt as CompoundStatement).block.forEach(selectDependencies);
+        }
+      }
+    };
+
+    const deselectDependents = (stmt: ProgramStatement) => {
+      if (this.selectedStatements.has(stmt._uuid)) {
+        this.selectedStatements.delete(stmt._uuid);
+        if ((stmt as CompoundStatement).block) {
+          (stmt as CompoundStatement).block.forEach(deselectDependents);
+        }
+      }
+    };
+
     if (this.selectedStatements.has(stmtUuid)) {
       this.selectedStatements.delete(stmtUuid);
+      Array.from(dependents).map((dep) => this.block.find((s) => s._uuid === dep)).forEach((dep) => this.selectedStatements.delete(dep._uuid));
+      deselectDependents(stmt);
     } else {
       this.selectedStatements.add(stmtUuid);
+      Array.from(dependencies).map((dep) => this.block.find((s) => s._uuid === dep)).forEach((dep) => this.selectedStatements.add(dep._uuid));
+      selectDependencies(stmt);
     }
+
     this.requestUpdate();
   }
 
@@ -374,8 +404,7 @@ export class GeBlock extends LitElement {
               .isExample="${this.isExample}"
               class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               @click="${() => this.toggleStatementSelection(stmt._uuid)}"
-            >
-            </ge-statement>
+            ></ge-statement>
           `
       )}
     `;
@@ -398,7 +427,7 @@ export class GeBlock extends LitElement {
   addStatementOptionsTemplate() {
     return html`
       <div class="add-statement-options">
-        ${Object.keys(this.filteredAddStatementOptions).length
+        ${Object.keys(this.filteredAddStatementOptions).length > 0
           ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
               if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
                 return this.addStatementOptionTemplate(stmtKey);
@@ -419,7 +448,7 @@ export class GeBlock extends LitElement {
                 ? this.addStatementOptionTemplate(stmtKey)
                 : nothing;
             })
-          : html`<div class="no-available-statements">No available device statements</div>`}
+          : html`<div class="no-available-device-statements">No available device statements</div>`}
       </div>
     `;
   }
@@ -480,9 +509,7 @@ export class GeBlock extends LitElement {
       </editor-modal>
     `;
   }
-  //#endregion
 
-  //#region Render
   render() {
     return html`
       ${this.isExample
