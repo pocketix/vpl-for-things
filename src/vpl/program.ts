@@ -233,6 +233,51 @@ export class Program {
     return programExport;
   }
 
+  exportLinearizedProgram() {
+    // Create a deep copy of the program to avoid modifying the original
+    let programCopy = JSON.parse(JSON.stringify(this));
+    
+    // Function to recursively replace procedure calls with their definitions
+    const expandProcedures = (block: Block): Block => {
+      let expandedBlock: Block = [];
+      
+      for (let stmt of block) {
+        // If this statement is a procedure call (exists in userProcedures)
+        if (this.header.userProcedures[stmt.id]) {
+          // Get the procedure's block and expand it recursively
+          const procedureBlock = JSON.parse(JSON.stringify(this.header.userProcedures[stmt.id]));
+          const expandedProcedure = expandProcedures(procedureBlock);
+          // Add all statements from the procedure
+          expandedBlock.push(...expandedProcedure);
+        } else if ((stmt as CompoundStatement).block) {
+          // If it's a compound statement, recursively expand its block
+          const compoundStmt = stmt as CompoundStatement;
+          compoundStmt.block = expandProcedures(compoundStmt.block);
+          expandedBlock.push(stmt);
+        } else {
+          // Regular statement, just add it
+          expandedBlock.push(stmt);
+        }
+      }
+      
+      return expandedBlock;
+    };
+
+    // Expand all procedures in the main block
+    programCopy.block = expandProcedures(programCopy.block);
+
+    // Export the program without the procedures in header since they're now inlined
+    let programExport = {
+      header: {
+        userVariables: programCopy.header.userVariables,
+        userProcedures: {}, // Empty since all procedures are inlined
+      },
+      block: this.exportProgramBlock(programCopy.block),
+    };
+
+    return programExport;
+  }
+
   addStatement(block: Block, statement: stmt) {
     let resultStatement: any = {};
 
@@ -266,6 +311,40 @@ export class Program {
 
     block.push(resultStatement);
   }
+}
+
+export function getBlockDependencies(block: Block, langStmts: Statements): Set<string> {
+  const dependencies = new Set<string>();
+
+  const addDependencies = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.predecessors) {
+      langStmt.predecessors.forEach((pred) => dependencies.add(pred));
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependencies);
+    }
+  };
+
+  block.forEach(addDependencies);
+  return dependencies;
+}
+
+export function getBlockDependents(block: Block, langStmts: Statements): Set<string> {
+  const dependents = new Set<string>();
+
+  const addDependents = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.successors) {
+      langStmt.successors.forEach((succ) => dependents.add(succ));
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependents);
+    }
+  };
+
+  block.forEach(addDependents);
+  return dependents;
 }
 
 type stmt = {
@@ -311,7 +390,6 @@ export type AbstractStatement = {
 export type AbstractStatementWithArgs = AbstractStatement & {
   arguments: ProgramStatementArgument[];
 };
-
 export type CompoundStatement = AbstractStatement & {
   block: Block;
 };

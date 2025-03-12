@@ -46,12 +46,14 @@ export class GraphicalEditor extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
+
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Render
   render() {
     return html`
-      <ge-block .block="${this.program.block}"></ge-block>
+      <ge-block .block="${this.program.block}" .skeletonizeMode="${this.skeletonizeMode}"></ge-block>
       ${this.program.block.length < 1
         ? html` <div class="help-message">Click on "+" button to add new statement</div> `
         : nothing}
