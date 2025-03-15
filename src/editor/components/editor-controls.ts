@@ -689,7 +689,15 @@ export class EditorControls extends LitElement {
   }
 
   handleExportHeader() {
-    // Implement the logic for exporting header
+    const headerExport = {
+      userVariables: this.program?.header.userVariables,
+      userProcedures: this.program?.header.userProcedures,
+    };
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(headerExport, null, 2));
+    const downloadAnchorNode = this.exportProgramLinkRef.value;
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute('download', 'header.json');
+    downloadAnchorNode.click();
   }
 
   userVariablesModalTemplate() {
