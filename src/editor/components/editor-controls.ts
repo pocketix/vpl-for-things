@@ -629,7 +629,17 @@ export class EditorControls extends LitElement {
         let fr = new FileReader();
         fr.onload = (e) => {
           const importedProgram = JSON.parse(e.target.result as string);
-          const programName = programFileInput.files[0].name.replace('.json', '');
+          let programName = programFileInput.files[0].name.replace('.json', '');
+
+          // Check for duplicate program names
+          if (this.savedPrograms.some((savedProgram) => savedProgram.name === programName)) {
+            let counter = 1;
+            while (this.savedPrograms.some((savedProgram) => savedProgram.name === `${programName} (${counter})`)) {
+              counter++;
+            }
+            programName = `${programName} (${counter})`;
+          }
+
           this.savedPrograms.push({ name: programName, program: importedProgram });
           this.requestUpdate();
           this.program.loadProgram(importedProgram);
