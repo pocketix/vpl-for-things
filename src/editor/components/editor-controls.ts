@@ -622,8 +622,9 @@ export class EditorControls extends LitElement {
   }
 
   handleImportProgram() {
-    if (this.inputProgramFileRef.value.files[0]) {
-      if (this.inputProgramFileRef.value.files[0].type === 'application/json') {
+    const programFileInput = this.inputProgramFileRef.value;
+    if (programFileInput.files[0]) {
+      if (programFileInput.files[0].type === 'application/json') {
         let fr = new FileReader();
         fr.onload = (e) => {
           this.program.loadProgram(JSON.parse(e.target.result as string));
@@ -651,7 +652,7 @@ export class EditorControls extends LitElement {
           });
           this.dispatchEvent(event2);
         };
-        fr.readAsText(this.inputProgramFileRef.value.files[0]);
+        fr.readAsText(programFileInput.files[0]);
       }
     }
   }
@@ -685,7 +686,48 @@ export class EditorControls extends LitElement {
   }
 
   handleImportHeader() {
-    // Implement the logic for importing header
+    const headerFileInput = this.shadowRoot.getElementById('header-file-input') as HTMLInputElement;
+    if (headerFileInput.files[0]) {
+      if (headerFileInput.files[0].type === 'application/json') {
+        let fr = new FileReader();
+        fr.onload = (e) => {
+          const importedHeader = JSON.parse(e.target.result as string);
+
+          // Check for duplicate variable names
+          for (let varName of Object.keys(importedHeader.userVariables)) {
+            if (this.program.header.userVariables[varName]) {
+              alert(`Duplicate variable name found: ${varName}`);
+              return;
+            }
+          }
+
+          // Check for duplicate procedure names
+          for (let procName of Object.keys(importedHeader.userProcedures)) {
+            if (this.program.header.userProcedures[procName]) {
+              alert(`Duplicate procedure name found: ${procName}`);
+              return;
+            }
+          }
+
+          // Merge headers
+          this.program.header.userVariables = {
+            ...this.program.header.userVariables,
+            ...importedHeader.userVariables,
+          };
+          this.program.header.userProcedures = {
+            ...this.program.header.userProcedures,
+            ...importedHeader.userProcedures,
+          };
+
+          const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(event);
+        };
+        fr.readAsText(headerFileInput.files[0]);
+      }
+    }
   }
 
   handleExportHeader() {
@@ -1064,22 +1106,27 @@ export class EditorControls extends LitElement {
         <div class="controls">
           <div class="controls-group-export">
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <label for="program-file-input">
-                <input
-                  ${ref(this.inputProgramFileRef)}
-                  type="file"
-                  name="program-file-input"
-                  id="program-file-input"
-                  style="display: none;"
-                  accept="application/json"
-                  @input="${this.handleImportProgram}" />
-                <editor-button @click="${this.handleImportProgram}" class="control-button">
-                  <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
-                  </editor-icon>
-                  <span>Import Program</span>
-                </editor-button>
-              </label>
-              <editor-button @click="${this.handleImportHeader}" class="control-button">
+              <input
+                ${ref(this.inputProgramFileRef)}
+                type="file"
+                name="program-file-input"
+                id="program-file-input"
+                style="display: none;"
+                accept="application/json"
+                @input="${this.handleImportProgram}" />
+              <editor-button @click="${() => this.inputProgramFileRef.value.click()}" class="control-button">
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+                </editor-icon>
+                <span>Import Program</span>
+              </editor-button>
+              <input
+                type="file"
+                name="header-file-input"
+                id="header-file-input"
+                style="display: none;"
+                accept="application/json"
+                @input="${this.handleImportHeader}" />
+              <editor-button @click="${() => this.shadowRoot.getElementById('header-file-input').click()}" class="control-button">
                 <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Header">
                 </editor-icon>
                 <span>Import Header</span>
