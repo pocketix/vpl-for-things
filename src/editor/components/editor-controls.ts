@@ -366,6 +366,7 @@ export class EditorControls extends LitElement {
   @property() addVariableName: string = '';
   @property() tempNewVariable: UserVariable;
   @property() skeletonizeMode: boolean = false;
+  @property() savedPrograms: { name: string, program: any }[] = [];
 
   userVariablesModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
@@ -627,7 +628,11 @@ export class EditorControls extends LitElement {
       if (programFileInput.files[0].type === 'application/json') {
         let fr = new FileReader();
         fr.onload = (e) => {
-          this.program.loadProgram(JSON.parse(e.target.result as string));
+          const importedProgram = JSON.parse(e.target.result as string);
+          const programName = programFileInput.files[0].name.replace('.json', '');
+          this.savedPrograms.push({ name: programName, program: importedProgram });
+          this.requestUpdate();
+          this.program.loadProgram(importedProgram);
 
           for (let proc of Object.keys(this.program.header.userProcedures)) {
             this.language.statements[proc] = {
@@ -766,6 +771,33 @@ export class EditorControls extends LitElement {
       downloadAnchorNode.setAttribute('download', `${fileName}.json`);
       downloadAnchorNode.click();
     }
+  }
+
+  handleLoadProgram(program: any) {
+    this.program.loadProgram(program);
+
+    for (let proc of Object.keys(this.program.header.userProcedures)) {
+      this.language.statements[proc] = {
+        type: 'unit',
+        group: 'misc',
+        label: proc,
+        icon: 'lightningChargeFill',
+        foregroundColor: '#ffffff',
+        backgroundColor: '#d946ef',
+        isUserProcedure: true,
+      };
+    }
+
+    const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+    const event2 = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event2);
   }
 
   userVariablesModalTemplate() {
@@ -1088,10 +1120,11 @@ export class EditorControls extends LitElement {
           <h2>Programs</h2>
         </div>
         <div class="programs-list">
-          <!-- Placeholder for programs list -->
-          <div class="program-item">Program 1</div>
-          <div class="program-item">Program 2</div>
-          <div class="program-item">Program 3</div>
+          ${this.savedPrograms.map((savedProgram) => html`
+            <div class="program-item" @click="${() => this.handleLoadProgram(savedProgram.program)}">
+              ${savedProgram.name}
+            </div>
+          `)}
         </div>
       </editor-modal>
     `;
