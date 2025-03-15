@@ -658,12 +658,15 @@ export class EditorControls extends LitElement {
   }
 
   handleExportProgram() {
-    const programExport = this.program?.exportProgram();
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
-    const downloadAnchorNode = this.exportProgramLinkRef.value;
-    downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute('download', 'program.json');
-    downloadAnchorNode.click();
+    const fileName = prompt("Enter the name for the exported program:", "program");
+    if (fileName) {
+      const programExport = this.program?.exportProgram();
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
+      const downloadAnchorNode = this.exportProgramLinkRef.value;
+      downloadAnchorNode.setAttribute('href', dataStr);
+      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
+      downloadAnchorNode.click();
+    }
   }
 
   handleLinearizeProgram() {
@@ -719,11 +722,31 @@ export class EditorControls extends LitElement {
             ...importedHeader.userProcedures,
           };
 
-          const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          // Integrate custom procedures into the language context
+          for (let proc of Object.keys(importedHeader.userProcedures)) {
+            this.language.statements[proc] = {
+              type: 'unit',
+              group: 'misc',
+              label: proc,
+              icon: 'lightningChargeFill',
+              foregroundColor: '#ffffff',
+              backgroundColor: '#d946ef',
+              isUserProcedure: true,
+            };
+          }
+
+          // Dispatch events to update the program and UI
+          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
           });
-          this.dispatchEvent(event);
+          this.dispatchEvent(programUpdatedEvent);
+
+          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(textEditorUpdatedEvent);
         };
         fr.readAsText(headerFileInput.files[0]);
       }
@@ -731,15 +754,18 @@ export class EditorControls extends LitElement {
   }
 
   handleExportHeader() {
-    const headerExport = {
-      userVariables: this.program?.header.userVariables,
-      userProcedures: this.program?.header.userProcedures,
-    };
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(headerExport, null, 2));
-    const downloadAnchorNode = this.exportProgramLinkRef.value;
-    downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute('download', 'header.json');
-    downloadAnchorNode.click();
+    const fileName = prompt("Enter the name for the exported header:", "header");
+    if (fileName) {
+      const headerExport = {
+        userVariables: this.program?.header.userVariables,
+        userProcedures: this.program?.header.userProcedures,
+      };
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(headerExport, null, 2));
+      const downloadAnchorNode = this.exportProgramLinkRef.value;
+      downloadAnchorNode.setAttribute('href', dataStr);
+      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
+      downloadAnchorNode.click();
+    }
   }
 
   userVariablesModalTemplate() {
@@ -1179,6 +1205,7 @@ export class EditorControls extends LitElement {
             </div>
           </div>
         </div>
+      </div>
       ${this.userVariablesModalTemplate()}
       ${this.programsModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
