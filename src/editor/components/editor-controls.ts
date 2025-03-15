@@ -25,11 +25,11 @@ import {
   textEditorCustomEvent,
 } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
+import { EditorProgramsModal } from './editor-programs-modal';
 import * as icons from '@/editor/icons';
 import { Language } from '@/index';
 import Types from '@vpl/types.ts';
 import { GeBlock } from './ge-block';
-import { EditorProgramsModal } from './editor-programs-modal';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -377,6 +377,10 @@ export class EditorControls extends LitElement {
     this.userVariablesModalRef.value.showModal();
   }
 
+  handleShowProgramsModal() {
+    this.programsModalRef.value.showModal();
+  }
+
   handleUserVariableTypeChange(e: Event, varKey: string) {
     this.program.header.userVariables[varKey].type = (e.currentTarget as HTMLInputElement).value as UserVariableType;
 
@@ -670,10 +674,6 @@ export class EditorControls extends LitElement {
 
   handleExportHeader() {
     // Implement the logic for exporting header
-  }
-
-  handleShowProgramsModal() {
-    this.programsModalRef.value.showModal();
   }
 
   userVariablesModalTemplate() {
@@ -1080,7 +1080,6 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
                 <span>Procedures</span>
               </editor-button>
-              
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
               <editor-button 
