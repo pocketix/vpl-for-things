@@ -392,7 +392,9 @@ export class EditorControls extends LitElement {
   }
 
   handleShowProgramsModal() {
-    this.programsModalRef.value.showModal();
+    if (this.programsModalRef.value) {
+      this.programsModalRef.value.showModal();
+    }
   }
 
   handleUserVariableTypeChange(e: Event, varKey: string) {
@@ -1003,6 +1005,22 @@ export class EditorControls extends LitElement {
     }
   }
 
+  programsModalTemplate() {
+    return html`
+      <editor-modal ${ref(this.programsModalRef)} .modalTitle="${'Programs'}">
+        <div class="programs-modal-header">
+          <h2>Programs</h2>
+        </div>
+        <div class="programs-list">
+          <!-- Placeholder for programs list -->
+          <div class="program-item">Program 1</div>
+          <div class="program-item">Program 2</div>
+          <div class="program-item">Program 3</div>
+        </div>
+      </editor-modal>
+    `;
+  }
+
   render() {
     return html`
       <div class="editor-controls-wrapper">
@@ -1106,10 +1124,9 @@ export class EditorControls extends LitElement {
             </div>
           </div>
         </div>
-     
       ${this.userVariablesModalTemplate()}
+      ${this.programsModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
-      <editor-programs-modal ${ref(this.programsModalRef)}></editor-programs-modal>
     `;
   }
 
