@@ -30,6 +30,7 @@ import * as icons from '@/editor/icons';
 import { EditorButton, Language } from '@/index';
 import Types from '@vpl/types.ts';
 import { GeBlock } from './ge-block';
+import { EditorProgramsModal } from './editor-programs-modal';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -373,6 +374,7 @@ export class EditorControls extends LitElement {
   userProceduresModalRef: Ref<EditorUserProceduresModal> = createRef();
   inputProgramFileRef: Ref<HTMLInputElement> = createRef();
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
+  programsModalRef: Ref<EditorProgramsModal> = createRef();
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -682,6 +684,10 @@ export class EditorControls extends LitElement {
 
   handleExportHeader() {
     // Implement the logic for exporting header
+  }
+
+  handleShowProgramsModal() {
+    this.programsModalRef.value.showModal();
   }
 
   userVariablesModalTemplate() {
@@ -1071,6 +1077,10 @@ export class EditorControls extends LitElement {
  
           
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <editor-button title="Programs" @click="${this.handleShowProgramsModal}" class="control-button">
+                <editor-icon .icon="${icons.folder}" .width="${18}" .height="${18}" title="Programs"></editor-icon>
+                <div>Programs</div>
+              </editor-button>
               <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
                 <div class="variables-icon">𝑥</div>
                 <div>Variables</div>
@@ -1079,6 +1089,7 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
                 <span>Procedures</span>
               </editor-button>
+              
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
               <editor-button 
@@ -1099,6 +1110,7 @@ export class EditorControls extends LitElement {
      
       ${this.userVariablesModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
+      <editor-programs-modal ${ref(this.programsModalRef)}></editor-programs-modal>
     `;
   }
 
