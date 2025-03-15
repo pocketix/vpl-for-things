@@ -1062,37 +1062,41 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Header"></editor-icon>
                 <span>Export Header</span>
               </editor-button>
+              <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
+                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
+                <span>Export Linearized</span>
+              </editor-button>
             </div>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
-          </div>
-          <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
-            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
-            <span>Export Linearized</span>
-          </editor-button>
-          <div class="controls-group-user">
-            <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
-              <div class="variables-icon">𝑥</div>
-              <div>Variables</div>
-            </editor-button>
-            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
-              <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
-              <span>Procedures</span>
-            </editor-button>
-            <editor-button 
-              @click="${this.handleSkeletonize}" 
-              class="control-button ${this.skeletonizeMode ? 'active' : ''}"
-              style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
-              <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
-              <span>Skeletonize</span>
-            </editor-button>
+ 
+          
+            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
+                <div class="variables-icon">𝑥</div>
+                <div>Variables</div>
+              </editor-button>
+              <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
+                <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+                <span>Procedures</span>
+              </editor-button>
+            </div>
+            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <editor-button 
+                @click="${this.handleSkeletonize}" 
+                class="control-button ${this.skeletonizeMode ? 'active' : ''}"
+                style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
+                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
+                <span>Skeletonize</span>
+              </editor-button>
+              <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
+                <option value="split">Split View</option>
+                <option value="ge">Graphical View</option>
+                <option value="te">Text View</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-      <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
-        <option value="split">Split View</option>
-        <option value="ge">Graphical View</option>
-        <option value="te">Text View</option>
-      </select>
+     
       ${this.userVariablesModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
