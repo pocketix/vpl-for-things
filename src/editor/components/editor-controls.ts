@@ -676,6 +676,14 @@ export class EditorControls extends LitElement {
     this.dispatchEvent(event);
   }
 
+  handleImportHeader() {
+    // Implement the logic for importing header
+  }
+
+  handleExportHeader() {
+    // Implement the logic for exporting header
+  }
+
   userVariablesModalTemplate() {
     return html`
       <editor-modal class="user-variables-modal" ${ref(this.userVariablesModalRef)} .modalTitle="${'Variables'}">
@@ -1023,31 +1031,44 @@ export class EditorControls extends LitElement {
         ` : nothing}
         <div class="controls">
           <div class="controls-group-export">
-            <label for="program-file-input">
-              <input
-                ${ref(this.inputProgramFileRef)}
-                type="file"
-                name="program-file-input"
-                id="program-file-input"
-                style="display: none;"
-                accept="application/json"
-                @input="${this.handleImportProgram}" />
-              <editor-button @click="${this.handleImportProgram}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <label for="program-file-input">
+                <input
+                  ${ref(this.inputProgramFileRef)}
+                  type="file"
+                  name="program-file-input"
+                  id="program-file-input"
+                  style="display: none;"
+                  accept="application/json"
+                  @input="${this.handleImportProgram}" />
+                <editor-button @click="${this.handleImportProgram}" class="control-button">
+                  <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+                  </editor-icon>
+                  <span>Import Program</span>
+                </editor-button>
+              </label>
+              <editor-button @click="${this.handleImportHeader}" class="control-button">
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Header">
                 </editor-icon>
-                <span>Import Program</span>
+                <span>Import Header</span>
               </editor-button>
-            </label>
-            <editor-button @click="${this.handleExportProgram}" class="control-button">
-              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
-              <span>Export Program</span>
-            </editor-button>
-            <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
-              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
-              <span>Export Linearized</span>
-            </editor-button>
+            </div>
+            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <editor-button @click="${this.handleExportProgram}" class="control-button">
+                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+                <span>Export Program</span>
+              </editor-button>
+              <editor-button @click="${this.handleExportHeader}" class="control-button">
+                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Header"></editor-icon>
+                <span>Export Header</span>
+              </editor-button>
+            </div>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
           </div>
+          <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
+            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
+            <span>Export Linearized</span>
+          </editor-button>
           <div class="controls-group-user">
             <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
               <div class="variables-icon">𝑥</div>
@@ -1076,4 +1097,5 @@ export class EditorControls extends LitElement {
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
   }
+
 }
