@@ -744,8 +744,8 @@ export class EditorControls extends LitElement {
               group: 'misc',
               label: proc,
               icon: 'lightningChargeFill',
-              foregroundColor: '#ffffff',
-              backgroundColor: '#d946ef',
+              foregroundColor: importedHeader.userProcedures[proc].foregroundColor || '#ffffff',
+              backgroundColor: importedHeader.userProcedures[proc].backgroundColor || '#d946ef',
               isUserProcedure: true,
             };
           }
@@ -773,7 +773,14 @@ export class EditorControls extends LitElement {
     if (fileName) {
       const headerExport = {
         userVariables: this.program?.header.userVariables,
-        userProcedures: this.program?.header.userProcedures,
+        userProcedures: Object.keys(this.program?.header.userProcedures || {}).reduce((acc, proc) => {
+          acc[proc] = {
+            ...this.program.header.userProcedures[proc],
+            foregroundColor: this.language.statements[proc].foregroundColor,
+            backgroundColor: this.language.statements[proc].backgroundColor,
+          };
+          return acc;
+        }, {}),
       };
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(headerExport, null, 2));
       const downloadAnchorNode = this.exportProgramLinkRef.value;
