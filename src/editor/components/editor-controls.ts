@@ -629,6 +629,13 @@ export class EditorControls extends LitElement {
         let fr = new FileReader();
         fr.onload = (e) => {
           const importedProgram = JSON.parse(e.target.result as string);
+
+          // Validate the imported program structure
+          if (!importedProgram.header || !importedProgram.block) {
+            alert("The imported file does not contain a valid program structure.");
+            return;
+          }
+
           let programName = programFileInput.files[0].name.replace('.json', '');
 
           // Check for duplicate program names
@@ -642,30 +649,38 @@ export class EditorControls extends LitElement {
 
           this.savedPrograms.push({ name: programName, program: importedProgram });
           this.requestUpdate();
-          this.program.loadProgram(importedProgram);
 
-          for (let proc of Object.keys(this.program.header.userProcedures)) {
+          // Load the program into the editor
+          this.program.header = importedProgram.header; // Update header
+          this.program.block = importedProgram.block; // Update block
+
+          // Integrate custom procedures into the language context
+          for (let proc of Object.keys(importedProgram.header.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
               group: 'misc',
               label: proc,
               icon: 'lightningChargeFill',
-              foregroundColor: '#ffffff',
-              backgroundColor: '#d946ef',
+              foregroundColor: importedProgram.header.userProcedures[proc].foregroundColor || '#ffffff',
+              backgroundColor: importedProgram.header.userProcedures[proc].backgroundColor || '#d946ef',
               isUserProcedure: true,
             };
           }
 
-          const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+          // Dispatch events to update the program and UI
+          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
           });
-          this.dispatchEvent(event);
-          const event2 = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          this.dispatchEvent(programUpdatedEvent);
+
+          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
           });
-          this.dispatchEvent(event2);
+          this.dispatchEvent(textEditorUpdatedEvent);
+
+          alert("Program imported successfully!");
         };
         fr.readAsText(programFileInput.files[0]);
       }
@@ -675,7 +690,13 @@ export class EditorControls extends LitElement {
   handleExportProgram() {
     const fileName = prompt("Enter the name for the exported program:", "program");
     if (fileName) {
-      const programExport = this.program?.exportProgram();
+      const programExport = {
+        header: {
+          userVariables: this.program?.header.userVariables,
+          userProcedures: this.program?.header.userProcedures,
+        },
+        block: this.program?.block,
+      };
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
       const downloadAnchorNode = this.exportProgramLinkRef.value;
       downloadAnchorNode.setAttribute('href', dataStr);
@@ -709,43 +730,37 @@ export class EditorControls extends LitElement {
       if (headerFileInput.files[0].type === 'application/json') {
         let fr = new FileReader();
         fr.onload = (e) => {
-          const importedHeader = JSON.parse(e.target.result as string);
+          const importedData = JSON.parse(e.target.result as string);
 
-          // Check for duplicate variable names
-          for (let varName of Object.keys(importedHeader.userVariables)) {
-            if (this.program.header.userVariables[varName]) {
-              alert(`Duplicate variable name found: ${varName}`);
-              return;
-            }
+          // Check if the imported file contains userProcedures
+          if (!importedData.userProcedures) {
+            alert("The imported file does not contain valid user procedures.");
+            return;
           }
 
           // Check for duplicate procedure names
-          for (let procName of Object.keys(importedHeader.userProcedures)) {
+          for (let procName of Object.keys(importedData.userProcedures)) {
             if (this.program.header.userProcedures[procName]) {
               alert(`Duplicate procedure name found: ${procName}`);
               return;
             }
           }
 
-          // Merge headers
-          this.program.header.userVariables = {
-            ...this.program.header.userVariables,
-            ...importedHeader.userVariables,
-          };
+          // Merge userProcedures
           this.program.header.userProcedures = {
             ...this.program.header.userProcedures,
-            ...importedHeader.userProcedures,
+            ...importedData.userProcedures,
           };
 
           // Integrate custom procedures into the language context
-          for (let proc of Object.keys(importedHeader.userProcedures)) {
+          for (let proc of Object.keys(importedData.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
               group: 'misc',
               label: proc,
               icon: 'lightningChargeFill',
-              foregroundColor: importedHeader.userProcedures[proc].foregroundColor || '#ffffff',
-              backgroundColor: importedHeader.userProcedures[proc].backgroundColor || '#d946ef',
+              foregroundColor: importedData.userProcedures[proc].foregroundColor || '#ffffff',
+              backgroundColor: importedData.userProcedures[proc].backgroundColor || '#d946ef',
               isUserProcedure: true,
             };
           }
@@ -769,10 +784,9 @@ export class EditorControls extends LitElement {
   }
 
   handleExportHeader() {
-    const fileName = prompt("Enter the name for the exported header:", "header");
+    const fileName = prompt("Enter the name for the exported UDFs:", "udfs");
     if (fileName) {
-      const headerExport = {
-        userVariables: this.program?.header.userVariables,
+      const udfExport = {
         userProcedures: Object.keys(this.program?.header.userProcedures || {}).reduce((acc, proc) => {
           acc[proc] = {
             ...this.program.header.userProcedures[proc],
@@ -782,7 +796,7 @@ export class EditorControls extends LitElement {
           return acc;
         }, {}),
       };
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(headerExport, null, 2));
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(udfExport, null, 2));
       const downloadAnchorNode = this.exportProgramLinkRef.value;
       downloadAnchorNode.setAttribute('href', dataStr);
       downloadAnchorNode.setAttribute('download', `${fileName}.json`);
