@@ -124,7 +124,7 @@ export class GeBlock extends LitElement {
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
-  @property() skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -403,12 +403,16 @@ export class GeBlock extends LitElement {
   //#region Templates
   addStatementButtonTemplate() {
     return html`
-      <editor-button
-        @click="${this.handleShowAddNewStatementDialog}"
-        title="Add Statement"
-        class="add-new-statement-btn">
-        <editor-icon .icon="${icons['plusLg']}"></editor-icon>
-      </editor-button>
+      ${!this.skeletonizeMode
+        ? html`
+            <editor-button
+              @click="${this.handleShowAddNewStatementDialog}"
+              title="Add Statement"
+              class="add-new-statement-btn">
+              <editor-icon .icon="${icons['plusLg']}"></editor-icon>
+            </editor-button>
+          `
+        : nothing}
     `;
   }
 
@@ -424,8 +428,8 @@ export class GeBlock extends LitElement {
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}"
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .skeletonizeMode="${this.skeletonizeMode}" <!-- Pass skeletonizeMode to ge-statement -->
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               @click="${() => this.toggleStatementSelection(stmt._uuid)}"
             ></ge-statement>
           `

@@ -54,7 +54,7 @@ export class GraphicalEditor extends LitElement {
   render() {
     return html`
       <ge-block .block="${this.program.block}" .skeletonizeMode="${this.skeletonizeMode}"></ge-block>
-      ${this.program.block.length < 1
+      ${!this.skeletonizeMode && this.program.block.length < 1
         ? html` <div class="help-message">Click on "+" button to add new statement</div> `
         : nothing}
     `;

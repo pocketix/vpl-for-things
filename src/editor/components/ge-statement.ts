@@ -216,7 +216,7 @@ export class GEStatement extends LitElement {
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
   @property() exampleBlockIsVisible: boolean = false;
-  @property() skeletonizeMode: boolean = false; // Add skeletonizeMode property
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Context
@@ -470,7 +470,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample
+            ${!this.isExample && !this.skeletonizeMode
               ? html`
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
@@ -485,19 +485,18 @@ export class GEStatement extends LitElement {
                     .closeButtonIsVisible="${false}"
                     ${ref(this.statementControlsModalRef)}>
                     <div class="statement-controls-buttons">
-                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up" ?disabled="${this.skeletonizeMode}">
+                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">
                         <editor-icon .icon="${icons.arrowUp}"></editor-icon>
                         Move Up
                       </editor-button>
-                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down" ?disabled="${this.skeletonizeMode}">
+                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down">
                         <editor-icon .icon="${icons.arrowDown}"></editor-icon>
                         Move Down
                       </editor-button>
                       <editor-button
                         @click="${this.handleRemoveStatement}"
                         title="Remove Statement"
-                        class="remove-statement-button"
-                        ?disabled="${this.skeletonizeMode}">
+                        class="remove-statement-button">
                         <editor-icon .icon="${icons.trash}"></editor-icon>
                         Delete
                       </editor-button>
@@ -506,7 +505,7 @@ export class GEStatement extends LitElement {
                 `
               : nothing}
           </div>
-          ${(this.statement as CompoundStatement).block
+          ${(this.statement as CompoundStatement).block && !this.skeletonizeMode
             ? html`
                 <div @click="${this.handleToggleNestedBlockVisibility}" class="expand-nested-block-button">
                   <editor-icon
@@ -526,38 +525,44 @@ export class GEStatement extends LitElement {
   //#region Render
   render() {
     return html`
-      ${(this.statement as CompoundStatement).block
-        ? html`
-            ${this.statementTemplate(true)}
-            <ge-block
-              ${ref(this.statementNestedBlockRef)}
-              style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
-              class="nested ${this.nestedBlockVisible ? '' : 'hidden'}"
-              .block="${(this.statement as CompoundStatement).block}"
-              .parentStmt="${this.statement}"
-              .isProcBody="${this.isProcBody}"
-              .isExample="${this.isExample}"></ge-block>
-          `
-        : this.language.statements[this.statement.id].isUserProcedure && !this.isProcBody
-        ? html`
-            <editor-button @click="${this.handleShowProcDef}" class="user-proc-wrapper">
-              ${this.statementTemplate(false)}
-            </editor-button>
-            <editor-modal
-              ${ref(this.procModalRef)}
-              .modalTitle="${this.language.statements[this.statement.id].label}"
-              .modalIcon="${icons[this.language.statements[this.statement.id].icon]}"
-              .backgroundColor="${this.language.statements[this.statement.id].backgroundColor}"
-              .foregroundColor="${this.language.statements[this.statement.id].foregroundColor}"
-              .isFullWidth="${true}"
-              .isFullHeight="${true}">
+      <div
+        class="statement-wrapper ${this.skeletonizeMode ? 'disabled' : ''}"
+        @click="${this.skeletonizeMode ? (e: Event) => e.stopPropagation() : null}">
+        ${(this.statement as CompoundStatement).block
+          ? html`
+              ${this.statementTemplate(true)}
               <ge-block
-                .isProcBody="${true}"
-                .isExample="${this.isExample}"
-                .block="${this.program.header.userProcedures[this.statement.id]}"></ge-block>
-            </editor-modal>
-          `
-        : this.statementTemplate(false)}
+                ${ref(this.statementNestedBlockRef)}
+                style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
+                class="nested ${this.nestedBlockVisible ? '' : 'hidden'}"
+                .block="${(this.statement as CompoundStatement).block}"
+                .parentStmt="${this.statement}"
+                .isProcBody="${this.isProcBody}"
+                .isExample="${this.isExample}">
+              </ge-block>
+            `
+          : this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
+          ? html`
+              <editor-button @click="${this.handleShowProcDef}" class="user-proc-wrapper">
+                ${this.statementTemplate(false)}
+              </editor-button>
+              <editor-modal
+                ${ref(this.procModalRef)}
+                .modalTitle="${this.language.statements[this.statement.id]?.label}"
+                .modalIcon="${icons[this.language.statements[this.statement.id]?.icon]}"
+                .backgroundColor="${this.language.statements[this.statement.id]?.backgroundColor}"
+                .foregroundColor="${this.language.statements[this.statement.id]?.foregroundColor}"
+                .isFullWidth="${true}"
+                .isFullHeight="${true}">
+                <ge-block
+                  .isProcBody="${true}"
+                  .isExample="${this.isExample}"
+                  .block="${this.program.header.userProcedures[this.statement.id]}">
+                </ge-block>
+              </editor-modal>
+            `
+          : this.statementTemplate(false)}
+      </div>
     `;
   }
   //#endregion
