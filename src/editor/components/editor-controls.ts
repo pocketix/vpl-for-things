@@ -837,9 +837,9 @@ export class EditorControls extends LitElement {
     alert("Program loaded successfully!");
   }
 
-  handleDeleteProgram(programName: string) {
-    if (confirm(`Are you sure you want to delete the program "${programName}"? This action cannot be undone.`)) {
-      this.savedPrograms = this.savedPrograms.filter((savedProgram) => savedProgram.name !== programName);
+  handleDeleteLoadedProgram(programName: string) {
+    if (confirm(`Are you sure you want to delete the program "${programName}"?`)) {
+      this.savedPrograms = this.savedPrograms.filter((program) => program.name !== programName);
       this.requestUpdate();
     }
   }
@@ -856,11 +856,11 @@ export class EditorControls extends LitElement {
               <div
                 class="program-item"
                 style="cursor: pointer; padding: 0.5rem; border: 1px solid #ccc; margin-bottom: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                <div @click="${() => this.handleLoadProgram(savedProgram.program)}">
+                <span @click="${() => this.handleLoadProgram(savedProgram.program)}" style="flex-grow: 1;">
                   ${savedProgram.name}
-                </div>
+                </span>
                 <editor-button
-                  @click="${() => this.handleDeleteProgram(savedProgram.name)}"
+                  @click="${() => this.handleDeleteLoadedProgram(savedProgram.name)}"
                   style="color: var(--red-600);">
                   <editor-icon .icon="${xLg}" .width="${18}" .height="${18}" title="Delete Program"></editor-icon>
                 </editor-button>
