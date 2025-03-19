@@ -241,6 +241,10 @@ export class GeBlock extends LitElement {
 
   //#region Handlers
   handleMoveStatementUp(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; // Disable interaction when skeletonize mode is active
+    }
     let statementIndex = e.detail.index;
     if (statementIndex > 0) {
       let tmpStatement = this.block[statementIndex];
@@ -258,6 +262,10 @@ export class GeBlock extends LitElement {
   }
 
   handleMoveStatementDown(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; // Disable interaction when skeletonize mode is active
+    }
     let statementIndex = e.detail.index;
     if (statementIndex < this.block.length - 1) {
       let tmpStatement = this.block[statementIndex];
@@ -275,6 +283,10 @@ export class GeBlock extends LitElement {
   }
 
   handleRemoveStatement(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; // Disable interaction when skeletonize mode is active
+    }
     let statementIndex = e.detail.index;
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
@@ -445,6 +457,7 @@ export class GeBlock extends LitElement {
               .index="${i}"
               .isExample="${this.isExample}"
               class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
+              .skeletonizeMode="${this.skeletonizeMode}" <!-- Pass skeletonizeMode to ge-statement -->
               @click="${() => this.toggleStatementSelection(stmt._uuid)}"
             >
             </ge-statement>
