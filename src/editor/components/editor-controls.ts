@@ -1203,9 +1203,8 @@ export class EditorControls extends LitElement {
                 accept="application/json"
                 @input="${this.handleImportHeader}" />
               <editor-button @click="${() => this.shadowRoot.getElementById('header-file-input').click()}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Header">
-                </editor-icon>
-                <span>Import Header</span>
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import UDFs"></editor-icon>
+                <span>Import UDFs</span>
               </editor-button>
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
@@ -1214,8 +1213,8 @@ export class EditorControls extends LitElement {
                 <span>Export Program</span>
               </editor-button>
               <editor-button @click="${this.handleExportHeader}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Header"></editor-icon>
-                <span>Export Header</span>
+                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export UDFs"></editor-icon>
+                <span>Export UDFs</span>
               </editor-button>
               <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
                 <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
