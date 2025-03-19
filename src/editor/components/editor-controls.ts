@@ -805,30 +805,59 @@ export class EditorControls extends LitElement {
   }
 
   handleLoadProgram(program: any) {
-    this.program.loadProgram(program);
+    this.program.header = program.header; // Update header
+    this.program.block = program.block; // Update block
 
-    for (let proc of Object.keys(this.program.header.userProcedures)) {
+    // Integrate custom procedures into the language context
+    for (let proc of Object.keys(program.header.userProcedures)) {
       this.language.statements[proc] = {
         type: 'unit',
         group: 'misc',
         label: proc,
         icon: 'lightningChargeFill',
-        foregroundColor: '#ffffff',
-        backgroundColor: '#d946ef',
+        foregroundColor: program.header.userProcedures[proc].foregroundColor || '#ffffff',
+        backgroundColor: program.header.userProcedures[proc].backgroundColor || '#d946ef',
         isUserProcedure: true,
       };
     }
 
-    const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+    // Dispatch events to update the program and UI
+    const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(event);
-    const event2 = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    this.dispatchEvent(programUpdatedEvent);
+
+    const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(event2);
+    this.dispatchEvent(textEditorUpdatedEvent);
+
+    alert("Program loaded successfully!");
+  }
+
+  programsModalTemplate() {
+    return html`
+      <editor-modal ${ref(this.programsModalRef)} .modalTitle="${'Programs'}">
+        <div class="programs-modal-header">
+          <h2>Programs</h2>
+        </div>
+        <div class="programs-list">
+          ${this.savedPrograms.map(
+            (savedProgram) => html`
+              <div
+                class="program-item"
+                style="cursor: pointer; padding: 0.5rem; border: 1px solid #ccc; margin-bottom: 0.5rem; border-radius: 4px;"
+                @click="${() => this.handleLoadProgram(savedProgram.program)}"
+              >
+                ${savedProgram.name}
+              </div>
+            `
+          )}
+        </div>
+      </editor-modal>
+    `;
   }
 
   userVariablesModalTemplate() {
@@ -1142,23 +1171,6 @@ export class EditorControls extends LitElement {
             @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
     }
-  }
-
-  programsModalTemplate() {
-    return html`
-      <editor-modal ${ref(this.programsModalRef)} .modalTitle="${'Programs'}">
-        <div class="programs-modal-header">
-          <h2>Programs</h2>
-        </div>
-        <div class="programs-list">
-          ${this.savedPrograms.map((savedProgram) => html`
-            <div class="program-item" @click="${() => this.handleLoadProgram(savedProgram.program)}">
-              ${savedProgram.name}
-            </div>
-          `)}
-        </div>
-      </editor-modal>
-    `;
   }
 
   render() {
