@@ -216,6 +216,7 @@ export class GEStatement extends LitElement {
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
   @property() exampleBlockIsVisible: boolean = false;
+  @property() skeletonizeMode: boolean = false; // Add skeletonizeMode property
   //#endregion
 
   //#region Context
@@ -484,18 +485,19 @@ export class GEStatement extends LitElement {
                     .closeButtonIsVisible="${false}"
                     ${ref(this.statementControlsModalRef)}>
                     <div class="statement-controls-buttons">
-                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">
+                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up" ?disabled="${this.skeletonizeMode}">
                         <editor-icon .icon="${icons.arrowUp}"></editor-icon>
                         Move Up
                       </editor-button>
-                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down">
+                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down" ?disabled="${this.skeletonizeMode}">
                         <editor-icon .icon="${icons.arrowDown}"></editor-icon>
                         Move Down
                       </editor-button>
                       <editor-button
                         @click="${this.handleRemoveStatement}"
                         title="Remove Statement"
-                        class="remove-statement-button">
+                        class="remove-statement-button"
+                        ?disabled="${this.skeletonizeMode}">
                         <editor-icon .icon="${icons.trash}"></editor-icon>
                         Delete
                       </editor-button>
