@@ -457,7 +457,7 @@ export class GEStatement extends LitElement {
           ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments.length === 1
             ? html`
                 <ge-statement-argument
-                  ?disabled="${this.statement.isInvalid ? true : false}"
+                  ?disabled="${this.statement.isInvalid || this.skeletonizeMode}"
                   .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}"
@@ -538,7 +538,8 @@ export class GEStatement extends LitElement {
                 .block="${(this.statement as CompoundStatement).block}"
                 .parentStmt="${this.statement}"
                 .isProcBody="${this.isProcBody}"
-                .isExample="${this.isExample}">
+                .isExample="${this.isExample}"
+                .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
               </ge-block>
             `
           : this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
@@ -557,7 +558,8 @@ export class GEStatement extends LitElement {
                 <ge-block
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
-                  .block="${this.program.header.userProcedures[this.statement.id]}">
+                  .block="${this.program.header.userProcedures[this.statement.id]}"
+                  .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
                 </ge-block>
               </editor-modal>
             `

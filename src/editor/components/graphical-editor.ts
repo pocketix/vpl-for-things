@@ -53,7 +53,10 @@ export class GraphicalEditor extends LitElement {
   //#region Render
   render() {
     return html`
-      <ge-block .block="${this.program.block}" .skeletonizeMode="${this.skeletonizeMode}"></ge-block>
+      <ge-block
+        .block="${this.program.block}"
+        .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+      </ge-block>
       ${!this.skeletonizeMode && this.program.block.length < 1
         ? html` <div class="help-message">Click on "+" button to add new statement</div> `
         : nothing}

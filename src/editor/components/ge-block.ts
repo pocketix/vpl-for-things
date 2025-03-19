@@ -428,10 +428,8 @@ export class GeBlock extends LitElement {
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}"
-              .skeletonizeMode="${this.skeletonizeMode}" <!-- Pass skeletonizeMode to ge-statement -->
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
-              @click="${() => this.toggleStatementSelection(stmt._uuid)}"
-            ></ge-statement>
+              .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+            </ge-statement>
           `
       )}
     `;
