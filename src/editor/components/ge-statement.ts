@@ -340,6 +340,7 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
+    if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
     this.procModalRef.value.showModal();
   }
 
@@ -539,12 +540,15 @@ export class GEStatement extends LitElement {
                 .parentStmt="${this.statement}"
                 .isProcBody="${this.isProcBody}"
                 .isExample="${this.isExample}"
-                .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+                .skeletonizeMode="${this.skeletonizeMode}">
               </ge-block>
             `
           : this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
           ? html`
-              <editor-button @click="${this.handleShowProcDef}" class="user-proc-wrapper">
+              <editor-button
+                @click="${this.handleShowProcDef}"
+                class="user-proc-wrapper"
+                ?disabled="${this.skeletonizeMode}"> <!-- Disable button in skeletonize mode -->
                 ${this.statementTemplate(false)}
               </editor-button>
               <editor-modal
@@ -559,7 +563,7 @@ export class GEStatement extends LitElement {
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
                   .block="${this.program.header.userProcedures[this.statement.id]}"
-                  .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+                  .skeletonizeMode="${this.skeletonizeMode}">
                 </ge-block>
               </editor-modal>
             `
