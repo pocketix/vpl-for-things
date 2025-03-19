@@ -47,7 +47,7 @@ export class VplEditor extends LitElement {
   @property() height?: number;
   @property() isSmallScreen: boolean = document.body.clientWidth < 800;
   @property() viewMode: string = 'split';
-  @property() skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -187,7 +187,7 @@ export class VplEditor extends LitElement {
   //#region Render
   render() {
     return html`
-      <editor-controls></editor-controls>
+      <editor-controls .skeletonizeMode="${this.skeletonizeMode}"></editor-controls>
       <div class="editor-view-wrapper">
         <graphical-editor .skeletonizeMode="${this.skeletonizeMode}" ${ref(this.graphicalEditorRef)}></graphical-editor>
         <text-editor
