@@ -87,9 +87,9 @@ export class VplEditor extends LitElement {
       }
     });
 
-    window.onbeforeunload = function () {
-      return 'Changes may be lost!';
-    };
+    // window.onbeforeunload = function () {
+    //   return 'Changes may be lost!';
+    // };
   }
 
   connectedCallback() {
