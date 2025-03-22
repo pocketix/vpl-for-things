@@ -356,7 +356,7 @@ export class GEStatement extends LitElement {
   multipleArgumentTemplate(argumentsArray: Argument[]) {
     return html`
       <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value.showModal()}">
-        <div btnStyle="gap: 4px; align-items: center;">
+        <div style="display: flex; gap: 4px; align-items: center;">
           <editor-icon .icon="${icons.threeDots}"></editor-icon>
           <div>Arguments</div>
         </div>

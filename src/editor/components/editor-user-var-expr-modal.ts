@@ -31,7 +31,7 @@ export class EditorUserVarExprModal extends LitElement {
   render() {
     return html`
       <editor-button @click="${this.handleShowExpressionModal}">
-        <div btnStyle="gap: 4px; align-items: center;">
+        <div style="display: flex; gap: 4px; align-items: center;">
           <editor-icon .icon="${threeDots}"></editor-icon>
           Expression
         </div>
