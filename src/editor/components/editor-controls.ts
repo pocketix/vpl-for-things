@@ -254,7 +254,7 @@ export class EditorControls extends LitElement {
   @property() variablesTableMode: VariableTableMode = 'display';
   @property() selectedAddVariableType: UserVariableType = Types.string;
   @property() selectedAddVariableInitialValueBool: any = true;
-  @property() selectedAddVariableInitialValueBoolExpr: any = initDefaultArgumentType(Types.boolean_expression);
+  @property() selectedAddVariableInitialValueBoolExpr: any = {value: initDefaultArgumentType(Types.boolean_expression), type: Types.boolean_expression};
   @property() selectedAddVariableInitialValueStr: any = '';
   @property() selectedAddVariableInitialValueNum: any = '0';
   @property() selectedAddVariableInitialValueNumExpr: any = [];
@@ -450,8 +450,8 @@ export class EditorControls extends LitElement {
           this.selectedAddVariableInitialValueBool = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case Types.boolean_expression:
-          this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
-          this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
+          this.program.header.userVariables[this.addVariableName] = this.selectedAddVariableInitialValueBoolExpr;
+          this.selectedAddVariableInitialValueBoolExpr = {value: initDefaultArgumentType(this.selectedAddVariableType), type: Types.boolean_expression};
           break;
         case Types.number:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNum;
