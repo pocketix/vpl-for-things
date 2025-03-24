@@ -14,7 +14,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
-import { languageContext, programContext } from '../context/editor-context';
+import { isRunningContext, languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
@@ -105,6 +105,10 @@ export class GeStatementArgument extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
+
+  @consume({ context: isRunningContext, subscribe: true })
+  @property({type: Boolean})
+  isRunning?: boolean;
 
   expressionModalRef: Ref<EditorModal> = createRef();
   selectArgumentVariableModalRef: Ref<EditorModal> = createRef();
@@ -263,6 +267,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                ?disabled=${this.isRunning}
                 autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
@@ -312,7 +317,7 @@ export class GeStatementArgument extends LitElement {
             <div class="argument-var-wrapper">
               <input
                 autofocus
-                ?disabled="${this.isExample}"
+                ?disabled=${this.isExample || this.isRunning}
                 id="${argumentElementId}"
                 type="number"
                 placeholder="123"
@@ -328,6 +333,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                ?disabled=${this.isExample || this.isRunning}
                 autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
@@ -350,8 +356,8 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                ?disabled=${this.isExample || this.isRunning}
                 autofocus
-                ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 placeholder="abc"
                 type="text"
@@ -367,8 +373,8 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                ?disabled=${this.isExample || this.isRunning}
                 autofocus
-                ?disabled="${this.isExample}"
                 style="width: 100%;"
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
