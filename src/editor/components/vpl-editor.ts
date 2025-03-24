@@ -1,9 +1,9 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { Language, Statement, Statements } from '@/vpl/language';
-import { Block, CompoundStatement, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
-import { languageContext, programContext } from '@/editor/context/editor-context';
+import { AbstractStatementWithArgs, Block, CompoundStatement, Expression, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
+import { isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
@@ -15,7 +15,12 @@ import { GraphicalEditor } from './graphical-editor';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
-import { EditorControls } from './editor-controls';
+import { EditorControls, SelectedEditorView } from './editor-controls';
+
+type ProgPointer =
+ | { type: "stlist", value: Block }
+ | { type: "statement", value: ProgramStatement }
+ | { type: "expression", value: Expression }
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -43,15 +48,18 @@ export class VplEditor extends LitElement {
   //#endregion
 
   //#region Props
-  @property() width?: number;
-  @property() height?: number;
-  @property() isSmallScreen: boolean = document.body.clientWidth < 800;
-  @property() viewMode: string = 'split';
+  @property({ type: Number }) width?: number;
+  @property({ type: Number }) height?: number;
+  @property({ type: Boolean }) isSmallScreen: boolean = document.body.clientWidth < 800;
+  @property({ type: String }) viewMode: SelectedEditorView;
+  @property({ type: Boolean }) showControls: boolean;
+  @property({ attribute: false }) runningBlockPath: any[];
   //#endregion
 
   //#region Refs
   textEditorRef: Ref<TextEditor> = createRef();
   graphicalEditorRef: Ref<GraphicalEditor> = createRef();
+  controlsRef: Ref<EditorControls> = createRef();
   //#endregion
 
   //#region Context
@@ -62,6 +70,14 @@ export class VplEditor extends LitElement {
   @provide({ context: programContext })
   @property({ attribute: false })
   program = new Program();
+
+  @provide({ context: runninBlockContext })
+  @property({ attribute: false })
+  runningBlock = "";
+
+  @provide({ context: isRunningContext })
+  @property({ attribute: false })
+  isRunning = false;
   //#endregion
 
   //#region Lifecycle
@@ -74,9 +90,7 @@ export class VplEditor extends LitElement {
       this.handleGraphicalEditorProgramUpdated();
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
-      this.handleChangeEditorView(e.detail.newView);
       this.viewMode = e.detail.newView;
-      this.requestUpdate();
     });
 
     window.addEventListener('resize', () => {
@@ -100,7 +114,75 @@ export class VplEditor extends LitElement {
       this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
     );
   }
+  willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("runningBlockPath")) {
+      this.runningBlock = this.findBlockByPath(this.runningBlockPath) || "";
+    }
+  }
+
   //#endregion
+
+  findBlockByPath(path: any[]) {
+    if (!this.runningBlockPath || this.runningBlockPath.length === 0) {
+      return null;
+    }
+
+    let currPtr: ProgPointer = {
+      type: "stlist",
+      value: this.program.block
+    }
+
+    for (let p of path) {
+      if (p.type === "statement") {
+        if (currPtr.type === "stlist" && Array.isArray(currPtr.value)) {
+          currPtr = {
+            type: "statement",
+            value: currPtr.value[p.pos]
+          }
+        }
+        // @ts-ignore
+        else if (currPtr.type === "statement" && currPtr.value.block !== undefined){ // TODO(filip): fix types
+          currPtr = {
+            type: "statement",
+            value: (currPtr.value as CompoundStatement).block[p.pos]
+          }
+        }
+        else {
+          console.error("invalid runningBlockPath: no matching compount block found: ", p, this.runningBlockPath);
+        }
+      }
+      else if (p.type === "expression") {
+        if (currPtr.type === "stlist") {
+          console.error("invalid runningBlockPath: expresssion in stlist", this.runningBlockPath);
+          return null;
+        }
+
+        if (currPtr.type === "statement" && (currPtr.value as AbstractStatementWithArgs).arguments !== undefined) {
+          currPtr = {
+            type: "expression",
+            value: (currPtr.value as AbstractStatementWithArgs).arguments[p.pos] as Expression // TODO(filip): these types...
+          }
+        }
+        else if (currPtr.type === "expression" && (Array.isArray(currPtr.value))) {
+          currPtr = {
+            type: "expression",
+            value: currPtr.value.value[p.pos] as Expression
+          }
+        }
+        else {
+          console.error("invalid runningBlockPath: expresssion in terminal expression", this.runningBlockPath);
+          return null;
+        }
+      }
+    }
+
+    if (currPtr.type === "stlist") {
+      console.error("invalid runningBlockPath: pointing to statement list is not supported", this.runningBlockPath);
+      return null;
+    }
+
+    return currPtr.value._uuid || "";
+  }
 
   //#region Handlers
   handleTextEditorProgramUpdated() {
@@ -148,43 +230,36 @@ export class VplEditor extends LitElement {
       '  '
     );
   }
-
-  handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
-    switch (newView) {
-      case 'ge':
-        this.graphicalEditorRef.value.classList.remove('hidden');
-        this.graphicalEditorRef.value.classList.add('flex');
-
-        this.textEditorRef.value.classList.remove('block');
-        this.textEditorRef.value.classList.add('hidden');
-        break;
-      case 'te':
-        this.textEditorRef.value.classList.remove('hidden');
-        this.textEditorRef.value.classList.add('block');
-
-        this.graphicalEditorRef.value.classList.add('hidden');
-        this.graphicalEditorRef.value.classList.remove('flex');
-        break;
-      case 'split':
-        this.graphicalEditorRef.value.classList.remove('hidden');
-        this.graphicalEditorRef.value.classList.add('flex');
-
-        this.textEditorRef.value.classList.remove('hidden');
-        this.textEditorRef.value.classList.add('block');
-        break;
-    }
-  }
   //#endregion
+  
+  openVariablesModal() {
+    this.controlsRef.value.openVariablesModal();
+  }
+
+  openProceduresModal() {
+    this.controlsRef.value.openProceduresModal();
+  }
 
   //#region Render
   render() {
-    return html`
-      <editor-controls></editor-controls>
-      <div class="editor-view-wrapper">
-        <graphical-editor ${ref(this.graphicalEditorRef)}></graphical-editor>
+
+    const graphicalEditor = this.viewMode === "ge" || this.viewMode === "split"
+      ? html`<graphical-editor ${ref(this.graphicalEditorRef)}></graphical-editor>`
+      : nothing;
+
+    const textEditor = this.viewMode === "te" || this.viewMode === "split"
+      ? html`
         <text-editor
           ${ref(this.textEditorRef)}
-          style="${this.isSmallScreen && this.viewMode !== 'te' ? 'display: none;' : ''}"></text-editor>
+          style="${this.isSmallScreen && this.viewMode !== 'te' ? 'display: none;' : ''}"></text-editor>`
+      : nothing;
+
+      // ${this.showControls ? html`<editor-controls .selectedEditorView=${this.viewMode}></editor-controls>` : nothing }
+    return html`
+      <editor-controls style="${!this.showControls ? 'position: absolute;' : ''}" .showControls=${this.showControls} .selectedEditorView=${this.viewMode} ${ref(this.controlsRef)}></editor-controls>
+      <div class="editor-view-wrapper">
+        ${graphicalEditor}
+        ${textEditor}
       </div>
     `;
   }
