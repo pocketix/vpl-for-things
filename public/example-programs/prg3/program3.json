@@ -12,7 +12,7 @@
           ],
           "arguments": [
             {
-              "type": "num",
+              "type": "number",
               "value": 3
             }
           ]
@@ -39,7 +39,7 @@
           ],
           "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "high"
             }
           ]
@@ -59,7 +59,7 @@
           ],
           "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "ideal"
             }
           ]
@@ -79,7 +79,7 @@
           ],
           "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "low"
             }
           ]
@@ -111,7 +111,7 @@
           ],
           "arguments": [
             {
-              "type": "str",
+              "type": "string",
               "value": "critical_low"
             }
           ]
@@ -119,7 +119,7 @@
       ],
       "arguments": [
         {
-          "type": "var",
+          "type": "variable",
           "value": "TemperatureDevice-1.temperatureLevel"
         }
       ]

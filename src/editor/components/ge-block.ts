@@ -10,16 +10,18 @@ import {
   DeviceStatement,
   EditorModal,
   Language,
+  Statement,
   UnitLanguageStatementWithArgs,
 } from '@/index';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+import { classMap } from 'lit/directives/class-map.js';
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
-  //#region Styles
+  //#region Styles{{{
   static styles = [
     globalStyles,
     css`
@@ -29,9 +31,8 @@ export class GeBlock extends LitElement {
         gap: 0.5rem;
       }
 
-      .add-new-statement-btn {
+      .add-new-statement-btn::part(btn) {
         width: fit-content;
-        align-self: flex-end;
       }
 
       .add-statement-tabs {
@@ -44,7 +45,7 @@ export class GeBlock extends LitElement {
         height: 500px;
       }
 
-      .statement-type-button {
+      .statement-type-button::part(btn) {
         background-color: white;
         border: none;
         box-shadow: none;
@@ -53,6 +54,7 @@ export class GeBlock extends LitElement {
       }
 
       .add-statements-wrapper {
+        margin-top: 0.3rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -81,9 +83,8 @@ export class GeBlock extends LitElement {
         gap: 0.25rem;
       }
 
-      .add-statament-option-button {
-        display: flex;
-        gap: 0.25rem;
+      .add-statament-option-button.selected::part(btn) {
+        box-shadow: rgb(99, 179, 237) 0px 0px 0px 3px;
       }
 
       .device-select-wrapper {
@@ -106,7 +107,7 @@ export class GeBlock extends LitElement {
         color: var(--gray-500);
       }
     `,
-  ];
+  ];//}}}
   //#endregion
 
   //#region Props
@@ -118,6 +119,7 @@ export class GeBlock extends LitElement {
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
+  @property() selectedStmtIdx: number|null = 0;
   //#endregion
 
   //#region Refs
@@ -135,6 +137,7 @@ export class GeBlock extends LitElement {
   //#endregion
 
   //#region Computed
+  // NOTE: this is inefficient
   get filteredAddStatementOptions() {
     type KeysAndLabels = {
       key: string;
@@ -142,13 +145,14 @@ export class GeBlock extends LitElement {
     };
 
     let statementKeysAndLabels: KeysAndLabels[] = [];
-    let filteredStatements = {};
+    let filteredStatements: {[key: string]: Statement} = {};
 
     for (let stmtKey in this.language.statements) {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
-      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
+      const isBasic = !(this.language.statements[stmt.key] as DeviceStatement).deviceName; // NOTE: need to change this if we want to filter through all available blocks (basic+device)
+      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure) || this.renderBasicStatements !== isBasic) {
         return false;
       }
 
@@ -286,7 +290,13 @@ export class GeBlock extends LitElement {
 
   handleAddNewStatement(e: Event) {
     let target = e.currentTarget as HTMLButtonElement;
-    this.addNewStatement(target.value);
+    this.addNewStatementFromDialog(target.value);
+  }
+
+  private addNewStatementFromDialog(stmtKey: string) {
+    this.selectedStmtIdx = 0;
+    this.addStatementOptionsFilter = "";
+    this.addNewStatement(stmtKey);
     this.hideAddNewStatementDialog();
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
@@ -302,13 +312,38 @@ export class GeBlock extends LitElement {
   }
 
   handleAddStatementFilter(e: Event) {
+    this.selectedStmtIdx = 0;
     this.addStatementOptionsFilter = (e.currentTarget as HTMLInputElement).value;
+  }
+
+  handleStmtSelectKeyboard(e: KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const maxLen = Object.keys(this.filteredAddStatementOptions).length;
+      if (this.selectedStmtIdx < maxLen - 1) {
+        console.log("what", maxLen, this.selectedStmtIdx)
+        this.selectedStmtIdx++;
+      }
+    }
+    else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (this.selectedStmtIdx > 0) {
+        this.selectedStmtIdx--;
+      }
+    }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      const statements = this.filteredAddStatementOptions;
+      const key = Object.keys(statements)[this.selectedStmtIdx];
+      this.addNewStatementFromDialog(key);
+    }
   }
 
   handleRenderBasicStatements() {
     if (!this.renderBasicStatements) {
       this.renderBasicStatements = true;
       this.addStatementOptionsFilter = '';
+      this.selectedStmtIdx = 0;
     }
   }
 
@@ -316,6 +351,7 @@ export class GeBlock extends LitElement {
     if (this.renderBasicStatements) {
       this.renderBasicStatements = false;
       this.addStatementOptionsFilter = '';
+      this.selectedStmtIdx = 0;
     }
   }
 
@@ -329,8 +365,10 @@ export class GeBlock extends LitElement {
   addStatementButtonTemplate() {
     return html`
       <editor-button
+        ?autofocus=${this.isProcBody}
         @click="${this.handleShowAddNewStatementDialog}"
         title="Add Statement"
+        style="align-self: flex-end;"
         class="add-new-statement-btn">
         <editor-icon .icon="${icons['plusLg']}"></editor-icon>
       </editor-button>
@@ -355,14 +393,17 @@ export class GeBlock extends LitElement {
     `;
   }
 
-  addStatementOptionTemplate(stmtKey: string) {
+  addStatementOptionTemplate(stmtKey: string, idx: number = 0) {
+    // const isSelected = (this.selectedStmtKey === null && idx === 0) || stmtKey === this.selectedStmtKey;
+    const isSelected = this.selectedStmtIdx === idx;
+
     return html`
       <editor-button
         .value="${stmtKey}"
         @click="${this.handleAddNewStatement}"
         .title="${stmtKey}"
-        class="add-statament-option-button"
-        style="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
+        class="add-statament-option-button ${classMap({ selected: isSelected })}"
+        btnStyle="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
         <editor-icon .icon="${icons[this.language.statements[stmtKey].icon]}"></editor-icon>
         <span>${this.language.statements[stmtKey].label}</span>
       </editor-button>
@@ -373,9 +414,9 @@ export class GeBlock extends LitElement {
     return html`
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
+          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey, idx) => {
               if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
-                return this.addStatementOptionTemplate(stmtKey);
+                return this.addStatementOptionTemplate(stmtKey, idx);
               }
             })
           : html`<div class="no-available-statements">No available statements</div>`}
@@ -388,9 +429,9 @@ export class GeBlock extends LitElement {
       ${this.devicesTemplate()}
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length > 0
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
+          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey, idx) => {
               return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice
-                ? this.addStatementOptionTemplate(stmtKey)
+                ? this.addStatementOptionTemplate(stmtKey, idx)
                 : nothing;
             })
           : html`<div class="no-available-statements">No available device statements</div>`}
@@ -422,6 +463,8 @@ export class GeBlock extends LitElement {
           <div class="add-statement-search-wrapper">
             <div class="add-statement-search-input-wrapper">
               <input
+                @keydown="${this.handleStmtSelectKeyboard}"
+                autofocus
                 type="text"
                 placeholder="Search"
                 .value="${this.addStatementOptionsFilter}"
@@ -430,7 +473,7 @@ export class GeBlock extends LitElement {
             </div>
             <div class="add-statement-tabs">
               <editor-button
-                class="statement-type-button basic-statement-button"
+                class="statement-type-button"
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'

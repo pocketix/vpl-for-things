@@ -30,7 +30,7 @@ export class VplEditor extends LitElement {
         gap: 0.5rem;
         position: relative;
         width: 100%;
-        max-width: 1200px;
+        max-width: 1600px;
       }
 
       .editor-view-wrapper {
@@ -87,9 +87,9 @@ export class VplEditor extends LitElement {
       }
     });
 
-    window.onbeforeunload = function () {
-      return 'Changes may be lost!';
-    };
+    // window.onbeforeunload = function () {
+    //   return 'Changes may be lost!';
+    // };
   }
 
   connectedCallback() {

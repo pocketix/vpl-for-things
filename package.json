@@ -19,13 +19,22 @@
   "module": "./dist/lit-project.js",
   "exports": {
     ".": {
-      "import": "./dist/vpl-for-things.js",
-      "require": "./dist/vpl-for-things.umd.cjs"
-    }
+      "import": {
+        "default": "./dist/vpl-for-things.js",
+        "types": "./dist/index.d.ts"
+      },
+      "require": {
+        "default": "./dist/vpl-for-things.umd.cjs",
+        "types": "./dist/index.d.ts"
+      }
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:watch": "tsc && vite build --watch",
     "preview": "vite preview",
     "release": "standard-version && git push --follow-tags && npm publish"
   },
@@ -41,8 +50,12 @@
   "devDependencies": {
     "@types/node": "^20.11.19",
     "standard-version": "^9.5.0",
+    "ts-lit-plugin": "^2.0.2",
     "typescript": "^5.2.2",
     "vite": "^5.1.0",
     "vite-plugin-dts": "^3.7.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.36.0"
   }
 }
