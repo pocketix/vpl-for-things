@@ -1,6 +1,8 @@
 import { LitElement, html, css, PropertyDeclarations } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
+import { consume } from '@lit/context';
+import { isRunningContext } from '../context/editor-context';
 
 @customElement('editor-button')
 export class EditorButton extends LitElement {
@@ -58,11 +60,26 @@ export class EditorButton extends LitElement {
   @property() btnStyle: string|null = null;
   @property({type: Boolean}) disabled: boolean = false;
   @property({type: Boolean}) autofocus: boolean = false;
+
+  @consume({ context: isRunningContext, subscribe: true })
+  @property({type: Boolean})
+  isRunning?: boolean;
   //#endregion
+
+  constructor() {
+    super();
+    this.addEventListener("click", (e) => {
+      if (this.isRunning) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    })
+  }
 
   //#region Render
   render() {
-    return html`<button ?disabled=${this.disabled} ?autofocus=${this.autofocus} part="btn" class="btn" style="${this.btnStyle}"> <slot></slot> </button>`;
+    return html`<button ?disabled=${this.isRunning} ?autofocus=${this.autofocus} part="btn" class="btn" style="${this.btnStyle}"> <slot></slot> </button>`;
   }
   //#endregion
 }
