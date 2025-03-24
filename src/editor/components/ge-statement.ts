@@ -10,7 +10,7 @@ import {
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
-import { languageContext, programContext } from '@/editor/context/editor-context';
+import { isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
@@ -225,6 +225,14 @@ export class GEStatement extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
+
+  @consume({ context: runninBlockContext, subscribe: true })
+  @property()
+  runningBlock?: string;
+
+  @consume({ context: isRunningContext, subscribe: true })
+  @property({type: Boolean})
+  isRunning?: boolean;
   //#endregion
 
   //#region Refs
@@ -271,11 +279,12 @@ export class GEStatement extends LitElement {
   updated() {
     const bgColor = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].backgroundColor;
     const color = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].foregroundColor;
-    const invalidStyle = this.statement.isInvalid ? "outline: 4px dashed #facc15; outline-offset: -4px; border-left: 4px solid transparent;" : "";
+    const invalidStyle = this.statement.isInvalid ? "outline: 4px dashed #facc15; outline-offset: -4px; border-left: 4px solid transparent;" : null;
+    const runningStyle = this.statement._uuid === this.runningBlock ? "outline: 4px dashed #0000ff; outline-offset: -4px; border-left: 4px solid transparent;" : null;
 
     this.statementHeaderRef.value.setAttribute(
       'style',
-      `background-color: ${bgColor}; color: ${color}; ${invalidStyle}`
+      `background-color: ${bgColor}; color: ${color}; ${invalidStyle ?? ""} ${runningStyle ?? ""}`
     );
 
     if (this.statementNestedBlockRef.value) {
@@ -471,6 +480,7 @@ export class GEStatement extends LitElement {
             ${!this.isExample
               ? html`
                   <editor-button
+                    style="${this.isRunning ? 'display: none' : ''}"
                     @click="${this.handleToggleStatementControlsModal}"
                     title="Statement Controls"
                   >
