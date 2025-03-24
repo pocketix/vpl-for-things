@@ -151,6 +151,9 @@ export class EditorUserProceduresModal extends LitElement {
   iconListModalRef: Ref<EditorModal> = createRef();
 
   get filteredUserProcedureKeys() {
+    if (!this.language) {
+      return [];
+    }
     return Object.keys(this.language.statements)
       .map((stmtKey) => stmtKey)
       .filter((stmtKey) => {
