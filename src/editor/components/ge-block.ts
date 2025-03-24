@@ -1,7 +1,7 @@
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { languageContext, programContext } from '@/editor/context/editor-context';
+import { isRunningContext, languageContext, programContext } from '@/editor/context/editor-context';
 import { Block, Program, ProgramStatement } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
@@ -134,6 +134,10 @@ export class GeBlock extends LitElement {
   @consume({ context: languageContext, subscribe: true })
   @property({ attribute: false })
   language?: Language;
+
+  @consume({ context: isRunningContext, subscribe: true })
+  @property({type: Boolean})
+  isRunning?: boolean;
   //#endregion
 
   //#region Computed
@@ -502,7 +506,7 @@ export class GeBlock extends LitElement {
   //#region Render
   render() {
     return html`
-      ${this.isExample
+      ${this.isExample || this.isRunning
         ? html`${this.statementsTemplate()}`
         : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
     `;
