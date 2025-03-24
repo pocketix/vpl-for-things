@@ -119,6 +119,9 @@ export function analyzeBlock(block: Block, langStmts: Statements, parentStmt: Pr
 }
 
 export function assignUuidToExprOperands(expr: Expression) {
+  if (!Array.isArray(expr.value)) {
+    return;
+  }
   for (let opd of expr.value) {
     opd._uuid = uuidv4();
     if (Array.isArray((opd as Expression).value)) {
