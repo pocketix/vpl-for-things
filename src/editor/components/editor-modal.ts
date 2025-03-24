@@ -115,11 +115,11 @@ export class EditorModal extends LitElement {
   //#region Lifecycle
   constructor() {
     super();
-    window.addEventListener('click', this.onOutsideClickCallback);
   }
 
   connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('click', this.onOutsideClickCallback);
   }
 
   updated() {
@@ -136,6 +136,9 @@ export class EditorModal extends LitElement {
 
   //#region Methods
   onOutsideClickCallback = (event) => {
+    if (this.displayType !== "dialog") {
+      return;
+    }
     if (
       !event.composedPath().some((e) => e.tagName === 'EDITOR-BUTTON') &&
       !event.composedPath().some((e) => e.tagName === 'EDITOR-MODAL')
