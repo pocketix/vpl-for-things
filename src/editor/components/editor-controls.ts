@@ -250,7 +250,7 @@ export class EditorControls extends LitElement {
   @property()
   language?: Language;
 
-  @property() selectedEditorView: SelectedEditorView = 'split';
+  @property({reflect: true, type: String}) selectedEditorView: SelectedEditorView = 'split';
   @property() variablesTableMode: VariableTableMode = 'display';
   @property() selectedAddVariableType: UserVariableType = Types.string;
   @property() selectedAddVariableInitialValueBool: any = true;
@@ -262,6 +262,7 @@ export class EditorControls extends LitElement {
   @property() addVariableInitialValueIsMissing: boolean = false;
   @property() addVariableNameExists: boolean = false;
   @property() variableSearchInput: string = '';
+  @property({ type: Boolean }) showControls: boolean;
 
   @property() addVariableName: string = '';
   @property() tempNewVariable: UserVariable;
@@ -283,6 +284,14 @@ export class EditorControls extends LitElement {
         return true;
       })
       .sort();
+  }
+
+  openVariablesModal() {
+    this.handleShowUserVariablesModal();
+  }
+
+  openProceduresModal() {
+    this.userProceduresModalRef.value.showModal();
   }
 
   handleShowUserVariablesModal() {
@@ -876,7 +885,8 @@ export class EditorControls extends LitElement {
   }
 
   render() {
-    return html`
+    return this.showControls
+      ? html`
       <div class="controls">
         <div class="controls-group-export">
           <label for="program-file-input">
@@ -918,6 +928,13 @@ export class EditorControls extends LitElement {
       </select>
       ${this.userVariablesModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
-    `;
+    `
+    : html`
+      <div>
+        ${this.userVariablesModalTemplate()}
+        <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
+      </div>
+    `
+
   }
 }
