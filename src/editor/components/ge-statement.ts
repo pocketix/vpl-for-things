@@ -25,7 +25,7 @@ import Types from '@vpl/types.ts';
 @customElement('ge-statement')
 export class GEStatement extends LitElement {
   //#region Styles
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -205,7 +205,7 @@ export class GEStatement extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
   //#endregion
 
   //#region Props

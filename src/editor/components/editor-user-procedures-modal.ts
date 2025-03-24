@@ -13,7 +13,7 @@ import { graphicalEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -128,7 +128,7 @@ export class EditorUserProceduresModal extends LitElement {
         gap: 0.25rem;
       }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: languageContext })
   @property()

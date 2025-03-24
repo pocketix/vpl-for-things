@@ -34,7 +34,7 @@ export type SelectedEditorView = 'ge' | 'te' | 'split';
 
 @customElement('editor-controls')
 export class EditorControls extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -240,7 +240,7 @@ export class EditorControls extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: programContext })
   @property()

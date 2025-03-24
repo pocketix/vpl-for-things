@@ -10,7 +10,7 @@ type DisplayType = 'modal' | 'dialog';
 @customElement('editor-modal')
 export class EditorModal extends LitElement {
   //#region CSS
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -92,7 +92,7 @@ export class EditorModal extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
   //#endregion CSS
 
   //#region Props
