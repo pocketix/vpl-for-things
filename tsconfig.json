@@ -21,7 +21,12 @@
       "@components/*": ["src/editor/components/*"],
       "@assets/*": ["src/assets/*"],
       "@vpl/*": ["src/vpl/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "ts-lit-plugin"
+      }
+    ]
   },
   "include": ["src/**/*"]
 }

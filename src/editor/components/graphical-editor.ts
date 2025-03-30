@@ -53,7 +53,7 @@ export class GraphicalEditor extends LitElement {
     return html`
       <ge-block .block="${this.program.block}"></ge-block>
       ${this.program.block.length < 1
-        ? html` <div class="help-message">Click on "+" button to add new statement</div> `
+        ? html` <div class="help-message">Click the "+" button to add a new statement</div> `
         : nothing}
     `;
   }

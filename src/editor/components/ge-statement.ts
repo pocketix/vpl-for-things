@@ -25,7 +25,7 @@ import Types from '@vpl/types.ts';
 @customElement('ge-statement')
 export class GEStatement extends LitElement {
   //#region Styles
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -101,29 +101,29 @@ export class GEStatement extends LitElement {
         flex-direction: column;
       }
 
-      .statement-controls-buttons editor-button {
+      .statement-controls-buttons editor-button::part(btn) {
         display: flex;
         justify-items: center;
-        gap: 0.25rem;
         white-space: nowrap;
         box-shadow: none;
         border: none;
+        border-radius: 0;
         border-bottom: 1px solid var(--gray-300);
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
       }
 
-      .statement-controls-buttons editor-button:last-child {
+      .statement-controls-buttons editor-button:first-child::part(btn) {
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+      }
+
+      .statement-controls-buttons editor-button:last-child::part(btn) {
         border-bottom-left-radius: 0.5rem;
         border-bottom-right-radius: 0.5rem;
         border-bottom: none;
       }
 
-      .remove-statement-button {
+      .remove-statement-button::part(btn) {
         color: var(--red-600);
-      }
-
-      .statement-controls-expand-button {
       }
 
       .expand-nested-block-button {
@@ -140,7 +140,7 @@ export class GEStatement extends LitElement {
         gap: 0.5rem;
       }
 
-      .user-proc-wrapper {
+      .user-proc-wrapper::part(btn) {
         display: block;
         padding: 0;
         border: none;
@@ -148,8 +148,7 @@ export class GEStatement extends LitElement {
         background: none;
       }
 
-      .ok-button {
-        display: flex;
+      .ok-button::part(btn) {
         justify-content: center;
         color: var(--green-600);
         gap: 4px;
@@ -206,7 +205,7 @@ export class GEStatement extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
   //#endregion
 
   //#region Props
@@ -270,21 +269,21 @@ export class GEStatement extends LitElement {
   }
 
   updated() {
+    const bgColor = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].backgroundColor;
+    const color = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].foregroundColor;
+    const invalidStyle = this.statement.isInvalid ? "outline: 4px dashed #facc15; outline-offset: -4px; border-left: 4px solid transparent;" : "";
+
     this.statementHeaderRef.value.setAttribute(
       'style',
-      `background-color: ${
-        this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
-      }; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}; ${
-        this.statement.isInvalid ? 'border: 4px dashed #facc15' : ''
-      }`
+      `background-color: ${bgColor}; color: ${color}; ${invalidStyle}`
     );
 
     if (this.statementNestedBlockRef.value) {
+      const bgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor;
+      const color = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor;
       this.statementNestedBlockRef.value.setAttribute(
         'style',
-        `background-color: ${
-          this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
-        }3a; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor};`
+        `background-color: ${bgColor}3a; color: ${color};`
       );
     }
   }
@@ -474,14 +473,14 @@ export class GEStatement extends LitElement {
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
                     title="Statement Controls"
-                    class="statement-controls-expand-button">
+                  >
                     <editor-icon .icon="${icons.list}"></editor-icon>
                   </editor-button>
                   <editor-modal
                     class="statement-controls-modal"
                     .displayType="${'dialog'}"
                     .titleIsVisible="${false}"
-                    .closeButtonIsVisible="${false}"
+                    ?hideCloseButton="${true}"
                     ${ref(this.statementControlsModalRef)}>
                     <div class="statement-controls-buttons">
                       <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">

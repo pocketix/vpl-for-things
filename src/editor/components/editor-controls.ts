@@ -22,12 +22,11 @@ import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userV
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
-  statementCustomEvent,
   textEditorCustomEvent,
 } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
 import * as icons from '@/editor/icons';
-import { EditorButton, Language } from '@/index';
+import { Language } from '@/index';
 import Types from '@vpl/types.ts';
 
 export type VariableTableMode = 'display' | 'edit';
@@ -35,7 +34,7 @@ export type SelectedEditorView = 'ge' | 'te' | 'split';
 
 @customElement('editor-controls')
 export class EditorControls extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -96,15 +95,8 @@ export class EditorControls extends LitElement {
         padding-left: 3px;
       }
 
-      .add-variable-button {
-        display: flex;
-        gap: 0.25rem;
-        white-space: nowrap;
-      }
 
       .edit-variable-button {
-        display: flex;
-        gap: 0.25rem;
         white-space: nowrap;
       }
 
@@ -163,9 +155,10 @@ export class EditorControls extends LitElement {
       }
 
       .add-variable-modal-save-button {
-        display: flex;
-        gap: 0.25rem;
         width: 100%;
+      }
+
+      .add-variable-modal-save-button::part(btn) {
         justify-content: center;
       }
 
@@ -173,9 +166,6 @@ export class EditorControls extends LitElement {
         display: flex;
         justify-content: space-between;
         gap: 0.5rem;
-      }
-
-      #add-variable-type-select {
       }
 
       .variable-types-legend {
@@ -206,9 +196,6 @@ export class EditorControls extends LitElement {
         font-family: var(--main-font);
       }
 
-      .user-variables-modal::part(dialog) {
-      }
-
       .no-variables-phrase {
         display: flex;
         flex-direction: column;
@@ -218,8 +205,7 @@ export class EditorControls extends LitElement {
         color: var(--gray-500);
       }
 
-      .control-button {
-        gap: 0.25rem;
+      .control-button::part(btn) {
         font-weight: 400;
       }
 
@@ -254,7 +240,7 @@ export class EditorControls extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: programContext })
   @property()
@@ -578,13 +564,14 @@ export class EditorControls extends LitElement {
           <div class="user-variables-header">
             <div class="user-variables-header-search">
               <input
+                autofocus
                 type="text"
                 placeholder="Search"
                 id="variable-search-field"
                 .value="${this.variableSearchInput}"
                 @input="${this.handleVariablesSearch}" />
               <div class="variables-buttons-wrapper">
-                <editor-button class="edit-variable-button" @click="${this.handleVariablesTableChangeMode}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleVariablesTableChangeMode}">
                   ${this.variablesTableMode === 'display'
                     ? html`
                         <editor-icon .icon="${pencilSquare}"></editor-icon>
@@ -595,7 +582,7 @@ export class EditorControls extends LitElement {
                         <div>Save</div>
                       `}
                 </editor-button>
-                <editor-button class="add-variable-button" @click="${this.handleShowAddVariableModal}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleShowAddVariableModal}">
                   <editor-icon .icon="${plusLg}"></editor-icon>
                   <div>New</div>
                 </editor-button>
@@ -604,6 +591,7 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-item">
                       <label for="add-variable-type-select">Type</label>
                       <select
+                        autofocus
                         name=""
                         id="add-variable-type-select"
                         .value="${this.selectedAddVariableType}"
@@ -650,15 +638,15 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-save">
                       <editor-button
                         class="add-variable-modal-save-button"
-                        style="color: var(--green-600);"
+                        btnStyle="color: var(--green-600);"
                         @click="${this.handleAddNewVariable}">
-                        <editor-icon .icon="${checkLg}"></editor-icon>
-                        <div>Add</div>
+                          <editor-icon .icon="${checkLg}"></editor-icon>
+                          <div>Add</div>
                       </editor-button>
                       <editor-button
                         @click="${this.handleCloseAddVariableModal}"
                         class="add-variable-modal-save-button"
-                        style="color: var(--red-600);">
+                        btnStyle="color: var(--red-600);">
                         <editor-icon .icon="${xLg}"></editor-icon>
                         <div>Cancel</div>
                       </editor-button>
@@ -693,7 +681,7 @@ export class EditorControls extends LitElement {
         return html`
           <editor-button
             @click="${this.handleShowAddVariableExpressionModal}"
-            style="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
+            btnStyle="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
             <div style="display: flex; gap: 4px; align-items: center;">
               <editor-icon .icon="${icons.threeDots}"></editor-icon>
               Expression
@@ -747,7 +735,7 @@ export class EditorControls extends LitElement {
               ${ref(this.variableTypesLegendModalRef)}
               .displayType="${'dialog'}"
               .titleIsVisible="${false}"
-              .closeButtonIsVisible="${false}">
+              ?hideCloseButton="${true}">
               <div class="variable-types-legend">
                 ${userVariableTypes.map((varType: UserVariableType) => {
                   return html`
@@ -773,7 +761,7 @@ export class EditorControls extends LitElement {
         ${repeat(
           this.filteredVariables,
           (key) => key,
-          (key, i) => {
+          (key) => {
             return html`
               <tr>
                 <td>
@@ -800,7 +788,7 @@ export class EditorControls extends LitElement {
                         name=""
                         id=""
                         .value="${key}"
-                        @change="${(e) => this.handleModifyVariableName(e, key)}" />`}
+                        @change="${(e: Event) => this.handleModifyVariableName(e, key)}" />`}
                 </td>
                 <td>
                   ${this.variablesTableMode === 'display'
@@ -847,13 +835,16 @@ export class EditorControls extends LitElement {
   }
 
   userVaribleModifyInitialValueTemplate(varKey: string) {
+    console.assert(typeof this.program.header.userVariables[varKey].value === "string", "user variable value is of type string");
+    const value = this.program.header.userVariables[varKey].value as string; // TODO(filip): rework types
+
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`
           <select
             class="mono-font"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}">
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}">
             <option value="true">True</option>
             <option value="false">False</option>
           </select>
@@ -868,8 +859,8 @@ export class EditorControls extends LitElement {
             id=""
             inputmode="decimal"
             placeholder="123"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
       case Types.string:
         return html`
@@ -878,8 +869,8 @@ export class EditorControls extends LitElement {
             name=""
             id=""
             placeholder="abc"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
     }
   }

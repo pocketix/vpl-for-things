@@ -19,6 +19,8 @@ export * from '@components/editor-user-procedure-modal';
 export * from '@components/editor-user-var-expr-modal';
 export * from '@components/editor-expression-operand-list';
 
+export * from '@components/../context/editor-context';
+
 export * from '@vpl/base.language';
 export * from '@vpl/language';
 export * from '@vpl/program';
