@@ -205,6 +205,22 @@ export class EditorUserProceduresModal extends LitElement {
     }
 
     const deviceList = this.language.deviceList || []; // Get deviceList from language context
+    const validUuids = new Set(this.program.header.skeletonize_uuid); // Get valid UUIDs
+
+    // Recursive function to remove blocks not in skeletonize_uuid
+    const filterInvalidBlocks = (block: any[]) => {
+      block.forEach((stmt, index) => {
+        if (!validUuids.has(stmt._uuid)) {
+          console.log('Removing block with invalid UUID:', stmt._uuid);
+          block.splice(index, 1); // Remove block if UUID is not valid
+          return; // Skip further processing for this block
+        }
+
+        if (stmt.block && Array.isArray(stmt.block)) {
+          filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
+        }
+      });
+    };
 
     // Recursive function to parse blocks, replace matching IDs, and print every id and uuid
     const parseBlock = (block: any[]) => {
@@ -237,7 +253,10 @@ export class EditorUserProceduresModal extends LitElement {
       });
     };
 
-    // Parse the skeletonize block
+    // First, filter out invalid blocks
+    filterInvalidBlocks(this.program.header.skeletonize);
+
+    // Then, parse the skeletonize block to replace device blocks
     parseBlock(this.program.header.skeletonize);
 
     this.requestUpdate();
