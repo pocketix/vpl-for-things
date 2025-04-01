@@ -343,15 +343,29 @@ export class GeBlock extends LitElement {
   }
 
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
-    if (!this.skeletonizeMode) return;
+    console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
+
+    if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No action taken.');
+      return;
+    }
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
-    if (!stmt) return;
+    if (!stmt) {
+      console.log(`Statement with UUID ${stmtUuid} not found.`);
+      return;
+    }
+
+    const addedUuids: string[] = [];
+    const removedUuids: string[] = [];
 
     const selectBlock = (stmt: ProgramStatement) => {
       if (!this.selectedStatements.has(stmt._uuid)) {
+        console.log(`Selecting statement with UUID: ${stmt._uuid}`); // Log UUID when selecting
+        this.requestUpdate();
         this.selectedStatements.add(stmt._uuid);
         this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
+        addedUuids.push(stmt._uuid);
       }
       if (isParentClick && (stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach(selectBlock);
@@ -360,10 +374,13 @@ export class GeBlock extends LitElement {
 
     const deselectBlock = (stmt: ProgramStatement) => {
       if (this.selectedStatements.has(stmt._uuid)) {
+        console.log(`Deselecting statement with UUID: ${stmt._uuid}`); // Log UUID when deselecting
+        this.requestUpdate();
         this.selectedStatements.delete(stmt._uuid);
         this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
           (uuid) => uuid !== stmt._uuid
         ); // Remove from skeletonize_uuid
+        removedUuids.push(stmt._uuid);
       }
       if (isParentClick && (stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach(deselectBlock);
@@ -374,6 +391,14 @@ export class GeBlock extends LitElement {
       deselectBlock(stmt);
     } else {
       selectBlock(stmt);
+    }
+
+    console.log('Skeletonize UUIDs:', this.program.header.skeletonize_uuid);
+    if (addedUuids.length > 0) {
+      console.log('Added UUIDs:', addedUuids);
+    }
+    if (removedUuids.length > 0) {
+      console.log('Removed UUIDs:', removedUuids);
     }
 
     this.requestUpdate();
@@ -419,10 +444,12 @@ export class GeBlock extends LitElement {
               .skeletonizeMode="${this.skeletonizeMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
+                console.log(`Block clicked: UUID ${stmt._uuid}`);
                 this.toggleStatementSelection(stmt._uuid, true);
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
+                console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
                 this.toggleStatementSelection(e.detail.uuid, false);
               }}">
             </ge-statement>
