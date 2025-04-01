@@ -342,7 +342,7 @@ export class GeBlock extends LitElement {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
-  toggleStatementSelection(stmtUuid: string) {
+  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     if (!this.skeletonizeMode) return;
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
@@ -353,7 +353,7 @@ export class GeBlock extends LitElement {
         this.selectedStatements.add(stmt._uuid);
         this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
       }
-      if ((stmt as CompoundStatement).block) {
+      if (isParentClick && (stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach(selectBlock);
       }
     };
@@ -365,7 +365,7 @@ export class GeBlock extends LitElement {
           (uuid) => uuid !== stmt._uuid
         ); // Remove from skeletonize_uuid
       }
-      if ((stmt as CompoundStatement).block) {
+      if (isParentClick && (stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach(deselectBlock);
       }
     };
@@ -417,7 +417,14 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              @click="${() => this.toggleStatementSelection(stmt._uuid)}">
+              @click="${(e: Event) => {
+                e.stopPropagation();
+                this.toggleStatementSelection(stmt._uuid, true);
+              }}"
+              @nested-click="${(e: CustomEvent) => {
+                e.stopPropagation();
+                this.toggleStatementSelection(e.detail.uuid, false);
+              }}">
             </ge-statement>
           `
       )}

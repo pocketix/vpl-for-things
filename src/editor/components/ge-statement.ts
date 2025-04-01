@@ -561,8 +561,16 @@ export class GEStatement extends LitElement {
                 .block="${(this.statement as CompoundStatement).block}"
                 .parentStmt="${this.statement}"
                 .isProcBody="${this.isProcBody}"
-                .isExample="${this.isExample}"
-                .skeletonizeMode="${this.skeletonizeMode}">
+                .skeletonizeMode="${this.skeletonizeMode}"
+                @click="${(e: Event) => {
+                  e.stopPropagation();
+                  const event = new CustomEvent('nested-click', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { uuid: this.statement._uuid },
+                  });
+                  this.dispatchEvent(event);
+                }}">
               </ge-block>
             `
           : this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
