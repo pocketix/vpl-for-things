@@ -207,7 +207,6 @@ export class EditorUserProceduresModal extends LitElement {
     }
 
     const deviceList = this.language.deviceList || []; // Get deviceList from language context
-    const deviceGroup = this.language.statements['deviceType']; // Fetch the deviceGroup block from base.language
 
     // Recursive function to parse blocks, replace matching IDs, and print every id
     const parseBlock = (block: any[]) => {
@@ -218,7 +217,15 @@ export class EditorUserProceduresModal extends LitElement {
           console.log('Parsed Name:', deviceName);
           if (deviceList.includes(deviceName)) {
             console.log('Replacing block with ID:', stmt.id);
-            block[index] = JSON.parse(JSON.stringify(deviceGroup)); // Replace with deviceGroup
+            block[index] = {
+              id: 'deviceType',
+              arguments: [
+                {
+                  type: 'multi_device',
+                  value: [deviceName], // Replace with the matched device name
+                },
+              ],
+            }; // Replace with a new block containing the matched device name
           } else {
             console.log('Parsed ID:', stmt.id);
           }
