@@ -420,6 +420,7 @@ export class GeBlock extends LitElement {
         }
       });
     } else {
+      selectBlock(stmt);
       this.selectedStatements.add(stmtUuid);
       Array.from(dependencies).forEach((depId) => {
         const depStmt = this.block.find((s) => s.id === depId);
@@ -463,9 +464,11 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .isProcBody="${this.isProcBody}"
               .statement="${stmt}"
               .index="${i}"
+              .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .skeletonizeMode="${this.skeletonizeMode}" <!-- Pass skeletonizeMode to ge-statement -->
@@ -576,17 +579,17 @@ export class GeBlock extends LitElement {
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Basic statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Basic statements
+              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Device statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Device statements
+              </editor-button>
             </div>
           </div>
           <div class="add-statements-wrapper">
