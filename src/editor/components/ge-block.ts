@@ -30,7 +30,7 @@ export class GeBlock extends LitElement {
       }
 
       .highlighted {
-        border: 2px solid yellow; /* Add yellow outline for selected blocks */
+        border: 2px solid var(--blue-500);
         background-color: var(--blue-100);
       }
 
@@ -348,14 +348,45 @@ export class GeBlock extends LitElement {
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) return;
 
-    if (this.program.header.skeletonize_uuid.includes(stmtUuid)) {
-      // Deselect: Remove UUID and unhighlight
-      this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter((id) => id !== stmtUuid);
+    const dependencies = getBlockDependencies([stmt], this.language.statements);
+    const dependents = getBlockDependents([stmt], this.language.statements);
+
+    const selectDependencies = (stmt: ProgramStatement) => {
+      if (!this.selectedStatements.has(stmt._uuid)) {
+        this.selectedStatements.add(stmt._uuid);
+        if ((stmt as CompoundStatement).block) {
+          (stmt as CompoundStatement).block.forEach(selectDependencies);
+        }
+      }
+    };
+
+    const deselectDependents = (stmt: ProgramStatement) => {
+      if (this.selectedStatements.has(stmt._uuid)) {
+        this.selectedStatements.delete(stmt._uuid);
+        if ((stmt as CompoundStatement).block) {
+          (stmt as CompoundStatement).block.forEach(deselectDependents);
+        }
+      }
+    };
+
+    if (this.selectedStatements.has(stmtUuid)) {
       this.selectedStatements.delete(stmtUuid);
+      Array.from(dependents).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.delete(depStmt._uuid);
+          deselectDependents(depStmt);
+        }
+      });
     } else {
-      // Select: Add UUID and highlight
-      this.program.header.skeletonize_uuid.push(stmtUuid);
       this.selectedStatements.add(stmtUuid);
+      Array.from(dependencies).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.add(depStmt._uuid);
+          selectDependencies(depStmt);
+        }
+      });
     }
 
     this.requestUpdate();
@@ -393,12 +424,11 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              class="${this.program.header.skeletonize_uuid.includes(stmt._uuid) ? 'highlighted' : ''}"
+              .isProcBody="${this.isProcBody}"
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}"
-              .skeletonizeMode="${this.skeletonizeMode}"
-              @click="${() => this.toggleStatementSelection(stmt._uuid)}">
+              .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
             </ge-statement>
           `
       )}
