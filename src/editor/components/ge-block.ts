@@ -33,6 +33,7 @@ export class GeBlock extends LitElement {
 
       .highlighted {
         border: 2px solid var(--blue-500);
+        border: 2px solid var(--blue-500);
         background-color: var(--blue-100);
       }
 
@@ -376,49 +377,36 @@ export class GeBlock extends LitElement {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
-  toggleStatementSelection(stmtUuid: string) {
+  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     if (!this.skeletonizeMode) return;
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) return;
 
-<<<<<<< HEAD
-    const dependencies = getBlockDependencies([stmt], this.language.statements);
-    const dependents = getBlockDependents([stmt], this.language.statements);
-
-    const selectDependencies = (stmt: ProgramStatement) => {
+    const selectBlock = (stmt: ProgramStatement) => {
       if (!this.selectedStatements.has(stmt._uuid)) {
         this.selectedStatements.add(stmt._uuid);
-        if ((stmt as CompoundStatement).block) {
-          (stmt as CompoundStatement).block.forEach(selectDependencies);
-        }
+        this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
+      }
+      if (isParentClick && (stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(selectBlock);
       }
     };
 
-    const deselectDependents = (stmt: ProgramStatement) => {
+    const deselectBlock = (stmt: ProgramStatement) => {
       if (this.selectedStatements.has(stmt._uuid)) {
         this.selectedStatements.delete(stmt._uuid);
-        if ((stmt as CompoundStatement).block) {
-          (stmt as CompoundStatement).block.forEach(deselectDependents);
-        }
+        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+          (uuid) => uuid !== stmt._uuid
+        ); // Remove from skeletonize_uuid
+      }
+      if (isParentClick && (stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(deselectBlock);
       }
     };
 
-    if (!this.skeletonizeMode) return;
     if (this.selectedStatements.has(stmtUuid)) {
-=======
-    if (this.program.header.skeletonize_uuid.includes(stmtUuid)) {
-      // Deselect: Remove UUID and unhighlight
-      this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter((id) => id !== stmtUuid);
->>>>>>> 8d43fd9 (Testing: adding to selected)
-      this.selectedStatements.delete(stmtUuid);
-      Array.from(dependents).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.delete(depStmt._uuid);
-          deselectDependents(depStmt);
-        }
-      });
+      deselectBlock(stmt);
     } else {
       selectBlock(stmt);
       this.selectedStatements.add(stmtUuid);
@@ -429,6 +417,7 @@ export class GeBlock extends LitElement {
           selectDependencies(depStmt);
         }
       });
+      selectBlock(stmt);
     }
 
     this.requestUpdate();
@@ -466,29 +455,21 @@ export class GeBlock extends LitElement {
             <ge-statement
               class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .isProcBody="${this.isProcBody}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .statement="${stmt}"
               .index="${i}"
+              .isProcBody="${this.isProcBody}"
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
-              .skeletonizeMode="${this.skeletonizeMode}" <!-- Pass skeletonizeMode to ge-statement -->
-              @click="${() => this.toggleStatementSelection(stmt._uuid)}"
-            >
-            </ge-statement>
-          `
-      )}
-      ${repeat(
-        this.block,
-        (stmt) => stmt._uuid,
-        (stmt, i) =>
-          html`
-            <ge-statement
-              .isProcBody="${this.isProcBody}"
-              .statement="${stmt}"
-              .index="${i}"
-              .isExample="${this.isExample}">
-            </ge-statement>
-              .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+              .skeletonizeMode="${this.skeletonizeMode}"
+              @click="${(e: Event) => {
+                e.stopPropagation();
+                this.toggleStatementSelection(stmt._uuid, true);
+              }}"
+              @nested-click="${(e: CustomEvent) => {
+                e.stopPropagation();
+                this.toggleStatementSelection(e.detail.uuid, false);
+              }}">
             </ge-statement>
           `
       )}
@@ -582,11 +563,17 @@ export class GeBlock extends LitElement {
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
               </editor-button>
+                  : 'border-bottom: 2px solid white'}">
+                Basic statements
+              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
+                  : 'border-bottom: 2px solid white'}">
+                Device statements
+              </editor-button>
                   : 'border-bottom: 2px solid white'}">
                 Device statements
               </editor-button>
