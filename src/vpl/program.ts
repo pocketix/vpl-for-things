@@ -152,6 +152,7 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
+      skeletonize: [],
     };
     this.block = [];
   }
@@ -375,6 +376,7 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
+  skeletonize: Block;
 };
 
 export type UserVariable = {

@@ -191,6 +191,12 @@ export class EditorUserProceduresModal extends LitElement {
     this.selectedFgColor = (e.currentTarget as HTMLInputElement).value;
   }
 
+  formatSkeletonize() {
+
+    
+  
+  }
+
   handleAddNewProc() {
     if (this.addProcName === '') {
       this.addProcNameIsMissing = true;
@@ -212,6 +218,7 @@ export class EditorUserProceduresModal extends LitElement {
     this.addProcName = '';
     this.addProcedureModalRef.value.hideModal();
 
+    this.formatSkeletonize();
     // Create the new procedure
     this.language.statements[newProcId] = {
       type: 'unit',
@@ -239,6 +246,7 @@ export class EditorUserProceduresModal extends LitElement {
       this.program.header.userProcedures[newProcId] = [];
     }
 
+    
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
