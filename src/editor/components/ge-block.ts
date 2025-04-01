@@ -348,45 +348,32 @@ export class GeBlock extends LitElement {
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) return;
 
-    const dependencies = getBlockDependencies([stmt], this.language.statements);
-    const dependents = getBlockDependents([stmt], this.language.statements);
-
-    const selectDependencies = (stmt: ProgramStatement) => {
+    const selectBlock = (stmt: ProgramStatement) => {
       if (!this.selectedStatements.has(stmt._uuid)) {
         this.selectedStatements.add(stmt._uuid);
-        if ((stmt as CompoundStatement).block) {
-          (stmt as CompoundStatement).block.forEach(selectDependencies);
-        }
+        this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
+      }
+      if ((stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(selectBlock);
       }
     };
 
-    const deselectDependents = (stmt: ProgramStatement) => {
+    const deselectBlock = (stmt: ProgramStatement) => {
       if (this.selectedStatements.has(stmt._uuid)) {
         this.selectedStatements.delete(stmt._uuid);
-        if ((stmt as CompoundStatement).block) {
-          (stmt as CompoundStatement).block.forEach(deselectDependents);
-        }
+        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+          (uuid) => uuid !== stmt._uuid
+        ); // Remove from skeletonize_uuid
+      }
+      if ((stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(deselectBlock);
       }
     };
 
     if (this.selectedStatements.has(stmtUuid)) {
-      this.selectedStatements.delete(stmtUuid);
-      Array.from(dependents).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.delete(depStmt._uuid);
-          deselectDependents(depStmt);
-        }
-      });
+      deselectBlock(stmt);
     } else {
-      this.selectedStatements.add(stmtUuid);
-      Array.from(dependencies).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.add(depStmt._uuid);
-          selectDependencies(depStmt);
-        }
-      });
+      selectBlock(stmt);
     }
 
     this.requestUpdate();
@@ -424,11 +411,13 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              .isProcBody="${this.isProcBody}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .statement="${stmt}"
               .index="${i}"
+              .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
-              .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
+              .skeletonizeMode="${this.skeletonizeMode}"
+              @click="${() => this.toggleStatementSelection(stmt._uuid)}">
             </ge-statement>
           `
       )}
@@ -514,17 +503,17 @@ export class GeBlock extends LitElement {
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Basic statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Basic statements
+              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Device statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Device statements
+              </editor-button>
             </div>
           </div>
           <div class="add-statements-wrapper">
