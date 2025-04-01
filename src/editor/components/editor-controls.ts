@@ -718,8 +718,8 @@ export class EditorControls extends LitElement {
     this.skeletonizeMode = !this.skeletonizeMode;
 
     if (!this.skeletonizeMode) {
-      // Clear selected_uuids when exiting skeletonize mode
-      this.program.header.selected_uuids = [];
+      // Clear skeletonize_uuid when exiting skeletonize mode
+      this.program.header.skeletonize_uuid = [];
     }
 
     const event = new CustomEvent('skeletonize-mode-changed', {

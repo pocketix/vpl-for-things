@@ -33,6 +33,13 @@ export class GEStatement extends LitElement {
         flex-direction: column;
       }
 
+
+
+      .highlight-active {
+        box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8); /* Highlight effect */
+        border: 2px solid rgba(255, 255, 0, 0.8);
+      }
+
       .expr-arg {
         white-space: nowrap;
         overflow-x: auto;
@@ -217,6 +224,7 @@ export class GEStatement extends LitElement {
   @property() isExample: boolean = false;
   @property() exampleBlockIsVisible: boolean = false;
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   //#endregion
 
   //#region Context
@@ -353,6 +361,11 @@ export class GEStatement extends LitElement {
     }
     e.stopPropagation();
   }
+
+  toggleHighlight() {
+    this.isHighlighted = !this.isHighlighted;
+    this.requestUpdate();
+  }
   //#endregion
 
   //#region Templates
@@ -405,7 +418,7 @@ export class GEStatement extends LitElement {
                   title="Show Help"
                   @click="${this.handleShowStmtDescModal}"
                   .icon="${icons[this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].icon]}"
-                  .color="${this.language.statements[this.statement.id].foregroundColor}"
+                  .color="${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}"
                   .width="${24}"
                   .height="${24}">
                 </editor-icon>
@@ -527,8 +540,17 @@ export class GEStatement extends LitElement {
   render() {
     return html`
       <div
-        class="statement-wrapper ${this.skeletonizeMode ? 'disabled' : ''}"
-        @click="${this.skeletonizeMode ? (e: Event) => e.stopPropagation() : null}">
+        class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
+        @click="${() => {
+          if (this.skeletonizeMode) {
+            const event = new CustomEvent('toggle-statement-selection', {
+              bubbles: true,
+              composed: true,
+              detail: { uuid: this.statement._uuid },
+            });
+            this.dispatchEvent(event);
+          }
+        }}">
         ${(this.statement as CompoundStatement).block
           ? html`
               ${this.statementTemplate(true)}
@@ -548,7 +570,7 @@ export class GEStatement extends LitElement {
               <editor-button
                 @click="${this.handleShowProcDef}"
                 class="user-proc-wrapper"
-                ?disabled="${this.skeletonizeMode}"> <!-- Disable button in skeletonize mode -->
+                ?disabled="${this.skeletonizeMode}">
                 ${this.statementTemplate(false)}
               </editor-button>
               <editor-modal

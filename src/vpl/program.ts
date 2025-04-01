@@ -157,7 +157,8 @@ export class Program {
       userVariables: {},
       userProcedures: {},
       skeletonize: [],
-      selected_uuids: [], // Add selected_uuids array to the header
+      skeletonize_uuid: [], // Add skeletonize_uuid array to the header
+      selected_uuids: [],
     };
     this.block = [];
   }
@@ -377,7 +378,8 @@ export type Header = {
     [id: string]: Block;
   };
   skeletonize: [];
-  selected_uuids: string[]; // Add selected_uuids array to the Header type
+  skeletonize_uuid: string[]; // Add skeletonize_uuid array to the Header type
+  selected_uuids: string[];
 };
 
 export type UserVariable = {
