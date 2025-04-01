@@ -412,10 +412,22 @@ export class GeBlock extends LitElement {
       this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter((id) => id !== stmtUuid);
 >>>>>>> 8d43fd9 (Testing: adding to selected)
       this.selectedStatements.delete(stmtUuid);
+      Array.from(dependents).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.delete(depStmt._uuid);
+          deselectDependents(depStmt);
+        }
+      });
     } else {
-      // Select: Add UUID and highlight
-      this.program.header.skeletonize_uuid.push(stmtUuid);
       this.selectedStatements.add(stmtUuid);
+      Array.from(dependencies).forEach((depId) => {
+        const depStmt = this.block.find((s) => s.id === depId);
+        if (depStmt) {
+          this.selectedStatements.add(depStmt._uuid);
+          selectDependencies(depStmt);
+        }
+      });
     }
 
     this.requestUpdate();
@@ -451,7 +463,7 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              class="${this.program.header.skeletonize_uuid.includes(stmt._uuid) ? 'highlighted' : ''}"
+              .isProcBody="${this.isProcBody}"
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}"
