@@ -194,9 +194,36 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   formatSkeletonize() {
+    // Copy the contents of program.block from program to program.header.skeletonize
+    this.program.header.skeletonize = JSON.parse(JSON.stringify(this.program.block));
 
-    
-  
+    // Log the skeletonize content for debugging
+    console.log('Skeletonize Content:', this.program.header.skeletonize);
+
+    // If skeletonize is empty, log a warning and return
+    if (!this.program.header.skeletonize || this.program.header.skeletonize.length === 0) {
+      console.warn('Skeletonize is empty. Ensure program.block contains data.');
+      return;
+    }
+
+    // Recursive function to parse blocks and print every id
+    const parseBlock = (block: any[]) => {
+      block.forEach((stmt) => {
+        if (stmt.id) {
+          console.log('Parsed ID:', stmt.id);
+        } else {
+          console.warn('Block without ID:', stmt);
+        }
+        if (stmt.block && Array.isArray(stmt.block)) {
+          parseBlock(stmt.block); // Recursively parse nested blocks
+        }
+      });
+    };
+
+    // Parse the skeletonize block
+    parseBlock(this.program.header.skeletonize);
+
+    this.requestUpdate();
   }
 
   handleAddNewProc() {
@@ -221,6 +248,9 @@ export class EditorUserProceduresModal extends LitElement {
     this.addProcedureModalRef.value.hideModal();
 
     this.formatSkeletonize();
+
+    this.requestUpdate();
+
     // Create the new procedure
     this.language.statements[newProcId] = {
       type: 'unit',
@@ -231,9 +261,8 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    this.program.header.userProcedures[newProcId] = [];
+    this.program.header.userProcedures[newProcId] = JSON.parse(JSON.stringify(this.program.header.skeletonize));
 
-    
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,

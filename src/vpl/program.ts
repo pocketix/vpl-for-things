@@ -375,7 +375,7 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
-  skeletonize: Block;
+  skeletonize: [];
 };
 
 export type UserVariable = {
