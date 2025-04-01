@@ -211,10 +211,13 @@ export class EditorUserProceduresModal extends LitElement {
 
     // Recursive function to remove blocks not in skeletonize_uuid
     const filterInvalidBlocks = (block: any[]) => {
+      console.log('Skeletonize UUIDs:', Array.from(validUuids)); // Log the skeletonize_uuid array
       block.forEach((stmt, index) => {
+        console.log('Processing block with UUID:', stmt._uuid); // Log the UUID of the current block
         if (!validUuids.has(stmt._uuid)) {
           console.log('Removing block with invalid UUID:', stmt._uuid);
           block.splice(index, 1); // Remove block if UUID is not valid
+          this.requestUpdate();
           return; // Skip further processing for this block
         }
 
