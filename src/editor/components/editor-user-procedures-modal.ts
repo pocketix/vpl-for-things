@@ -208,13 +208,14 @@ export class EditorUserProceduresModal extends LitElement {
 
     const deviceList = this.language.deviceList || []; // Get deviceList from language context
 
-    // Recursive function to parse blocks, replace matching IDs, and print every id
+    // Recursive function to parse blocks, replace matching IDs, and print every id and uuid
     const parseBlock = (block: any[]) => {
       block.forEach((stmt, index) => {
         if (stmt.id) {
           const idParts = stmt.id.split('.'); // Split the id by '.'
           const deviceName = idParts[0]; // Extract the first part as the device name
           console.log('Parsed Name:', deviceName);
+          console.log('Parsed ID:', stmt._uuid ? stmt._uuid : 'No UUID');
           if (deviceList.includes(deviceName)) {
             console.log('Replacing block with ID:', stmt.id);
             block[index] = {
@@ -227,10 +228,10 @@ export class EditorUserProceduresModal extends LitElement {
               ],
             }; // Replace with a new block containing the matched device name
           } else {
-            console.log('Parsed ID:', stmt.id);
+            console.log('Parsed ID:', stmt.id, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
           }
         } else {
-          console.warn('Block without ID:', stmt);
+          console.warn('Block without ID:', stmt, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
         }
         if (stmt.block && Array.isArray(stmt.block)) {
           parseBlock(stmt.block); // Recursively parse nested blocks

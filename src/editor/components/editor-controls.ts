@@ -716,12 +716,28 @@ export class EditorControls extends LitElement {
 
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
+
+    if (!this.skeletonizeMode) {
+      // Clear selected_uuids when exiting skeletonize mode
+      this.program.header.selected_uuids = [];
+    }
+
     const event = new CustomEvent('skeletonize-mode-changed', {
       bubbles: true,
       composed: true,
       detail: { active: this.skeletonizeMode }
     });
     this.dispatchEvent(event);
+  }
+
+  handleAddToSelectedUUIDs(uuid: string) {
+    if (!this.program.header.selected_uuids.includes(uuid)) {
+      this.program.header.selected_uuids.push(uuid);
+    }
+  }
+
+  handleRemoveFromSelectedUUIDs(uuid: string) {
+    this.program.header.selected_uuids = this.program.header.selected_uuids.filter((id) => id !== uuid);
   }
 
   handleImportHeader() {
