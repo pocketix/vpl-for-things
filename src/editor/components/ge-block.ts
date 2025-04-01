@@ -31,7 +31,12 @@ export class GeBlock extends LitElement {
         gap: 0.5rem;
       }
 
-      .add-new-statement-btn::part(btn) {
+      .highlighted {
+        border: 2px solid var(--blue-500);
+        background-color: var(--blue-100);
+      }
+
+      .add-new-statement-btn {
         width: fit-content;
       }
 
@@ -377,6 +382,7 @@ export class GeBlock extends LitElement {
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) return;
 
+<<<<<<< HEAD
     const dependencies = getBlockDependencies([stmt], this.language.statements);
     const dependents = getBlockDependents([stmt], this.language.statements);
 
@@ -400,23 +406,16 @@ export class GeBlock extends LitElement {
 
     if (!this.skeletonizeMode) return;
     if (this.selectedStatements.has(stmtUuid)) {
+=======
+    if (this.program.header.skeletonize_uuid.includes(stmtUuid)) {
+      // Deselect: Remove UUID and unhighlight
+      this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter((id) => id !== stmtUuid);
+>>>>>>> 8d43fd9 (Testing: adding to selected)
       this.selectedStatements.delete(stmtUuid);
-      Array.from(dependents).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.delete(depStmt._uuid);
-          deselectDependents(depStmt);
-        }
-      });
     } else {
+      // Select: Add UUID and highlight
+      this.program.header.skeletonize_uuid.push(stmtUuid);
       this.selectedStatements.add(stmtUuid);
-      Array.from(dependencies).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.add(depStmt._uuid);
-          selectDependencies(depStmt);
-        }
-      });
     }
 
     this.requestUpdate();
@@ -452,7 +451,7 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              .isProcBody="${this.isProcBody}"
+              class="${this.program.header.skeletonize_uuid.includes(stmt._uuid) ? 'highlighted' : ''}"
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}"
@@ -473,6 +472,8 @@ export class GeBlock extends LitElement {
               .statement="${stmt}"
               .index="${i}"
               .isExample="${this.isExample}">
+            </ge-statement>
+              .skeletonizeMode="${this.skeletonizeMode}"> <!-- Use skeletonizeMode directly -->
             </ge-statement>
           `
       )}
