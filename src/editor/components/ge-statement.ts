@@ -588,7 +588,8 @@ export class GEStatement extends LitElement {
                 .backgroundColor="${this.language.statements[this.statement.id]?.backgroundColor}"
                 .foregroundColor="${this.language.statements[this.statement.id]?.foregroundColor}"
                 .isFullWidth="${true}"
-                .isFullHeight="${true}">
+                .isFullHeight="${true}"
+                .isFromBody="${true}">
                 <ge-block
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"

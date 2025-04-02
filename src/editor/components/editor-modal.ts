@@ -103,6 +103,7 @@ export class EditorModal extends LitElement {
   @property() foregroundColor: string;
   @property() isFullWidth?: boolean = false;
   @property() isFullHeight?: boolean = false;
+  @property() isFromBody?: boolean = false;
   //#endregion Props
 
   //#region Refs
