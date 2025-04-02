@@ -177,18 +177,57 @@ export class EditorModal extends LitElement {
 
   //#region Render
   render() {
+    if (this.isFromBody) {
+      return html`
+        <dialog
+          ${ref(this.dialogRef)}
+          class="dialog"
+          part="dialog"
+          style="background-color: green;
+            ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''} 
+            ${this.isFullHeight ? 'height: 100%;' : ''} 
+            ${this.displayType === 'dialog' ? 'width: fit-content;' : ''}">
+          <form method="dialog" class="dialog-form-wrapper">
+            <div class="dialog-header">
+              ${this.titleIsVisible
+                ? html`
+                    <div class="dialog-title" part="dialog-title">
+                      ${this.modalIcon
+                        ? html`<editor-icon .icon="${this.modalIcon}" .width="${18}" .height="${18}"></editor-icon>`
+                        : nothing}
+                      <span>${this.modalTitle}</span>
+                    </div>
+                  `
+                : nothing}
+              ${this.closeButtonIsVisible
+                ? html`
+                    <editor-button @click="${this.hideModal}" type="reset" class="close-btn">
+                      <editor-icon .icon="${xLg}" .width="${18}" .height="${18}"></editor-icon>
+                    </editor-button>
+                  `
+                : nothing}
+            </div>
+            ${this.titleIsVisible ? html`<div class="spacer"></div>` : nothing}
+            <div class="dialog-content">
+              <slot></slot>
+            </div>
+          </form>
+        </dialog>
+      `;
+    }
+  
+    // Original dialog rendering
     return html`
       <dialog
         ${ref(this.dialogRef)}
         class="dialog"
         part="dialog"
-        style="${this.backgroundColor ? `border: 2px solid ${this.backgroundColor};` : ''}
-        ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''}
-        ${this.isFullHeight ? 'height: 100%;' : ''}
-        ${this.displayType === 'dialog' ? 'width: fit-content;' : ''}">
+        style="${this.backgroundColor ? `border: 2px solid ${this.backgroundColor};` : ''} 
+          ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''} 
+          ${this.isFullHeight ? 'height: 100%;' : ''} 
+          ${this.displayType === 'dialog' ? 'width: fit-content;' : ''}">
         <form method="dialog" class="dialog-form-wrapper">
-          <div
-            class="dialog-header"
+          <div class="dialog-header"
             style="${this.backgroundColor
               ? `background-color: ${this.backgroundColor}; color: ${this.foregroundColor};`
               : this.displayType === 'dialog'
@@ -198,7 +237,7 @@ export class EditorModal extends LitElement {
               ? html`
                   <div class="dialog-title" part="dialog-title">
                     ${this.modalIcon
-                      ? html` <editor-icon .icon="${this.modalIcon}" .width="${18}" .height="${18}"></editor-icon> `
+                      ? html`<editor-icon .icon="${this.modalIcon}" .width="${18}" .height="${18}"></editor-icon>`
                       : nothing}
                     <span>${this.modalTitle}</span>
                   </div>
@@ -220,6 +259,7 @@ export class EditorModal extends LitElement {
       </dialog>
     `;
   }
+  
   //#endregion Render
 }
 
