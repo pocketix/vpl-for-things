@@ -225,7 +225,6 @@ export class GEStatement extends LitElement {
   @property() exampleBlockIsVisible: boolean = false;
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
-  @property({ type: Boolean }) restrainedMode: boolean = false; // New property to enable restrained mode
   //#endregion
 
   //#region Context
@@ -412,7 +411,7 @@ export class GEStatement extends LitElement {
           ? 'user-proc'
           : ''}">
         <div class="statement-label-wrapper">
-          ${this.language.statements[this.statement.id].icon && !this.restrainedMode // Hide editor button in restrained mode
+          ${this.language.statements[this.statement.id].icon
             ? html`
                 <editor-icon
                   class="stmt-icon"
@@ -472,7 +471,7 @@ export class GEStatement extends LitElement {
           ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments.length === 1
             ? html`
                 <ge-statement-argument
-                  ?disabled="${this.statement.isInvalid || this.skeletonizeMode || this.restrainedMode}" <!-- Disable in restrained mode -->
+                  ?disabled="${this.statement.isInvalid || this.skeletonizeMode}"
                   .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}"
@@ -485,7 +484,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample && !this.skeletonizeMode && !this.restrainedMode // Hide control expand button in restrained mode
+            ${!this.isExample && !this.skeletonizeMode
               ? html`
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
