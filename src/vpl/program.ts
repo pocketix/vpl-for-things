@@ -148,6 +148,12 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
+export type MetadataInit = {
+  uuid: string;
+  id: string;
+  devices: string[];
+};
+
 export class Program {
   header: Header;
   block: Block;
@@ -156,8 +162,9 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
+      initializedProcedures: [] as MetadataInit[], // Update initializedProcedures to use MetadataInit type
       skeletonize: [],
-      skeletonize_uuid: [], // Add skeletonize_uuid array to the header
+      skeletonize_uuid: [],
       selected_uuids: [],
     };
     this.block = [];
@@ -377,8 +384,9 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
+  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
   skeletonize: [];
-  skeletonize_uuid: string[]; // Add skeletonize_uuid array to the Header type
+  skeletonize_uuid: string[];
   selected_uuids: string[];
 };
 
