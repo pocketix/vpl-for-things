@@ -107,7 +107,6 @@ export class EditorModal extends LitElement {
   @property() isFullWidth?: boolean = false;
   @property() isFullHeight?: boolean = false;
   @property() isFromBody?: boolean = false;
-  @property({ type: Boolean }) restrainedMode: boolean = false; // Add restrainedMode as a property
   //#endregion Props
 
   //#region Refs
@@ -127,11 +126,6 @@ export class EditorModal extends LitElement {
   updated() {
     if (this.isVisible) {
       this.showModal();
-    }
-    if (this.isFromBody) {
-      this.restrainedMode = true; // Set restrainedMode when isFromBody is true
-    } else {
-      this.restrainedMode = false; // Reset restrainedMode otherwise
     }
   }
 
@@ -183,9 +177,49 @@ export class EditorModal extends LitElement {
 
   //#region Templates
   //#endregion Templates
-  
+
   //#region Render
   render() {
+    if (this.isFromBody) {
+      return html`
+        <dialog
+          ${ref(this.dialogRef)}
+          class="dialog"
+          part="dialog"
+          style="background-color: green;
+            ${this.isFullWidth ? 'width: 100%; max-width: 100vw;' : ''} 
+            ${this.isFullHeight ? 'height: 100%;' : ''} 
+            ${this.displayType === 'dialog' ? 'width: fit-content;' : ''}">
+          <form method="dialog" class="dialog-form-wrapper">
+            <div class="dialog-header">
+              ${this.titleIsVisible
+                ? html`
+                    <div class="dialog-title" part="dialog-title">
+                      ${this.modalIcon
+                        ? html`<editor-icon .icon="${this.modalIcon}" .width="${18}" .height="${18}"></editor-icon>`
+                        : nothing}
+                      <span>${this.modalTitle}</span>
+                    </div>
+                  `
+                : nothing}
+              ${this.closeButtonIsVisible
+                ? html`
+                    <editor-button @click="${this.hideModal}" type="reset" class="close-btn">
+                      <editor-icon .icon="${xLg}" .width="${18}" .height="${18}"></editor-icon>
+                    </editor-button>
+                  `
+                : nothing}
+            </div>
+            ${this.titleIsVisible ? html`<div class="spacer"></div>` : nothing}
+            <div class="dialog-content">
+              <slot></slot>
+            </div>
+          </form>
+        </dialog>
+      `;
+    }
+  
+    // Original dialog rendering
     return html`
       <dialog
         ${ref(this.dialogRef)}
@@ -228,6 +262,7 @@ export class EditorModal extends LitElement {
       </dialog>
     `;
   }
+  
   //#endregion Render
 }
 
