@@ -126,7 +126,6 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
-  @property({ type: Boolean }) restrainedMode: boolean = false; // New property to enable restrained mode
   //#endregion
 
   //#region Refs
@@ -496,7 +495,7 @@ export class GeBlock extends LitElement {
   //#region Templates
   addStatementButtonTemplate() {
     return html`
-      ${!this.skeletonizeMode && !this.restrainedMode // Hide button in restrained mode
+      ${!this.skeletonizeMode
         ? html`
             <editor-button
               @click="${this.handleShowAddNewStatementDialog}"
@@ -523,7 +522,6 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              .restrainedMode="${this.restrainedMode}" <!-- Pass restrainedMode to ge-statement -->
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
