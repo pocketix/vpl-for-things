@@ -33,7 +33,6 @@ export class GeBlock extends LitElement {
 
       .highlighted {
         border: 2px solid var(--blue-500);
-        border: 2px solid var(--blue-500);
         background-color: var(--blue-100);
       }
 
@@ -125,7 +124,9 @@ export class GeBlock extends LitElement {
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
-  @property() selectedStmtIdx: number|null = 0;
+  @property() selectedStatements: Set<string> = new Set();
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false; // New property to enable restrained mode
   //#endregion
 
   //#region Refs
@@ -384,6 +385,13 @@ export class GeBlock extends LitElement {
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
     }
+  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
+    console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
+
+    if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No action taken.');
+      return;
+    }
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) {
@@ -424,16 +432,45 @@ export class GeBlock extends LitElement {
 
     if (this.selectedStatements.has(stmtUuid)) {
       deselectBlock(stmt);
+    if (!stmt) {
+      console.log(`Statement with UUID ${stmtUuid} not found.`);
+      return;
+    }
+
+    const addedUuids: string[] = [];
+    const removedUuids: string[] = [];
+
+    const selectBlock = (stmt: ProgramStatement) => {
+      if (!this.selectedStatements.has(stmt._uuid)) {
+        console.log(`Selecting statement with UUID: ${stmt._uuid}`); // Log UUID when selecting
+        this.requestUpdate();
+        this.selectedStatements.add(stmt._uuid);
+        this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
+        addedUuids.push(stmt._uuid);
+      }
+      if (isParentClick && (stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(selectBlock);
+      }
+    };
+
+    const deselectBlock = (stmt: ProgramStatement) => {
+      if (this.selectedStatements.has(stmt._uuid)) {
+        console.log(`Deselecting statement with UUID: ${stmt._uuid}`); // Log UUID when deselecting
+        this.requestUpdate();
+        this.selectedStatements.delete(stmt._uuid);
+        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+          (uuid) => uuid !== stmt._uuid
+        ); // Remove from skeletonize_uuid
+        removedUuids.push(stmt._uuid);
+      }
+      if (isParentClick && (stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach(deselectBlock);
+      }
+    };
+
+    if (this.selectedStatements.has(stmtUuid)) {
+      deselectBlock(stmt);
     } else {
-      selectBlock(stmt);
-      this.selectedStatements.add(stmtUuid);
-      Array.from(dependencies).forEach((depId) => {
-        const depStmt = this.block.find((s) => s.id === depId);
-        if (depStmt) {
-          this.selectedStatements.add(depStmt._uuid);
-          selectDependencies(depStmt);
-        }
-      });
       selectBlock(stmt);
     }
 
@@ -459,14 +496,16 @@ export class GeBlock extends LitElement {
   //#region Templates
   addStatementButtonTemplate() {
     return html`
-      <editor-button
-        ?autofocus=${this.isProcBody}
-        @click="${this.handleShowAddNewStatementDialog}"
-        title="Add Statement"
-        style="align-self: flex-end;"
-        class="add-new-statement-btn">
-        <editor-icon .icon="${icons['plusLg']}"></editor-icon>
-      </editor-button>
+      ${!this.skeletonizeMode && !this.restrainedMode // Hide button in restrained mode
+        ? html`
+            <editor-button
+              @click="${this.handleShowAddNewStatementDialog}"
+              title="Add Statement"
+              class="add-new-statement-btn">
+              <editor-icon .icon="${icons['plusLg']}"></editor-icon>
+            </editor-button>
+          `
+        : nothing}
     `;
   }
 
@@ -479,14 +518,12 @@ export class GeBlock extends LitElement {
           html`
             <ge-statement
               class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
-              .isProcBody="${this.isProcBody}"
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .statement="${stmt}"
               .index="${i}"
               .isProcBody="${this.isProcBody}"
-              .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
+              .restrainedMode="${this.restrainedMode}" <!-- Pass restrainedMode to ge-statement -->
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
@@ -590,17 +627,11 @@ export class GeBlock extends LitElement {
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
               </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Basic statements
-              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
                   : 'border-bottom: 2px solid white'}">
                 Device statements
               </editor-button>
