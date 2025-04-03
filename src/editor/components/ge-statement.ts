@@ -224,6 +224,7 @@ export class GEStatement extends LitElement {
   @property() isExample: boolean = false;
   @property() exampleBlockIsVisible: boolean = false;
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   //#endregion
 
@@ -562,6 +563,7 @@ export class GEStatement extends LitElement {
                 .parentStmt="${this.statement}"
                 .isProcBody="${this.isProcBody}"
                 .skeletonizeMode="${this.skeletonizeMode}"
+                .restrainedMode="${this.restrainedMode}"
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
@@ -594,7 +596,8 @@ export class GEStatement extends LitElement {
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
                   .block="${this.program.header.userProcedures[this.statement.id]}"
-                  .skeletonizeMode="${this.skeletonizeMode}">
+                  .skeletonizeMode="${this.skeletonizeMode}"
+                  .restrainedMode="${this.restrainedMode}">
                 </ge-block>
               </editor-modal>
             `

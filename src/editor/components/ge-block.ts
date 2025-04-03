@@ -125,6 +125,7 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -442,6 +443,7 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
+              .restrainedMode="${this.restrainedMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
