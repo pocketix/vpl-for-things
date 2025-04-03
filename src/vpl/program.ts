@@ -148,10 +148,16 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
+export type DeviceInstances = {
+    uuid: string;
+    id: string;
+    type?: string;
+};
+
 export type MetadataInit = {
   uuid: string;
   id: string;
-  devices: string[];
+  devices: DeviceInstances[];
 };
 
 export class Program {
