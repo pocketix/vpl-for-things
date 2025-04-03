@@ -261,9 +261,6 @@ export class GeBlock extends LitElement {
 
   hideAddNewStatementDialog() {
     this.addStatementModalRef.value.hideModal();
-    this.restrainedMode = false; // Set restrainedMode to false when closing the modal
-    //log the restrainedMode value
-    console.log('restrainedMode value:', this.restrainedMode); // Debug log
   }
 
   showAddNewStatementOptions() {
@@ -482,9 +479,6 @@ export class GeBlock extends LitElement {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
       this.selectedStatements.clear();
       this.requestUpdate();
-    }
-    if (changedProperties.has('restrainedMode')) {
-      console.log('restrainedMode updated:', this.restrainedMode); // Debug log
     }
   }
   //#endregion
