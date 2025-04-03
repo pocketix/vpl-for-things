@@ -226,7 +226,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
-  @property({ type: Object }) procedureBlockCopy: any = null; // Add a new property
+  @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   //#endregion
 
   //#region Context
