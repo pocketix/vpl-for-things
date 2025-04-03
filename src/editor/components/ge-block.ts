@@ -232,6 +232,15 @@ export class GeBlock extends LitElement {
     if (this.language.statements[stmtKey].isUserProcedure) {
       const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
+
+      // Add entry to initializedProcedures with MetadataInit structure
+      const metadataEntry = {
+        uuid: addedStmt._uuid,
+        id: stmtKey,
+        devices: [], // Populate devices if available
+      };
+      this.program.header.initializedProcedures.push(metadataEntry);
+      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -305,6 +314,12 @@ export class GeBlock extends LitElement {
     // Check if the statement is a custom user procedure
     if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
       console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
+
+      // Remove entry from initializedProcedures
+      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
+        (entry) => entry.uuid !== stmtToRemove._uuid
+      );
+      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
     }
 
     this.block.splice(statementIndex, 1);
