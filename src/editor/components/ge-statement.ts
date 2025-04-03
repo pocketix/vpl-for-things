@@ -452,7 +452,8 @@ export class GEStatement extends LitElement {
                                         <ge-block
                                           .isExample="${true}"
                                           .block="${this.language.statements[this.statement.id].description.example
-                                            .block}">
+                                            .block}"
+                                          .restrainedMode="${this.restrainedMode}">
                                         </ge-block>
                                       `
                                     : nothing}
@@ -485,7 +486,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample && !this.skeletonizeMode
+            ${!this.isExample && !this.skeletonizeMode && !this.restrainedMode
               ? html`
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
