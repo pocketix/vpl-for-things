@@ -258,9 +258,6 @@ export class GeBlock extends LitElement {
 
   hideAddNewStatementDialog() {
     this.addStatementModalRef.value.hideModal();
-    this.restrainedMode = false; // Set restrainedMode to false when closing the modal
-    //log the restrainedMode value
-    console.log('restrainedMode value:', this.restrainedMode); // Debug log
   }
 
   showAddNewStatementOptions() {
@@ -383,8 +380,11 @@ export class GeBlock extends LitElement {
 
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
-    
-    
+
+    if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No action taken.');
+      return;
+    }
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) {
@@ -392,18 +392,6 @@ export class GeBlock extends LitElement {
       return;
     }
 
-    // Log the corresponding entry in initializedProcedures
-    const entry = this.program.header.initializedProcedures.find((entry) => entry.uuid === stmtUuid);
-    if (entry) {
-      //set restrainedMode to true
-      this.restrainedMode = true;
-      console.log(`Opening: Info about the entry - UUID: ${entry.uuid}, ID: ${entry.id}, Devices: ${entry.devices}`);
-    }
-
-    if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No action taken.');
-      return;
-    }
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
@@ -456,9 +444,6 @@ export class GeBlock extends LitElement {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
       this.selectedStatements.clear();
       this.requestUpdate();
-    }
-    if (changedProperties.has('restrainedMode')) {
-      console.log('restrainedMode updated:', this.restrainedMode); // Debug log
     }
   }
   //#endregion
