@@ -126,7 +126,7 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
-  @property({ type: Boolean }) restrainedMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false; // New property to enable restrained mode
   //#endregion
 
   //#region Refs
@@ -261,6 +261,9 @@ export class GeBlock extends LitElement {
 
   hideAddNewStatementDialog() {
     this.addStatementModalRef.value.hideModal();
+    this.restrainedMode = false; // Set restrainedMode to false when closing the modal
+    //log the restrainedMode value
+    console.log('restrainedMode value:', this.restrainedMode); // Debug log
   }
 
   showAddNewStatementOptions() {
@@ -420,53 +423,8 @@ export class GeBlock extends LitElement {
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
     }
-  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
-    console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
-
-    if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No action taken.');
-      return;
-    }
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
-    if (!stmt) {
-      console.log(`Statement with UUID ${stmtUuid} not found.`);
-      return;
-    }
-
-    const addedUuids: string[] = [];
-    const removedUuids: string[] = [];
-
-    const selectBlock = (stmt: ProgramStatement) => {
-      if (!this.selectedStatements.has(stmt._uuid)) {
-        console.log(`Selecting statement with UUID: ${stmt._uuid}`); // Log UUID when selecting
-        this.requestUpdate();
-        this.selectedStatements.add(stmt._uuid);
-        this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
-        addedUuids.push(stmt._uuid);
-      }
-      if (isParentClick && (stmt as CompoundStatement).block) {
-        (stmt as CompoundStatement).block.forEach(selectBlock);
-      }
-    };
-
-    const deselectBlock = (stmt: ProgramStatement) => {
-      if (this.selectedStatements.has(stmt._uuid)) {
-        console.log(`Deselecting statement with UUID: ${stmt._uuid}`); // Log UUID when deselecting
-        this.requestUpdate();
-        this.selectedStatements.delete(stmt._uuid);
-        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
-          (uuid) => uuid !== stmt._uuid
-        ); // Remove from skeletonize_uuid
-        removedUuids.push(stmt._uuid);
-      }
-      if (isParentClick && (stmt as CompoundStatement).block) {
-        (stmt as CompoundStatement).block.forEach(deselectBlock);
-      }
-    };
-
-    if (this.selectedStatements.has(stmtUuid)) {
-      deselectBlock(stmt);
     if (!stmt) {
       console.log(`Statement with UUID ${stmtUuid} not found.`);
       return;
@@ -525,13 +483,16 @@ export class GeBlock extends LitElement {
       this.selectedStatements.clear();
       this.requestUpdate();
     }
+    if (changedProperties.has('restrainedMode')) {
+      console.log('restrainedMode updated:', this.restrainedMode); // Debug log
+    }
   }
   //#endregion
 
   //#region Templates
   addStatementButtonTemplate() {
     return html`
-      ${!this.skeletonizeMode
+      ${!this.skeletonizeMode && !this.restrainedMode // Hide button in restrained mode
         ? html`
             <editor-button
               @click="${this.handleShowAddNewStatementDialog}"
@@ -558,7 +519,7 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              .restrainedMode="${this.restrainedMode}"
+              .restrainedMode="${this.restrainedMode}" <!-- Pass restrainedMode to ge-statement -->
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
