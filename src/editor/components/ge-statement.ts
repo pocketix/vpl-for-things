@@ -351,7 +351,7 @@ export class GEStatement extends LitElement {
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
 
-    console.log('Original Procedure Block:', this.program.header.userProcedures[this.statement.id]);
+    console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
@@ -359,14 +359,24 @@ export class GEStatement extends LitElement {
       // Parse the entire block, including nested ones, and replace all deviceType blocks
       const parseBlock = (block) => {
         block.forEach((stmt, index) => {
+          console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-            // Replace the deviceType block with a placeholder or updated structure
+            // Replace the deviceType block with the alert block
+            console.log('Replacing deviceType block with alert block');
             block[index] = {
-              id: 'deviceType',
+              id: 'alert',
               arguments: [
                 {
-                  type: 'multi_device',
-                  value: [], // Replace with the matched device name
+                  type: 'str_opt',
+                  value: 'email', // Example value
+                },
+                {
+                  type: Types.string,
+                  value: 'example@example.com', // Example email
+                },
+                {
+                  type: Types.string,
+                  value: 'Notification message', // Example message
                 },
               ],
             };
@@ -625,7 +635,7 @@ export class GEStatement extends LitElement {
                 <ge-block
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
-                  .block="${this.program.header.userProcedures[this.statement.id]}"
+                  .block="${this.procedureBlockCopy }"
                   .skeletonizeMode="${this.skeletonizeMode}"
                   .restrainedMode="${this.restrainedMode}">
                 </ge-block>
