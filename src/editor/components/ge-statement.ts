@@ -351,11 +351,15 @@ export class GEStatement extends LitElement {
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
 
-    // Interact with the user procedure's block before displaying it
-    const procedureBlock = this.program.header.userProcedures[this.statement.id];
-    if (procedureBlock) {
-      console.log('Original Procedure Block:', procedureBlock);
+    // Create a deep copy of the user procedure's block before interacting with it
+    const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
+    if (originalProcedureBlock) {
+      const procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
+      console.log('Copy of Procedure Block:', procedureBlockCopy);
 
+      // Interact with the copied procedure block
+      // Example: Modify the copy as needed
+      procedureBlockCopy.modified = true; // Example modification
     }
 
     this.procModalRef.value.showModal();
