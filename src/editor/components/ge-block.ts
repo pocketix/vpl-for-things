@@ -219,12 +219,20 @@ export class GeBlock extends LitElement {
 
   //#region Methods
   addNewStatement(stmtKey: string) {
-    this.program.addStatement(this.block, {
+    const newStatement = {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
       arguments: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
         .arguments,
-    });
+    };
+
+    this.program.addStatement(this.block, newStatement);
+
+    // Check if the statement is a custom user procedure
+    if (this.language.statements[stmtKey].isUserProcedure) {
+      const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
+      console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
+    }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -292,6 +300,13 @@ export class GeBlock extends LitElement {
       return; // Disable interaction when skeletonize mode is active
     }
     let statementIndex = e.detail.index;
+    const stmtToRemove = this.block[statementIndex];
+
+    // Check if the statement is a custom user procedure
+    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
+      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
+    }
+
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
     e.stopPropagation();
