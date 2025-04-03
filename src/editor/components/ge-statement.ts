@@ -226,6 +226,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
+  @property({ type: Object }) procedureBlockCopy: any = null; // Add a new property
   //#endregion
 
   //#region Context
@@ -351,17 +352,35 @@ export class GEStatement extends LitElement {
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
 
-    // Create a deep copy of the user procedure's block before interacting with it
+    console.log('Original Procedure Block:', this.program.header.userProcedures[this.statement.id]);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
-      const procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
-      console.log('Copy of Procedure Block:', procedureBlockCopy);
+      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
 
-      // Interact with the copied procedure block
-      // Example: Modify the copy as needed
-      procedureBlockCopy.modified = true; // Example modification
+      // Parse the entire block, including nested ones, and replace all deviceType blocks
+      const parseBlock = (block) => {
+        block.forEach((stmt, index) => {
+          if (stmt.id === 'deviceType') {
+            // Replace the deviceType block with a placeholder or updated structure
+            block[index] = {
+              id: 'deviceType',
+              arguments: [
+                {
+                  type: 'multi_device',
+                  value: [], // Replace with the matched device name
+                },
+              ],
+            };
+          }
+          if (stmt.block && Array.isArray(stmt.block)) {
+            parseBlock(stmt.block); // Recursively parse nested blocks
+          }
+        });
+      };
+
+      parseBlock(this.procedureBlockCopy); // Update the class property
+      console.log('Modified Procedure Block (deviceType blocks replaced):', this.procedureBlockCopy);
     }
-
     this.procModalRef.value.showModal();
   }
 
@@ -552,7 +571,7 @@ export class GEStatement extends LitElement {
   //#region Render
   render() {
     return html`
-      <div
+            <div
         class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
