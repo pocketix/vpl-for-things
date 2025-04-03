@@ -350,6 +350,14 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
+
+    // Interact with the user procedure's block before displaying it
+    const procedureBlock = this.program.header.userProcedures[this.statement.id];
+    if (procedureBlock) {
+      console.log('Original Procedure Block:', procedureBlock);
+
+    }
+
     this.procModalRef.value.showModal();
   }
 
