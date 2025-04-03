@@ -148,7 +148,7 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
-export type DeviceInstances = {
+export type DeviceInstance = {
     uuid: string;
     id: string;
     type?: string;
@@ -157,7 +157,7 @@ export type DeviceInstances = {
 export type MetadataInit = {
   uuid: string;
   id: string;
-  devices: DeviceInstances[];
+  devices: [string, string][]; // Update devices to be an array of tuples [uuid, id]
 };
 
 export class Program {
