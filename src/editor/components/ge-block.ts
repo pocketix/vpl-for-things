@@ -237,10 +237,15 @@ export class GeBlock extends LitElement {
       const metadataEntry = {
         uuid: addedStmt._uuid,
         id: stmtKey,
-        devices: [], // Populate devices if available
+        devices: ["Pipik"], // Populate devices if available
       };
       this.program.header.initializedProcedures.push(metadataEntry);
-      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
+
+      // Log each entry in initializedProcedures explicitly
+      console.log('Updated initializedProcedures:');
+      this.program.header.initializedProcedures.forEach((entry) => {
+        console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices: ${entry.devices}`);
+      });
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
