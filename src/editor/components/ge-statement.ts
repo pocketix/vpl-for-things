@@ -363,23 +363,19 @@ export class GEStatement extends LitElement {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
             // Replace the deviceType block with the alert block
-            console.log('Replacing deviceType block with alert block');
+            console.log('Replacing deviceType block with type block');
             block[index] = {
-              id: 'alert',
+              id: 'deviceType',
               arguments: [
                 {
-                  type: 'str_opt',
-                  value: 'email', // Example value
-                },
-                {
                   type: Types.string,
-                  value: 'example@example.com', // Example email
-                },
-                {
-                  type: Types.string,
-                  value: 'Notification message', // Example message
+                  value: stmt.arguments[0].value,
+                  isInvalid: false,
                 },
               ],
+              isInvalid: false,
+
+
             };
           }
           if (stmt.block && Array.isArray(stmt.block)) {

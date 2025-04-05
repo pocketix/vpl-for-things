@@ -255,7 +255,7 @@ export class GeBlock extends LitElement {
             // Push the UUID of the statement and the argument value (if applicable)
             if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
-              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg}`);
+              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
               devices.push([stmt._uuid, String(arg.value)]);
             }
           }
