@@ -1,4 +1,5 @@
-import { LitElement, html, css, customElement, property } from 'lit-element';
+import { LitElement, html, css  } from 'lit-element';
+import {customElement, property} from 'lit/decorators.js';
 
 @customElement('multi-device-selector')
 export class MultiDeviceSelector extends LitElement {

@@ -237,14 +237,11 @@ export class GeBlock extends LitElement {
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
 
       // Parse the block to populate the devices array
-      const devices: { uuid: string; id: string }[] = [];
+      const devices: [string, string][] = []; // Updated to use tuple type
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
           if (stmt.id === 'deviceType') {
-            devices.push({
-              uuid: stmt._uuid,
-              id: stmt.id,
-            });
+            devices.push([stmt._uuid, stmt.id]); // Push as a tuple
           }
           if ((stmt as CompoundStatement).block) {
             parseBlockForDevices((stmt as CompoundStatement).block);
@@ -258,7 +255,7 @@ export class GeBlock extends LitElement {
       const metadataEntry = {
         uuid: addedStmt._uuid,
         id: stmtKey,
-        devices,
+        devices, // Devices is now a tuple array
       };
       this.program.header.initializedProcedures.push(metadataEntry);
 
@@ -266,8 +263,8 @@ export class GeBlock extends LitElement {
       console.log('Updated initializedProcedures:');
       this.program.header.initializedProcedures.forEach((entry) => {
         console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices:`);
-        entry.devices.forEach((device) => {
-          console.log(`  - Device UUID: ${device.uuid}, Device ID: ${device.id}`);
+        entry.devices.forEach(([deviceUuid, deviceId]) => {
+          console.log(`  - Device UUID: ${deviceUuid}, Device ID: ${deviceId}`);
         });
       });
     }
