@@ -126,6 +126,7 @@ export class GeBlock extends LitElement {
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
+  @property({ type: Boolean }) isHighlighted: boolean = false;
   //#endregion
 
   //#region Refs
@@ -439,39 +440,34 @@ export class GeBlock extends LitElement {
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
-    const selectBlock = (stmt: ProgramStatement) => {
-      if (!this.selectedStatements.has(stmt._uuid)) {
-        console.log(`Selecting statement with UUID: ${stmt._uuid}`); // Log UUID when selecting
-        this.requestUpdate();
-        this.selectedStatements.add(stmt._uuid);
-        this.program.header.skeletonize_uuid.push(stmt._uuid); // Add to skeletonize_uuid
-        addedUuids.push(stmt._uuid);
+    const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      if (isSelected) {
+        if (!this.selectedStatements.has(stmt._uuid)) {
+          console.log(`Selecting statement with UUID: ${stmt._uuid}`);
+          this.selectedStatements.add(stmt._uuid);
+          this.program.header.skeletonize_uuid.push(stmt._uuid);
+          addedUuids.push(stmt._uuid);
+          this.requestUpdate();
+        }
+      } else {
+        if (this.selectedStatements.has(stmt._uuid)) {
+          console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
+          this.selectedStatements.delete(stmt._uuid);
+          this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+            (uuid) => uuid !== stmt._uuid
+          );
+          removedUuids.push(stmt._uuid);
+          this.requestUpdate();
+        }
       }
-      if (isParentClick && (stmt as CompoundStatement).block) {
-        (stmt as CompoundStatement).block.forEach(selectBlock);
+
+      if ((stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
       }
     };
 
-    const deselectBlock = (stmt: ProgramStatement) => {
-      if (this.selectedStatements.has(stmt._uuid)) {
-        console.log(`Deselecting statement with UUID: ${stmt._uuid}`); // Log UUID when deselecting
-        this.requestUpdate();
-        this.selectedStatements.delete(stmt._uuid);
-        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
-          (uuid) => uuid !== stmt._uuid
-        ); // Remove from skeletonize_uuid
-        removedUuids.push(stmt._uuid);
-      }
-      if (isParentClick && (stmt as CompoundStatement).block) {
-        (stmt as CompoundStatement).block.forEach(deselectBlock);
-      }
-    };
-
-    if (this.selectedStatements.has(stmtUuid)) {
-      deselectBlock(stmt);
-    } else {
-      selectBlock(stmt);
-    }
+    const isSelected = !this.selectedStatements.has(stmtUuid);
+    propagateSelection(stmt, isSelected);
 
     console.log('Skeletonize UUIDs:', this.program.header.skeletonize_uuid);
     if (addedUuids.length > 0) {
@@ -481,12 +477,12 @@ export class GeBlock extends LitElement {
       console.log('Removed UUIDs:', removedUuids);
     }
 
-    this.requestUpdate();
+    this.requestUpdate(); // Trigger UI rerender
   }
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      this.selectedStatements.clear();
+      this.selectedStatements.clear();statementCustomEvent
       this.requestUpdate();
     }
   }
@@ -516,13 +512,14 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}" 
               .statement="${stmt}"
               .index="${i}"
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode}"
+              .isSelected="${this.selectedStatements.has(stmt._uuid)}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
