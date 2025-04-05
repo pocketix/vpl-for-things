@@ -3,11 +3,13 @@ import { Device } from './language';
 export const exampleDevices: Device[] = [
   {
     deviceName: 'DistanceSensor-1',
+    deviceType: 'DistanceSensor',
     attributes: ['waterLevel', 'distance'],
     functions: [],
   },
   {
     deviceName: 'LT22222-Relay-1',
+    deviceType: 'Relay',
     attributes: ['relayState'], // "opened", "closed"
     functions: [
       {
@@ -31,6 +33,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'Doorbell-1',
+    deviceType: 'Doorbell',
     attributes: ['motionSensor'], // "active", "inactive"
     functions: [
       {
@@ -45,6 +48,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'TemperatureDevice-1',
+    deviceType: 'TemperatureDevice',
     attributes: ['temperatureLevel'], // "high", "ideal", "low", "critical_low"
     functions: [
       {
@@ -70,6 +74,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'LED-1',
+    deviceType: 'LED',
     attributes: ['currentLedColor'], // 'blue', 'orange', 'red'
     functions: [
       {
@@ -95,6 +100,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'Buzzer-1',
+    deviceType: 'Buzzer',
     attributes: [],
     functions: [
       {
@@ -109,6 +115,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'CoffeeMachine',
+    deviceType: 'CoffeeMachine',
     attributes: [],
     functions: [
       {
@@ -133,11 +140,13 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'LightSensor',
+    deviceType: 'LightSensor',
     attributes: ['isDark'],
     functions: [],
   },
   {
     deviceName: 'OutDoorLight',
+    deviceType: 'OutDoorLight',
     attributes: [],
     functions: [
       {
