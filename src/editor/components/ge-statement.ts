@@ -7,6 +7,7 @@ import {
   Program,
   ProgramStatement,
   initDefaultArgumentType,
+  assignUuidToBlock,
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
@@ -357,6 +358,9 @@ export class GEStatement extends LitElement {
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
 
+      // Use the existing logic to assign UUIDs to the copied block
+      //assignUuidToBlock(this.procedureBlockCopy);
+
       // Parse the entire block, including nested ones, and replace all deviceType blocks
       const parseBlock = (block) => {
         block.forEach((stmt, index) => {
@@ -366,6 +370,7 @@ export class GEStatement extends LitElement {
             console.log('Replacing deviceType block with type block');
             block[index] = {
               id: 'deviceType',
+              _uuid: stmt._uuid,
               arguments: [
                 {
                   type: Types.string,

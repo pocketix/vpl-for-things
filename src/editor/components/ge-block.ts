@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs } from '@/vpl/program';
+import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -232,10 +232,14 @@ export class GeBlock extends LitElement {
     if (this.language.statements[stmtKey].isUserProcedure) {
       const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
+
+      // Use the existing logic to assign UUIDs to the user procedure block
+      assignUuidToBlock(userProcedureBlock);
+
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
 
       // Parse the block to populate the devices array
-      const devices: [string, string][] = []; // Updated to use tuple type
+      const devices: [string, string][] = [];
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
           console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
@@ -251,6 +255,7 @@ export class GeBlock extends LitElement {
           }
       
           if (stmt.id === 'deviceType') {
+            console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
             
             // Push the UUID of the statement and the argument value (if applicable)
             if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
