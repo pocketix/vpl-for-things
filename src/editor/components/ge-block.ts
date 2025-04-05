@@ -33,6 +33,7 @@ export class GeBlock extends LitElement {
 
       .highlighted {
         border: 2px solid var(--blue-500);
+        border: 2px solid var(--blue-500);
         background-color: var(--blue-100);
       }
 
@@ -126,7 +127,7 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
-  @property({ type: Boolean }) restrainedMode: boolean = false; // New property to enable restrained mode
+  @property({ type: Boolean }) restrainedMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -223,6 +224,7 @@ export class GeBlock extends LitElement {
   //#region Methods
   addNewStatement(stmtKey: string) {
     const newStatement = {
+    const newStatement = {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
       arguments: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
@@ -234,64 +236,20 @@ export class GeBlock extends LitElement {
     // Check if the statement is a custom user procedure
     if (this.language.statements[stmtKey].isUserProcedure) {
       const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
-      const userProcedureBlock = this.program.header.userProcedures[stmtKey];
-
-      // Use the existing logic to assign UUIDs to the user procedure block
-      assignUuidToBlock(userProcedureBlock);
-
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
-
-      // Parse the block to populate the devices array
-      const devices: [string, string][] = [];
-      const parseBlockForDevices = (block: Block) => {
-        block.forEach((stmt) => {
-          console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-          
-          // Check if the statement has arguments
-          if ((stmt as AbstractStatementWithArgs).arguments) {
-            (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
-              console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
-              
-              // Push the UUID of the statement and the argument value
-              devices.push([stmt._uuid, String(arg.value)]);
-            });
-          }
-      
-          if (stmt.id === 'deviceType') {
-            console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-            
-            // Push the UUID of the statement and the argument value (if applicable)
-            if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
-              const arg = (stmt as AbstractStatementWithArgs).arguments[0];
-              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
-              devices.push([stmt._uuid, String(arg.value)]);
-            }
-          }
-      
-          if ((stmt as CompoundStatement).block) {
-            parseBlockForDevices((stmt as CompoundStatement).block);
-          }
-        });
-      };
-      
-
-      parseBlockForDevices(userProcedureBlock);
 
       // Add entry to initializedProcedures with MetadataInit structure
       const metadataEntry = {
         uuid: addedStmt._uuid,
         id: stmtKey,
-        devices, // Devices is now a tuple array
+        devices: ["Pipik"], // Populate devices if available
       };
       this.program.header.initializedProcedures.push(metadataEntry);
 
       // Log each entry in initializedProcedures explicitly
       console.log('Updated initializedProcedures:');
       this.program.header.initializedProcedures.forEach((entry) => {
-        console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices:`);
-        entry.devices.forEach(([deviceUuid, deviceId]) => {
-          console.log(`  - Device UUID: ${deviceUuid}, Device ID: ${deviceId}`);
-        });
+        console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices: ${entry.devices}`);
       });
     }
 
@@ -305,6 +263,9 @@ export class GeBlock extends LitElement {
 
   hideAddNewStatementDialog() {
     this.addStatementModalRef.value.hideModal();
+    this.restrainedMode = false; // Set restrainedMode to false when closing the modal
+    //log the restrainedMode value
+    console.log('restrainedMode value:', this.restrainedMode); // Debug log
   }
 
   showAddNewStatementOptions() {
@@ -361,6 +322,19 @@ export class GeBlock extends LitElement {
       return; // Disable interaction when skeletonize mode is active
     }
     let statementIndex = e.detail.index;
+    const stmtToRemove = this.block[statementIndex];
+
+    // Check if the statement is a custom user procedure
+    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
+      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
+
+      // Remove entry from initializedProcedures
+      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
+        (entry) => entry.uuid !== stmtToRemove._uuid
+      );
+      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
+    }
+
     const stmtToRemove = this.block[statementIndex];
 
     // Check if the statement is a custom user procedure
@@ -459,11 +433,8 @@ export class GeBlock extends LitElement {
 
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
-
-    if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No action taken.');
-      return;
-    }
+    
+    
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) {
@@ -471,6 +442,18 @@ export class GeBlock extends LitElement {
       return;
     }
 
+    // Log the corresponding entry in initializedProcedures
+    const entry = this.program.header.initializedProcedures.find((entry) => entry.uuid === stmtUuid);
+    if (entry) {
+      //set restrainedMode to true
+      this.restrainedMode = true;
+      console.log(`Opening: Info about the entry - UUID: ${entry.uuid}, ID: ${entry.id}, Devices: ${entry.devices}`);
+    }
+
+    if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No action taken.');
+      return;
+    }
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
@@ -516,13 +499,16 @@ export class GeBlock extends LitElement {
       console.log('Removed UUIDs:', removedUuids);
     }
 
-    this.requestUpdate();
+    this.requestUpdate(); // Trigger UI rerender
   }
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      this.selectedStatements.clear();
+      this.selectedStatements.clear();statementCustomEvent
       this.requestUpdate();
+    }
+    if (changedProperties.has('restrainedMode')) {
+      console.log('restrainedMode updated:', this.restrainedMode); // Debug log
     }
   }
   //#endregion
@@ -555,9 +541,10 @@ export class GeBlock extends LitElement {
               .statement="${stmt}"
               .index="${i}"
               .isProcBody="${this.isProcBody}"
+              .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              .restrainedMode="${this.restrainedMode}" <!-- Pass restrainedMode to ge-statement -->
+              .restrainedMode="${this.restrainedMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
@@ -661,11 +648,17 @@ export class GeBlock extends LitElement {
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
               </editor-button>
+                  : 'border-bottom: 2px solid white'}">
+                Basic statements
+              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
+                  : 'border-bottom: 2px solid white'}">
+                Device statements
+              </editor-button>
                   : 'border-bottom: 2px solid white'}">
                 Device statements
               </editor-button>
