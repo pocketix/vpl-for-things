@@ -157,7 +157,7 @@ export type DeviceInstance = {
 export type MetadataInit = {
   uuid: string;
   id: string;
-  devices: [string, string][]; // Update devices to be an array of tuples [uuid, id]
+  devices: Array<[string, string]>; // Update devices to be an array of string tuples
 };
 
 export class Program {
