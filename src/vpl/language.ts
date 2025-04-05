@@ -6,11 +6,13 @@ export class Language {
   variables: Variables;
   statements: Statements;
   deviceList: string[];
+  deviceTypes: { [deviceName: string]: string }; // Added deviceTypes property
 
   constructor(devices?: Device[]) {
     this.variables = {};
     this.statements = baseLanguageStatements;
     this.deviceList = [];
+    this.deviceTypes = {}; // Initialize deviceTypes
 
     if (devices) {
       for (let device of devices) {
@@ -27,6 +29,9 @@ export class Language {
             label: `${device.deviceName}.${func.label}`,
           };
         }
+
+        // Store device type in deviceTypes
+        this.deviceTypes[device.deviceName] = device.deviceType;
 
         // Do not include devices with no functions
         if (device.functions.length > 0) {
