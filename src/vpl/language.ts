@@ -125,6 +125,7 @@ export type ArgumentOptions = {
 
 export type Device = {
   deviceName: string;
+  deviceType: string;
   attributes: string[];
   functions: (UnitLanguageStatement | UnitLanguageStatementWithArgs)[];
 };
