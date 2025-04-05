@@ -233,6 +233,9 @@ export class EditorUserProceduresModal extends LitElement {
         if (stmt.id) {
           const idParts = stmt.id.split('.'); // Split the id by '.'
           const deviceName = idParts[0]; // Extract the first part as the device name
+          //create a parser to go  through the tuple array  deviceListWithTypes adn fint the device type based on the device name
+          const deviceType = this.language.deviceListWithTypes[deviceName]; // Get the device type from the language context
+          console.log('Device Type:', deviceType);
           console.log('Parsed Name:', deviceName);
           console.log('Parsed ID:', stmt._uuid ? stmt._uuid : 'No UUID');
           if (deviceList.includes(deviceName)) {
@@ -241,8 +244,8 @@ export class EditorUserProceduresModal extends LitElement {
               id: 'deviceType',
               arguments: [
                 {
-                  type: 'multi_device',
-                  value: [deviceName], // Replace with the matched device name
+                  type: 'deviceType',
+                  value: deviceType, 
                 },
               ],
             }; // Replace with a new block containing the matched device name
