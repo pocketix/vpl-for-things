@@ -147,4 +147,5 @@ export type Device = {
 
 export type DeviceStatement = (UnitLanguageStatement | UnitLanguageStatementWithArgs) & {
   deviceName: string;
+  deviceType: string;
 };
