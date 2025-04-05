@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement } from '@/vpl/program';
+import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -239,15 +239,33 @@ export class GeBlock extends LitElement {
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
           console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-          if (stmt.id === 'deviceType') {
-            console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-            devices.push([stmt._uuid, stmt.id]); // Push as a tuple
+          
+          // Check if the statement has arguments
+          if ((stmt as AbstractStatementWithArgs).arguments) {
+            (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
+              console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
+              
+              // Push the UUID of the statement and the argument value
+              devices.push([stmt._uuid, String(arg.value)]);
+            });
           }
+      
+          if (stmt.id === 'deviceType') {
+            
+            // Push the UUID of the statement and the argument value (if applicable)
+            if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
+              const arg = (stmt as AbstractStatementWithArgs).arguments[0];
+              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg}`);
+              devices.push([stmt._uuid, String(arg.value)]);
+            }
+          }
+      
           if ((stmt as CompoundStatement).block) {
             parseBlockForDevices((stmt as CompoundStatement).block);
           }
         });
       };
+      
 
       parseBlockForDevices(userProcedureBlock);
 
