@@ -3,7 +3,7 @@ import { Device } from './language';
 export const exampleDevices: Device[] = [
   {
     deviceName: 'DistanceSensor-1',
-    deviceType: 'DistanceSensor',
+    deviceType: 'Sensor',
     attributes: ['waterLevel', 'distance'],
     functions: [],
   },
@@ -74,7 +74,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'LED-1',
-    deviceType: 'LED',
+    deviceType: 'AlertDevice',
     attributes: ['currentLedColor'], // 'blue', 'orange', 'red'
     functions: [
       {
@@ -100,7 +100,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'Buzzer-1',
-    deviceType: 'Buzzer',
+    deviceType: 'AlertDevice',
     attributes: [],
     functions: [
       {
@@ -140,7 +140,7 @@ export const exampleDevices: Device[] = [
   },
   {
     deviceName: 'LightSensor',
-    deviceType: 'LightSensor',
+    deviceType: 'Sensor',
     attributes: ['isDark'],
     functions: [],
   },
