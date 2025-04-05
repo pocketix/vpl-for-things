@@ -231,13 +231,16 @@ export class GeBlock extends LitElement {
     // Check if the statement is a custom user procedure
     if (this.language.statements[stmtKey].isUserProcedure) {
       const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
+      const userProcedureBlock = this.program.header.userProcedures[stmtKey];
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
 
       // Parse the block to populate the devices array
       const devices: [string, string][] = []; // Updated to use tuple type
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
+          console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
           if (stmt.id === 'deviceType') {
+            console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
             devices.push([stmt._uuid, stmt.id]); // Push as a tuple
           }
           if ((stmt as CompoundStatement).block) {
@@ -246,7 +249,7 @@ export class GeBlock extends LitElement {
         });
       };
 
-      parseBlockForDevices(this.block);
+      parseBlockForDevices(userProcedureBlock);
 
       // Add entry to initializedProcedures with MetadataInit structure
       const metadataEntry = {
