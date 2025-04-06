@@ -131,6 +131,7 @@ export class GeBlock extends LitElement {
 
   //#region Refs
   addStatementModalRef: Ref<EditorModal> = createRef();
+  deviceSelectionModalRef: Ref<EditorModal> = createRef();
   //#endregion
 
   //#region Context
@@ -426,14 +427,14 @@ export class GeBlock extends LitElement {
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
-    //check if clicked block is devicetype
+    const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
+    if (clickedBlock && clickedBlock.id === 'deviceType') {
+      console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+      this.showDeviceSelectionModal();
+      return;
+    }
 
     if (!this.skeletonizeMode) {
-      const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-      if (clickedBlock && clickedBlock.id === 'deviceType') {
-        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-      }
-  
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
     }
@@ -485,6 +486,16 @@ export class GeBlock extends LitElement {
     }
 
     this.requestUpdate(); // Trigger UI rerender
+  }
+
+  showDeviceSelectionModal() {
+    this.deviceSelectionModalRef.value.showModal();
+  }
+
+  handleDeviceStatementSelected(stmtKey: string) {
+    console.log(`Selected device statement: ${stmtKey}`);
+    this.deviceSelectionModalRef.value.hideModal();
+    // Add logic to handle the selected statement
   }
 
   updated(changedProperties: Map<string, any>) {
@@ -648,6 +659,21 @@ export class GeBlock extends LitElement {
       ${this.isExample
         ? html`${this.statementsTemplate()}`
         : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
+      <editor-modal ${ref(this.deviceSelectionModalRef)} .modalTitle="${'Select Device Statement'}">
+        <div class="device-selection-modal-content">
+          ${Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
+            const statement = this.language.statements[stmtKey];
+            return html`
+              <editor-button
+                @click="${() => this.handleDeviceStatementSelected(stmtKey)}"
+                style="color: ${statement.foregroundColor}; background-color: ${statement.backgroundColor};">
+                <editor-icon .icon="${icons[statement.icon]}"></editor-icon>
+                <span>${statement.label}</span>
+              </editor-button>
+            `;
+          })}
+        </div>
+      </editor-modal>
     `;
   }
   //#endregion
