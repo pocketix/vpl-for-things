@@ -16,6 +16,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+import { stat } from 'fs';
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
@@ -127,6 +128,7 @@ export class GeBlock extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false;
+  @property() filteredDeviceStatements: string[] = [];
   //#endregion
 
   //#region Refs
@@ -430,13 +432,12 @@ export class GeBlock extends LitElement {
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
     if (clickedBlock && clickedBlock.id === 'deviceType') {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-      if (clickedBlock._uuid !== undefined){
-        this.showDeviceSelectionModal();
+if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+      this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
         
       }
-        
-      return;
+       
     }
 
     if (!this.skeletonizeMode) {
@@ -493,14 +494,40 @@ export class GeBlock extends LitElement {
     this.requestUpdate(); // Trigger UI rerender
   }
 
-  showDeviceSelectionModal() {
+  showDeviceSelectionModal(clickedBlock: ProgramStatement) {
+    this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
+      const statement = this.language.statements[stmtKey];
+      return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+      
+    });
     this.deviceSelectionModalRef.value.showModal();
   }
 
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
     this.deviceSelectionModalRef.value.hideModal();
-    // Add logic to handle the selected statement
+
+    const clickedBlock = this.block.find((stmt) => stmt.id === 'deviceType');
+    if (clickedBlock) {
+      console.log(`Replacing deviceType block with selected statement: ${stmtKey}`);
+      const selectedStatement = {
+        ...this.language.statements[stmtKey],
+        id: stmtKey,
+        _uuid: clickedBlock._uuid, // Retain the UUID of the original block
+      };
+      const index = this.block.indexOf(clickedBlock);
+      if (index !== -1) {
+        this.block[index] = selectedStatement;
+        this.requestUpdate();
+        const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          bubbles: true,
+          composed: true,
+          detail: { programBodyUpdated: true },
+        });
+        this.dispatchEvent(event);
+      }
+    }
   }
 
   updated(changedProperties: Map<string, any>) {
@@ -666,7 +693,7 @@ export class GeBlock extends LitElement {
         : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
       <editor-modal ${ref(this.deviceSelectionModalRef)} .modalTitle="${'Select Device Statement'}">
         <div class="device-selection-modal-content">
-          ${Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
+          ${this.filteredDeviceStatements.map((stmtKey) => {
             const statement = this.language.statements[stmtKey];
             return html`
               <editor-button
