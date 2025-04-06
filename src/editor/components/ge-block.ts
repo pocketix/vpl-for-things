@@ -427,12 +427,13 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     //check if clicked block is devicetype
-    const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-    if (clickedBlock && clickedBlock.id === 'deviceType') {
-      console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-    }
 
     if (!this.skeletonizeMode) {
+      const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
+      if (clickedBlock && clickedBlock.id === 'deviceType') {
+        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+      }
+  
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
     }
