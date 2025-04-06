@@ -379,8 +379,6 @@ export class GEStatement extends LitElement {
                 },
               ],
               isInvalid: false,
-
-
             };
           }
           if (stmt.block && Array.isArray(stmt.block)) {
@@ -391,6 +389,8 @@ export class GEStatement extends LitElement {
 
       parseBlock(this.procedureBlockCopy); // Update the class property
       console.log('Modified Procedure Block (deviceType blocks replaced):', this.procedureBlockCopy);
+
+      this.requestUpdate(); // Ensure the component is re-rendered
     }
     this.procModalRef.value.showModal();
   }
