@@ -430,7 +430,12 @@ export class GeBlock extends LitElement {
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
     if (clickedBlock && clickedBlock.id === 'deviceType') {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-      this.showDeviceSelectionModal();
+      if (clickedBlock._uuid !== undefined){
+        this.showDeviceSelectionModal();
+        console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+        
+      }
+        
       return;
     }
 
