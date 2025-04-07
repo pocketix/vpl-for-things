@@ -129,6 +129,8 @@ export class GeBlock extends LitElement {
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false;
   @property() filteredDeviceStatements: string[] = [];
+  @property() tmpUUID :string = '';
+  @property() parentProcedureUuid: string; // Add property to store the UUID
   //#endregion
 
   //#region Refs
@@ -217,6 +219,19 @@ export class GeBlock extends LitElement {
     super.connectedCallback();
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
+    }
+    if (this.parentProcedureUuid) {
+      console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
+
+      // Log the entry from initializedProcedures for the parentProcedureUuid
+      const metadataEntry = this.program.header.initializedProcedures.find(
+        (entry) => entry.uuid === this.parentProcedureUuid
+      );
+      if (metadataEntry) {
+        console.log(`Metadata entry for UUID ${this.parentProcedureUuid}:`, metadataEntry);
+      } else {
+        console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
+      }
     }
   }
   //#endregion
@@ -506,6 +521,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
 
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
+  
     this.deviceSelectionModalRef.value.hideModal();
 
     const clickedBlock = this.block.find((stmt) => stmt.id === 'deviceType');
@@ -519,6 +535,30 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       const index = this.block.indexOf(clickedBlock);
       if (index !== -1) {
         this.block[index] = selectedStatement;
+
+        // Debugging log to confirm block replacement
+        console.log(`Block at index ${index} replaced with selected statement:`, selectedStatement);
+
+        // Log the UUID of the user procedure being displayed
+        console.log(`User Procedure UUID being displayeddddd:d ${clickedBlock._uuid}`);
+
+        // Update the metadata entry in the initializedProcedures array
+        const metadataEntry = this.program.header.initializedProcedures.find(
+          (entry) => entry.uuid === this.parentProcedureUuid
+        );
+
+        if (metadataEntry) {
+          console.log(`Found metadata entry for UUID: ${clickedBlock._uuid}`, metadataEntry);
+
+          metadataEntry.devices = metadataEntry.devices.map(([deviceUuid, deviceId]) => {
+            const updatedDeviceId = deviceUuid === clickedBlock._uuid ? stmtKey : deviceId;
+            console.log(`Device UUID: ${deviceUuid}, Updated Device ID: ${updatedDeviceId}`);
+            return [deviceUuid, updatedDeviceId];
+          });
+        } else {
+          console.warn(`No metadata entry found for UUID: ${clickedBlock._uuid}`);
+        }
+
         this.requestUpdate();
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,
@@ -526,6 +566,8 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
           detail: { programBodyUpdated: true },
         });
         this.dispatchEvent(event);
+      } else {
+        console.warn(`Clicked block not found in the block array.`);
       }
     }
   }

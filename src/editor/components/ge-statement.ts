@@ -639,8 +639,9 @@ export class GEStatement extends LitElement {
                   .isExample="${this.isExample}"
                   .block="${this.procedureBlockCopy }"
                   .skeletonizeMode="${this.skeletonizeMode}"
-                  .restrainedMode="${this.restrainedMode}">
-                </ge-block>
+                  .restrainedMode="${this.restrainedMode}"
+                  .parentProcedureUuid="${this.statement._uuid}" <!-- Pass the UUID -->
+                ></ge-block>
               </editor-modal>
             `
           : this.statementTemplate(false)}
