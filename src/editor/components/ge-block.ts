@@ -541,7 +541,10 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
 
         // Log the UUID of the user procedure being displayed
         console.log(`User Procedure UUID being displayeddddd:d ${clickedBlock._uuid}`);
-
+        this.tmpUUID = clickedBlock._uuid;
+        console.log(`Assigned tmpUUID: ${this.tmpUUID}`);
+        this.requestUpdate(); // Ensure UI updates with the new tmpUUID
+  
         // Update the metadata entry in the initializedProcedures array
         const metadataEntry = this.program.header.initializedProcedures.find(
           (entry) => entry.uuid === this.parentProcedureUuid
@@ -612,6 +615,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
+              .uuidMetadata="${this.tmpUUID}" 
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);

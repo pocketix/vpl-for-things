@@ -228,6 +228,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
+  @property() uuidMetadata: string;
   //#endregion
 
   //#region Context
@@ -362,6 +363,20 @@ export class GEStatement extends LitElement {
       //assignUuidToBlock(this.procedureBlockCopy);
 
       // Parse the entire block, including nested ones, and replace all deviceType blocks
+      console.log('------------------> ID:', this.statement._uuid);
+      //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
+      const initializedProcedures = this.program.header.initializedProcedures;
+      const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
+      
+      //parse the procedureEntry devices array and print its contents properly
+      console.log('------------------> Procedure Entry:', procedureEntry);
+      if (procedureEntry) {
+        procedureEntry.devices.forEach((device) => {
+          console.log('------------------> Device:', device);
+        });
+      }
+
+
       const parseBlock = (block) => {
         block.forEach((stmt, index) => {
           console.log('Current Statement:', stmt.id);
