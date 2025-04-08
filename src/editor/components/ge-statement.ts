@@ -228,7 +228,6 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
-  @property({ type: String }) parentProcedureUuid: string; // Add this property
   //#endregion
 
   //#region Context
@@ -362,8 +361,7 @@ export class GEStatement extends LitElement {
       // Use the existing logic to assign UUIDs to the copied block
       //assignUuidToBlock(this.procedureBlockCopy);
 
-      console.log('Paretn id? :', this.parentProcedureUuid);
-
+      // Parse the entire block, including nested ones, and replace all deviceType blocks
       const parseBlock = (block) => {
         block.forEach((stmt, index) => {
           console.log('Current Statement:', stmt.id);
@@ -608,7 +606,6 @@ export class GEStatement extends LitElement {
                 .isProcBody="${this.isProcBody}"
                 .skeletonizeMode="${this.skeletonizeMode}"
                 .restrainedMode="${this.restrainedMode}"
-                .parentProcedureUuid="${this.parentProcedureUuid}" <!-- Pass parentProcedureUuid -->
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
