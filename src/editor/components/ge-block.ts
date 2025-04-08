@@ -220,19 +220,6 @@ export class GeBlock extends LitElement {
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
     }
-    if (this.parentProcedureUuid) {
-      console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
-
-      // Log the entry from initializedProcedures for the parentProcedureUuid
-      const metadataEntry = this.program.header.initializedProcedures.find(
-        (entry) => entry.uuid === this.parentProcedureUuid
-      );
-      if (metadataEntry) {
-        console.log(`Metadata entry for UUID ${this.parentProcedureUuid}:`, metadataEntry);
-      } else {
-        console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
-      }
-    }
   }
   //#endregion
 
@@ -255,23 +242,21 @@ export class GeBlock extends LitElement {
       // Use the existing logic to assign UUIDs to the user procedure block
       assignUuidToBlock(userProcedureBlock);
 
-      console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
-
       // Parse the block to populate the devices array
       const devices: [string, string][] = [];
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
-          console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
+          //console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
           
           // Check if the statement has arguments
-          if ((stmt as AbstractStatementWithArgs).arguments) {
-            (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
-              console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
+          // if ((stmt as AbstractStatementWithArgs).arguments) {
+          //   (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
+          //     console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
               
-              // Push the UUID of the statement and the argument value
-              devices.push([stmt._uuid, String(arg.value)]);
-            });
-          }
+          //     // Push the UUID of the statement and the argument value
+          //     devices.push([stmt._uuid, String(arg.value)]);
+          //   });
+          // }
       
           if (stmt.id === 'deviceType') {
             console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
@@ -447,12 +432,10 @@ export class GeBlock extends LitElement {
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
     if (clickedBlock && clickedBlock.id === 'deviceType') {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+    if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
-        
       }
-       
     }
 
     if (!this.skeletonizeMode) {
@@ -612,6 +595,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
+              .parentProcedureUuid="${this.parentProcedureUuid}" <!-- Pass parentProcedureUuid -->
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
