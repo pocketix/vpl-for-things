@@ -381,10 +381,34 @@ export class GEStatement extends LitElement {
         block.forEach((stmt, index) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-            // Replace the deviceType block with the alert block
+            // Look for an entry in the devices array of the procedureEntry that has the same uuid as the one in the statement
+            const deviceEntry = procedureEntry.devices.find(([uuid]) => uuid === stmt._uuid);
+            var deviceID;
+            if (deviceEntry) {
+              console.log('------------------> Device Entry:', deviceEntry);
+              deviceID = deviceEntry[1]; // Update the value with the ID (second element of the tuple)
+              console.log('------------------> Updated Statement:', deviceID);
+              const  deviceIDName = deviceID.split('.')[0];
+              console.log('------------------> Device ID Name:', deviceIDName);
+
+              // Check if deviceID exists in the program header's deviceList or language's deviceList
+              if (!this.language.deviceList.includes(deviceIDName)) {
+                deviceID = 'deviceType'; // Fallback to 'deviceType' if not found
+              }
+            } else {
+              console.log('------------------> Device Entry not found');
+              deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
+            }
+            // Replace the deviceType block with the updated block
             console.log('Replacing deviceType block with type block');
+
+            //check if deviceID is in the program header devicelist array and if it is not, set the deviceID to 'deviceType'
+            //splcie the deviceID by . and take the first part of the string
+  
+
+            
             block[index] = {
-              id: 'deviceType',
+              id: deviceID,
               _uuid: stmt._uuid,
               arguments: [
                 {
