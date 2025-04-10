@@ -1,4 +1,4 @@
-import { ArgumentType, LanguageStatementType, Argument, Statements } from './language';
+import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
 import Types from '@vpl/types.ts';
 
@@ -164,7 +164,6 @@ export type MetadataInit = {
   uuid: string;
   id: string;
   devices: DeviceMetadata[]; // Store complete device statements
-  procedureBlockCopy?: any[]; // Store the modified procedure block
 };
 
 export class Program {
@@ -196,13 +195,6 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
-
-    // Load initializedProcedures if available
-    if (programExport.header.initializedProcedures) {
-      this.header.initializedProcedures = programExport.header.initializedProcedures;
-      console.log('Program class loaded initializedProcedures:', this.header.initializedProcedures);
-    }
-
     this.block = programExport.block;
   }
 
@@ -250,7 +242,6 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
-        initializedProcedures: this.header.initializedProcedures,
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -302,7 +293,6 @@ export class Program {
       header: {
         userVariables: programCopy.header.userVariables,
         userProcedures: {}, // Empty since all procedures are inlined
-        initializedProcedures: programCopy.header.initializedProcedures,
       },
       block: this.exportProgramBlock(programCopy.block),
     };

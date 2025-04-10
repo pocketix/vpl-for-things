@@ -132,7 +132,6 @@ export class GeBlock extends LitElement {
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
   @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
-  @property() uuidMetadata: string; // Add property to store the UUID metadata
   //#endregion
 
   //#region Refs
@@ -240,9 +239,6 @@ export class GeBlock extends LitElement {
 
   //#region Methods
   addNewStatement(stmtKey: string) {
-    // Hide all modals in the document to prevent them from stacking
-    this.hideAllModals();
-
     const newStatement = {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
@@ -302,32 +298,7 @@ export class GeBlock extends LitElement {
         id: stmtKey,
         devices, // Now using DeviceMetadata array
       };
-
-      // Check if there's already an entry with the same UUID
-      const existingEntryIndex = this.program.header.initializedProcedures.findIndex(
-        entry => entry.uuid === addedStmt._uuid
-      );
-
-      if (existingEntryIndex >= 0) {
-        // Update the existing entry
-        console.log(`Updating existing metadata entry for UUID: ${addedStmt._uuid}`);
-        this.program.header.initializedProcedures[existingEntryIndex] = metadataEntry;
-      } else {
-        // Add a new entry
-        console.log(`Adding new metadata entry for UUID: ${addedStmt._uuid}`);
-        this.program.header.initializedProcedures.push(metadataEntry);
-      }
-
-      // Set the _isInitializing flag on the statement component to prevent modal from showing
-      // We need to wait for the component to be rendered
-      setTimeout(() => {
-        // Find the statement component by UUID
-        const statementElement = this.shadowRoot?.querySelector(`ge-statement[uuid="${addedStmt._uuid}"]`);
-        if (statementElement) {
-          (statementElement as any)._isInitializing = true;
-          console.log(`Set _isInitializing flag on statement with UUID: ${addedStmt._uuid}`);
-        }
-      }, 0);
+      this.program.header.initializedProcedures.push(metadataEntry);
 
       // Log each entry in initializedProcedures explicitly
       console.log('Updated initializedProcedures:');
@@ -350,34 +321,6 @@ export class GeBlock extends LitElement {
 
   hideAddNewStatementDialog() {
     this.addStatementModalRef.value.hideModal();
-  }
-
-  hideAllModals() {
-    // Hide all modals to prevent them from stacking
-    if (this.addStatementModalRef.value) {
-      this.addStatementModalRef.value.hideModal();
-    }
-    if (this.deviceSelectionModalRef.value) {
-      this.deviceSelectionModalRef.value.hideModal();
-    }
-
-    // Hide all modals in the document
-    const allModals = document.querySelectorAll('editor-modal');
-    allModals.forEach(modal => {
-      if (typeof (modal as any).hideModal === 'function') {
-        (modal as any).hideModal();
-      }
-    });
-
-    // Also hide modals in all child ge-statement components
-    const statementElements = this.shadowRoot?.querySelectorAll('ge-statement');
-    if (statementElements) {
-      statementElements.forEach(statement => {
-        if (typeof (statement as any).hideAllModals === 'function') {
-          (statement as any).hideAllModals();
-        }
-      });
-    }
   }
 
   showAddNewStatementOptions() {
@@ -504,37 +447,12 @@ export class GeBlock extends LitElement {
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
     if (clickedBlock && clickedBlock.id === 'deviceType') {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-
-      if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
-        // If we're in a procedure body, we need to set the parentProcedureUuid and tmpUUID
-        if (this.isProcBody) {
-          // If we have a uuidMetadata, use it for both tmpUUID and parentProcedureUuid
-          if (this.uuidMetadata) {
-            this.tmpUUID = this.uuidMetadata;
-            this.parentProcedureUuid = this.uuidMetadata;
-            console.log(`Set tmpUUID and parentProcedureUuid from uuidMetadata: ${this.uuidMetadata}`);
-          }
-          // If parentProcedureUuid is not set, try to get it from other sources
-          else if (!this.parentProcedureUuid) {
-            // Try to get the parent procedure UUID from the parent element
-            const parentElement = this.parentElement;
-            if (parentElement && parentElement.tagName === 'GE-BLOCK') {
-              this.parentProcedureUuid = (parentElement as any).parentProcedureUuid;
-              this.tmpUUID = this.parentProcedureUuid; // Also set tmpUUID
-              console.log(`Got parentProcedureUuid and tmpUUID from parent element: ${this.parentProcedureUuid}`);
-            } else if (this.parentStmt && this.parentStmt._uuid) {
-              // If we can't get it from the parent element, try to get it from the parent statement
-              this.parentProcedureUuid = this.parentStmt._uuid;
-              this.tmpUUID = this.parentProcedureUuid; // Also set tmpUUID
-              console.log(`Got parentProcedureUuid and tmpUUID from parent statement: ${this.parentProcedureUuid}`);
-            }
-          }
-        }
-
-        console.log(`toggleStatementSelection - parentProcedureUuid: ${this.parentProcedureUuid}, tmpUUID: ${this.tmpUUID}`);
-        this.showDeviceSelectionModal(clickedBlock);
+if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+      this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+
       }
+
     }
 
     if (!this.skeletonizeMode) {
@@ -595,37 +513,6 @@ export class GeBlock extends LitElement {
     // Store the clicked block for later use
     this.currentDeviceBlock = clickedBlock;
 
-    // If we're in a procedure body, we need to find the parent procedure UUID
-    if (this.isProcBody) {
-      console.log('In procedure body');
-
-      // If we have a uuidMetadata, use it for both tmpUUID and parentProcedureUuid
-      if (this.uuidMetadata) {
-        this.tmpUUID = this.uuidMetadata;
-        this.parentProcedureUuid = this.uuidMetadata;
-        console.log(`Set tmpUUID and parentProcedureUuid from uuidMetadata: ${this.uuidMetadata}`);
-      }
-      // If parentProcedureUuid is not set, try to get it from other sources
-      else if (!this.parentProcedureUuid) {
-        console.log('parentProcedureUuid is not set');
-
-        // Try to get the parent procedure UUID from the parent element
-        const parentElement = this.parentElement;
-        if (parentElement && parentElement.tagName === 'GE-BLOCK') {
-          this.parentProcedureUuid = (parentElement as any).parentProcedureUuid;
-          this.tmpUUID = this.parentProcedureUuid; // Also set tmpUUID
-          console.log(`Got parentProcedureUuid and tmpUUID from parent element: ${this.parentProcedureUuid}`);
-        } else if (this.parentStmt && this.parentStmt._uuid) {
-          // If we can't get it from the parent element, try to get it from the parent statement
-          this.parentProcedureUuid = this.parentStmt._uuid;
-          this.tmpUUID = this.parentProcedureUuid; // Also set tmpUUID
-          console.log(`Got parentProcedureUuid and tmpUUID from parent statement: ${this.parentProcedureUuid}`);
-        }
-      }
-    }
-
-    console.log(`showDeviceSelectionModal - parentProcedureUuid: ${this.parentProcedureUuid}, tmpUUID: ${this.tmpUUID}`);
-
     // Filter device statements
     this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
@@ -638,7 +525,6 @@ export class GeBlock extends LitElement {
 
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
-    console.log(`handleDeviceStatementSelected - parentProcedureUuid: ${this.parentProcedureUuid}`);
 
     this.deviceSelectionModalRef.value.hideModal();
 
@@ -672,71 +558,25 @@ export class GeBlock extends LitElement {
         this.requestUpdate(); // Ensure UI updates with the new tmpUUID
 
         // Update the metadata entry in the initializedProcedures array
-        // First try to find the entry using tmpUUID, then fall back to parentProcedureUuid
-        let metadataEntry = null;
-
-        if (this.tmpUUID) {
-          console.log(`Looking for metadata entry with tmpUUID: ${this.tmpUUID}`);
-          metadataEntry = this.program.header.initializedProcedures.find(
-            (entry) => entry.uuid === this.tmpUUID
-          );
-        }
-
-        if (!metadataEntry && this.parentProcedureUuid) {
-          console.log(`Looking for metadata entry with parentProcedureUuid: ${this.parentProcedureUuid}`);
-          metadataEntry = this.program.header.initializedProcedures.find(
-            (entry) => entry.uuid === this.parentProcedureUuid
-          );
-        }
-
-        // If we still don't have a metadata entry, try to find it using uuidMetadata
-        if (!metadataEntry && this.uuidMetadata) {
-          console.log(`Looking for metadata entry with uuidMetadata: ${this.uuidMetadata}`);
-          metadataEntry = this.program.header.initializedProcedures.find(
-            (entry) => entry.uuid === this.uuidMetadata
-          );
-        }
+        const metadataEntry = this.program.header.initializedProcedures.find(
+          (entry) => entry.uuid === this.parentProcedureUuid
+        );
 
         if (metadataEntry) {
-          console.log(`Found metadata entry for UUID: ${metadataEntry.uuid}`, metadataEntry);
+          console.log(`Found metadata entry for UUID: ${this.parentProcedureUuid}`, metadataEntry);
 
-          // We need to update the metadata directly
-          // Since we've already replaced the deviceType statement with a device statement,
-          // we need to find the device in the metadata by its UUID
-
-          // Find the device in the metadata by UUID
-          const deviceIndex = metadataEntry.devices.findIndex((device: DeviceMetadata) => device.uuid === clickedBlock._uuid);
-
-          console.log(`Device index in metadata: ${deviceIndex}`);
-          console.log(`Device UUID: ${clickedBlock._uuid}`);
-          console.log(`Metadata devices:`, metadataEntry.devices.map((d: DeviceMetadata) => d.uuid));
-
-          console.log(`Total devices in metadata: ${metadataEntry.devices.length}`);
-
-          // Update the device metadata at the corresponding index
-          if (deviceIndex >= 0) {
-            const deviceToUpdate = metadataEntry.devices[deviceIndex];
-            console.log(`Updating device at index ${deviceIndex} - Old ID: ${deviceToUpdate.deviceId}, New ID: ${stmtKey}`);
-
-            // Update the device metadata
-            metadataEntry.devices[deviceIndex] = {
-              uuid: deviceToUpdate.uuid, // Keep the original UUID
-              deviceId: stmtKey,
-              statement: newStatement
-            };
-          } else {
-            // If the device is not found in the metadata, add it
-            console.log(`Device not found in metadata, adding new entry with UUID: ${clickedBlock._uuid}`);
-            metadataEntry.devices.push({
-              uuid: clickedBlock._uuid,
-              deviceId: stmtKey,
-              statement: newStatement
-            });
-          }
-
-          // Clear the procedureBlockCopy to force a rebuild on next open
-          metadataEntry.procedureBlockCopy = null;
-          console.log('Cleared procedureBlockCopy in metadata to force rebuild on next open');
+          // Update the device metadata
+          metadataEntry.devices = metadataEntry.devices.map(device => {
+            if (device.uuid === clickedBlock._uuid) {
+              console.log(`Updating device - UUID: ${device.uuid}, Old ID: ${device.deviceId}, New ID: ${stmtKey}`);
+              return {
+                uuid: device.uuid,
+                deviceId: stmtKey,
+                statement: newStatement
+              };
+            }
+            return device;
+          });
         } else {
           console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
         }
@@ -756,7 +596,7 @@ export class GeBlock extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      this.selectedStatements.clear();
+      this.selectedStatements.clear();statementCustomEvent
       this.requestUpdate();
     }
   }
@@ -795,7 +635,6 @@ export class GeBlock extends LitElement {
               .restrainedMode="${this.restrainedMode}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
               .uuidMetadata="${this.tmpUUID}"
-              uuid="${stmt._uuid}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
