@@ -133,10 +133,9 @@ export function assignUuidToExprOperands(expr: Expression) {
 
 export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
-    if (stmt._uuid !== undefined) {
-      continue;
+    if (stmt._uuid === undefined) {
+      stmt._uuid = uuidv4();
     }
-    stmt._uuid = uuidv4();
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
         if (isExpressionArray(arg)) {
