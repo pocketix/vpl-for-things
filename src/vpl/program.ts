@@ -54,7 +54,7 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
     case Types.string:
       return '';
     case Types.multi_device:
-        return [] as Devices[];  
+        return [] as Devices[];
     default:
       return null;
   }
@@ -154,10 +154,16 @@ export type DeviceInstance = {
     type?: string;
 };
 
+export type DeviceMetadata = {
+  uuid: string;
+  deviceId: string;
+  statement: ProgramStatement; // Store the complete statement with arguments
+};
+
 export type MetadataInit = {
   uuid: string;
   id: string;
-  devices: Array<[string, string]>; // Update devices to be an array of string tuples
+  devices: DeviceMetadata[]; // Store complete device statements
 };
 
 export class Program {
@@ -252,11 +258,11 @@ export class Program {
   exportLinearizedProgram() {
     // Create a deep copy of the program to avoid modifying the original
     let programCopy = JSON.parse(JSON.stringify(this));
-    
+
     // Function to recursively replace procedure calls with their definitions
     const expandProcedures = (block: Block): Block => {
       let expandedBlock: Block = [];
-      
+
       for (let stmt of block) {
         // If this statement is a procedure call (exists in userProcedures)
         if (this.header.userProcedures[stmt.id]) {
@@ -275,7 +281,7 @@ export class Program {
           expandedBlock.push(stmt);
         }
       }
-      
+
       return expandedBlock;
     };
 
