@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock } from '@/vpl/program';
+import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -260,43 +260,57 @@ export class GeBlock extends LitElement {
       assignUuidToBlock(userProcedureBlock);
 
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
+      
 
       // Parse the block to populate the devices array
-      const devices: [string, string][] = [];
+      const devices: DeviceMetadata[] = [];
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
           console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-          
-          // Check if the statement has arguments
-          if ((stmt as AbstractStatementWithArgs).arguments) {
-            (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
-              console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
+          // if ((stmt as AbstractStatementWithArgs).arguments) {
+          //   (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
+          //     console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
               
-              // Push the UUID of the statement and the argument value
-              devices.push([stmt._uuid, String(arg.value)]);
-            });
-          }
+          //     // Push the UUID of the statement and the argument value
+          //     devices.push({
+          //       uuid: stmt._uuid,
+          //       deviceId: String(arg.value),
+          //       statement: stmt,
+          //     });
+          //   });
+          // }
       
           if (stmt.id === 'deviceType') {
             console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-            
-            // Push the UUID of the statement and the argument value (if applicable)
             if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
-              devices.push([stmt._uuid, String(arg.value)]);
+              devices.push({
+                uuid: stmt._uuid,
+                deviceId: String(arg.value),
+                statement: stmt,
+              });
             }
           }
-      
           if ((stmt as CompoundStatement).block) {
             parseBlockForDevices((stmt as CompoundStatement).block);
           }
         });
       };
-      
-
       parseBlockForDevices(userProcedureBlock);
+
+      const newEntry: MetadataInit = {
+        uuid: addedStmt._uuid,
+        id: stmtKey,
+        devices: devices, // Store complete device statements
+      };
+      this.program.header.initializedProcedures.push(newEntry);
+      //print all initializedProcedures and their conent
+      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
+      
     }
+
+    
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
