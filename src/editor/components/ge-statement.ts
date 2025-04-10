@@ -382,7 +382,8 @@ export class GEStatement extends LitElement {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
             // Look for an entry in the devices array of the procedureEntry that has the same uuid as the one in the statement
-            const deviceEntry = procedureEntry.devices.find(([uuid]) => uuid === stmt._uuid);
+            //const deviceEntry = procedureEntry.devices.find(([uuid]) => uuid === stmt._uuid);
+            const deviceEntry = "";
             var deviceID;
             if (deviceEntry) {
               console.log('------------------> Device Entry:', deviceEntry);

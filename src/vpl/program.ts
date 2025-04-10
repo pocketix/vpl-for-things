@@ -133,6 +133,9 @@ export function assignUuidToExprOperands(expr: Expression) {
 
 export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
+    if (stmt._uuid !== undefined) {
+      continue;
+    }
     stmt._uuid = uuidv4();
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
@@ -148,18 +151,17 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
-export type DeviceInstance = {
-    uuid: string;
-    id: string;
-    type?: string;
+export type DeviceMetadata = {
+  uuid: string;
+  deviceId: string;
+  statement: ProgramStatement; // Store the complete statement with arguments
 };
 
 export type MetadataInit = {
   uuid: string;
   id: string;
-  devices: Array<[string, string]>; // Update devices to be an array of string tuples
+  devices: DeviceMetadata[]; // Store complete device statements
 };
-
 export class Program {
   header: Header;
   block: Block;
@@ -168,7 +170,7 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
-      initializedProcedures: [] as MetadataInit[], // Update initializedProcedures to use MetadataInit type
+      initializedProcedures: [], // Update initializedProcedures to use MetadataInit type
       skeletonize: [],
       skeletonize_uuid: [],
       selected_uuids: [],

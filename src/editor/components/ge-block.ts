@@ -165,6 +165,9 @@ export class GeBlock extends LitElement {
       if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
         return false;
       }
+      if(stmt.key === 'deviceType'){
+        return false;
+      }
 
       if (this.parentStmt) {
         if (this.language.statements[stmt.key].parents) {
@@ -220,23 +223,25 @@ export class GeBlock extends LitElement {
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
     }
-    if (this.parentProcedureUuid) {
-      console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
-
-      // Log the entry from initializedProcedures for the parentProcedureUuid
-      const metadataEntry = this.program.header.initializedProcedures.find(
-        (entry) => entry.uuid === this.parentProcedureUuid
-      );
-      if (metadataEntry) {
-        console.log(`Metadata entry for UUID ${this.parentProcedureUuid}:`, metadataEntry);
-      } else {
-        console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
-      }
-    }
   }
+  //   if (this.parentProcedureUuid) {
+  //     console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
+
+  //     // Log the entry from initializedProcedures for the parentProcedureUuid
+  //     const metadataEntry = this.program.header.initializedProcedures.find(
+  //       (entry) => entry.uuid === this.parentProcedureUuid
+  //     );
+  //     if (metadataEntry) {
+  //       console.log(`Metadata entry for UUID ${this.parentProcedureUuid}:`, metadataEntry);
+  //     } else {
+  //       console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
+  //     }
+  //   }
+  // }
   //#endregion
 
   //#region Methods
+  //----------------------------------------
   addNewStatement(stmtKey: string) {
     const newStatement = {
       type: this.language.statements[stmtKey].type,
@@ -251,7 +256,6 @@ export class GeBlock extends LitElement {
     if (this.language.statements[stmtKey].isUserProcedure) {
       const addedStmt = this.block[this.block.length - 1]; // Get the newly added statement
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
-
       // Use the existing logic to assign UUIDs to the user procedure block
       assignUuidToBlock(userProcedureBlock);
 
@@ -292,23 +296,6 @@ export class GeBlock extends LitElement {
       
 
       parseBlockForDevices(userProcedureBlock);
-
-      // Add entry to initializedProcedures with MetadataInit structure
-      const metadataEntry = {
-        uuid: addedStmt._uuid,
-        id: stmtKey,
-        devices, // Devices is now a tuple array
-      };
-      this.program.header.initializedProcedures.push(metadataEntry);
-
-      // Log each entry in initializedProcedures explicitly
-      console.log('Updated initializedProcedures:');
-      this.program.header.initializedProcedures.forEach((entry) => {
-        console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices:`);
-        entry.devices.forEach(([deviceUuid, deviceId]) => {
-          console.log(`  - Device UUID: ${deviceUuid}, Device ID: ${deviceId}`);
-        });
-      });
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -519,6 +506,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
     this.deviceSelectionModalRef.value.showModal();
   }
 
+  //this---------------------------------------
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
   
@@ -553,11 +541,6 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
         if (metadataEntry) {
           console.log(`Found metadata entry for UUID: ${clickedBlock._uuid}`, metadataEntry);
 
-          metadataEntry.devices = metadataEntry.devices.map(([deviceUuid, deviceId]) => {
-            const updatedDeviceId = deviceUuid === clickedBlock._uuid ? stmtKey : deviceId;
-            console.log(`Device UUID: ${deviceUuid}, Updated Device ID: ${updatedDeviceId}`);
-            return [deviceUuid, updatedDeviceId];
-          });
         } else {
           console.warn(`No metadata entry found for UUID: ${clickedBlock._uuid}`);
         }
