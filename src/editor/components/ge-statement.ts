@@ -7,8 +7,6 @@ import {
   Program,
   ProgramStatement,
   initDefaultArgumentType,
-  assignUuidToBlock,
-  DeviceMetadata,
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
@@ -230,6 +228,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
+  _isInitializing: boolean = false; // Flag to track if this is an initialization or user action
   //#endregion
 
   //#region Context
@@ -255,7 +254,13 @@ export class GEStatement extends LitElement {
 
   constructor() {
     super();
-    this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
+
+    // Hide all modals when the component is created
+    // This ensures that modals don't stack on top of each other
+    setTimeout(() => {
+      this.hideAllModals();
+    }, 0);
+    this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (_e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
         (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].type = this.program.header
           .userVariables[
@@ -352,28 +357,68 @@ export class GEStatement extends LitElement {
     this.statementControlsModalRef.value.hideModal();
   }
 
+  hideAllModals() {
+    // Hide all modals to prevent them from stacking
+    if (this.procModalRef.value) {
+      this.procModalRef.value.hideModal();
+    }
+    if (this.statementControlsModalRef.value) {
+      this.statementControlsModalRef.value.hideModal();
+    }
+    if (this.stmtDescModalRef.value) {
+      this.stmtDescModalRef.value.hideModal();
+    }
+  }
+
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
+
+    // Log the initialization state
+    console.log(`handleShowProcDef called with _isInitializing = ${this._isInitializing}`);
+
+    // Reset the initialization flag after we've checked it
+    // This ensures that subsequent clicks will show the modal
+    this._isInitializing = false;
 
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
 
-      // Use the existing logic to assign UUIDs to the copied block
-      //assignUuidToBlock(this.procedureBlockCopy);
-
       // Parse the entire block, including nested ones, and replace all deviceType blocks
-      console.log('------------------> ID:', this.statement._uuid);
-      //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
+      console.log('------------------> Statement UUID:', this.statement._uuid);
+
+      // Get the entry from initializedProcedures where uuid matches the statement's UUID
       const initializedProcedures = this.program.header.initializedProcedures;
       const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
 
-      //parse the procedureEntry devices array and print its contents properly
+      // Log the procedure entry if found
       console.log('------------------> Procedure Entry:', procedureEntry);
       if (procedureEntry) {
+        console.log('------------------> Found procedure entry with UUID:', procedureEntry.uuid);
         procedureEntry.devices.forEach((device) => {
           console.log('------------------> Device:', device);
+        });
+
+        // If we have a saved procedureBlockCopy, use it
+        if (procedureEntry.procedureBlockCopy) {
+          console.log('------------------> Using saved procedureBlockCopy:', procedureEntry.procedureBlockCopy);
+          this.procedureBlockCopy = JSON.parse(JSON.stringify(procedureEntry.procedureBlockCopy));
+          // Skip the parseBlock call since we're using the saved copy
+          this.requestUpdate();
+
+          // Only show the modal if this is a user-initiated action (not during initialization)
+          if (!this._isInitializing) {
+            this.procModalRef.value.showModal();
+          }
+
+          return; // Skip the rest of the method
+        }
+      } else {
+        console.log('------------------> No procedure entry found for UUID:', this.statement._uuid);
+        console.log('------------------> Available procedure entries:');
+        initializedProcedures.forEach(entry => {
+          console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices: ${entry.devices.length}`);
         });
       }
 
@@ -382,37 +427,84 @@ export class GEStatement extends LitElement {
         block.forEach((stmt: any, index: number) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-            // Look for an entry in the devices array of the procedureEntry that has the same uuid as the one in the statement
-            const deviceEntry = procedureEntry.devices.find(device => device.uuid === stmt._uuid);
+            // If we have a procedure entry, try to find a matching device
+            if (procedureEntry) {
+              // Find the device in the metadata by UUID
+              const deviceEntry = procedureEntry.devices.find(device => device.uuid === stmt._uuid);
 
-            if (deviceEntry) {
-              console.log('------------------> Device Entry:', deviceEntry);
-              const deviceID = deviceEntry.deviceId;
-              console.log('------------------> Device ID:', deviceID);
-              const deviceIDName = deviceID.split('.')[0];
-              console.log('------------------> Device ID Name:', deviceIDName);
+              // If we can't find by UUID, try to find by position
+              if (!deviceEntry) {
+                console.log('Device not found by UUID, trying to find by position...');
 
-              // Check if deviceID exists in the program header's deviceList or language's deviceList
-              if (!this.language.deviceList.includes(deviceIDName) && deviceID !== 'deviceType') {
-                console.log('------------------> Device not found in deviceList, using deviceType');
-                // Skip replacing if the device is not found
-                return;
+                // Find all deviceType statements in the block
+                const deviceTypeStmts = [];
+                const findDeviceTypeStmts = (b: any[], path: number[] = []) => {
+                  b.forEach((s, i) => {
+                    if (s.id === 'deviceType') {
+                      deviceTypeStmts.push({ stmt: s, path: [...path, i] });
+                    }
+                    if (s.block && Array.isArray(s.block)) {
+                      findDeviceTypeStmts(s.block, [...path, i]);
+                    }
+                  });
+                };
+
+                // Find all deviceType statements in the current block
+                findDeviceTypeStmts(block);
+
+                // Find the index of the current statement in the deviceTypeStmts array
+                const currentStmtIndex = deviceTypeStmts.findIndex(item => item.stmt === stmt);
+                console.log(`Current deviceType statement index: ${currentStmtIndex}`);
+
+                // Get the corresponding device entry from the metadata by position
+                if (currentStmtIndex >= 0 && currentStmtIndex < procedureEntry.devices.length) {
+                  const positionDeviceEntry = procedureEntry.devices[currentStmtIndex];
+                  console.log(`Found device by position at index ${currentStmtIndex}:`, positionDeviceEntry);
+
+                  // Update the device entry's UUID to match the current statement
+                  positionDeviceEntry.uuid = stmt._uuid;
+
+                  // Use this device entry
+                  return positionDeviceEntry;
+                }
               }
 
-              // Replace the deviceType block with the stored statement from metadata
-              console.log('Replacing deviceType block with stored statement');
+              // Process the device entry if found (either by UUID or position)
+              if (deviceEntry) {
+                console.log('------------------> Device Entry found:', deviceEntry);
+                const deviceID = deviceEntry.deviceId;
+                console.log('------------------> Device ID:', deviceID);
+                const deviceIDName = deviceID.split('.')[0];
+                console.log('------------------> Device ID Name:', deviceIDName);
 
-              // Create a deep copy of the stored statement to avoid reference issues
-              const statementCopy = JSON.parse(JSON.stringify(deviceEntry.statement));
+                // Check if deviceID exists in the program header's deviceList or language's deviceList
+                if (!this.language.deviceList.includes(deviceIDName) && deviceID !== 'deviceType') {
+                  console.log('------------------> Device not found in deviceList, using deviceType');
+                  // Skip replacing if the device is not found
+                  return;
+                }
 
-              // Ensure the UUID is preserved
-              statementCopy._uuid = stmt._uuid;
+                // Replace the deviceType block with the stored statement from metadata
+                console.log('Replacing deviceType block with stored statement');
 
-              // Replace the block with the stored statement
-              block[index] = statementCopy;
+                // Create a deep copy of the stored statement to avoid reference issues
+                const statementCopy = JSON.parse(JSON.stringify(deviceEntry.statement));
+
+                // Ensure the UUID is preserved
+                statementCopy._uuid = stmt._uuid;
+
+                // Replace the block with the stored statement
+                block[index] = statementCopy;
+
+                // Update the UUID in the metadata to match the current statement
+                deviceEntry.uuid = stmt._uuid;
+              } else {
+                console.log('------------------> Device Entry not found for UUID:', stmt._uuid);
+                // Keep the original deviceType block if no entry is found
+              }
             } else {
-              console.log('------------------> Device Entry not found');
-              // Keep the original deviceType block if no entry is found
+              console.log('------------------> No procedure entry available, keeping deviceType');
+              // Keep the original deviceType block if no procedure entry is found
             }
           }
           if (stmt.block && Array.isArray(stmt.block)) {
@@ -424,9 +516,20 @@ export class GEStatement extends LitElement {
       parseBlock(this.procedureBlockCopy); // Update the class property
       console.log('Modified Procedure Block (deviceType blocks replaced):', this.procedureBlockCopy);
 
+      // Save the modified procedure block in the metadata
+      if (procedureEntry) {
+        procedureEntry.procedureBlockCopy = JSON.parse(JSON.stringify(this.procedureBlockCopy));
+        console.log('Saved procedureBlockCopy in metadata:', procedureEntry.procedureBlockCopy);
+      }
+
       this.requestUpdate(); // Ensure the component is re-rendered
     }
-    this.procModalRef.value.showModal();
+
+    // Only show the modal if this is a user-initiated action (not during initialization)
+    // We can determine this by checking if the event was triggered by a click
+    if (!this._isInitializing) {
+      this.procModalRef.value.showModal();
+    }
   }
 
   handleShowStmtDescModal(e: Event) {
@@ -640,6 +743,7 @@ export class GEStatement extends LitElement {
                 .isProcBody="${this.isProcBody}"
                 .skeletonizeMode="${this.skeletonizeMode}"
                 .restrainedMode="${this.restrainedMode}"
+                .uuidMetadata="${this.uuidMetadata}"
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
@@ -674,7 +778,8 @@ export class GEStatement extends LitElement {
                   .block="${this.procedureBlockCopy }"
                   .skeletonizeMode="${this.skeletonizeMode}"
                   .restrainedMode="${this.restrainedMode}"
-                  .parentProcedureUuid="${this.statement._uuid}" <!-- Pass the UUID -->
+                  .parentProcedureUuid="${this.statement._uuid}"
+                  .uuidMetadata="${this.statement._uuid}"
                 ></ge-block>
               </editor-modal>
             `

@@ -651,7 +651,15 @@ export class EditorControls extends LitElement {
           this.requestUpdate();
 
           // Load the program into the editor
-          this.program.header = importedProgram.header; // Update header
+          this.program.header.userVariables = importedProgram.header.userVariables || {};
+          this.program.header.userProcedures = importedProgram.header.userProcedures || {};
+
+          // Load initializedProcedures if available
+          if (importedProgram.header.initializedProcedures) {
+            this.program.header.initializedProcedures = importedProgram.header.initializedProcedures;
+            console.log('Loaded initializedProcedures:', this.program.header.initializedProcedures);
+          }
+
           this.program.block = importedProgram.block; // Update block
 
           // Integrate custom procedures into the language context
@@ -694,6 +702,7 @@ export class EditorControls extends LitElement {
         header: {
           userVariables: this.program?.header.userVariables,
           userProcedures: this.program?.header.userProcedures,
+          initializedProcedures: this.program?.header.initializedProcedures,
         },
         block: this.program?.block,
       };
@@ -821,7 +830,16 @@ export class EditorControls extends LitElement {
   }
 
   handleLoadProgram(program: any) {
-    this.program.header = program.header; // Update header
+    // Update header components
+    this.program.header.userVariables = program.header.userVariables || {};
+    this.program.header.userProcedures = program.header.userProcedures || {};
+
+    // Load initializedProcedures if available
+    if (program.header.initializedProcedures) {
+      this.program.header.initializedProcedures = program.header.initializedProcedures;
+      console.log('Loaded initializedProcedures:', this.program.header.initializedProcedures);
+    }
+
     this.program.block = program.block; // Update block
 
     // Integrate custom procedures into the language context
@@ -1217,7 +1235,7 @@ export class EditorControls extends LitElement {
                 3. Click "Create Procedure" when you're ready
               </div>
             </div>
-            <editor-button 
+            <editor-button
               @click="${() => {
                 const proceduresModal = this.userProceduresModalRef.value;
                 proceduresModal.showModal();
@@ -1225,7 +1243,7 @@ export class EditorControls extends LitElement {
                 requestAnimationFrame(() => {
                   proceduresModal.handleShowAddProcedureModal();
                 });
-              }}" 
+              }}"
               class="control-button create-procedure"
               style="background-color: var(--blue-500); color: white; font-weight: 500;">
               <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
@@ -1276,8 +1294,8 @@ export class EditorControls extends LitElement {
               </editor-button>
             </div>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
- 
-          
+
+
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
               <editor-button title="Programs" @click="${this.handleShowProgramsModal}" class="control-button">
                 <editor-icon .icon="${icons.folder}" .width="${18}" .height="${18}" title="Programs"></editor-icon>
@@ -1293,8 +1311,8 @@ export class EditorControls extends LitElement {
               </editor-button>
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <editor-button 
-                @click="${this.handleSkeletonize}" 
+              <editor-button
+                @click="${this.handleSkeletonize}"
                 class="control-button ${this.skeletonizeMode ? 'active' : ''}"
                 style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
                 <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
