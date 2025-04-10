@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata } from '@/vpl/program';
+import { Block, Program, ProgramStatement, getBlockDependencies, getBlockDependents, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -16,7 +16,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
-
+import { stat } from 'fs';
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
@@ -131,7 +131,6 @@ export class GeBlock extends LitElement {
   @property() filteredDeviceStatements: string[] = [];
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
-  @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
   //#endregion
 
   //#region Refs
@@ -259,36 +258,38 @@ export class GeBlock extends LitElement {
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
 
       // Parse the block to populate the devices array
-      const devices: DeviceMetadata[] = [];
+      const devices: [string, string][] = [];
       const parseBlockForDevices = (block: Block) => {
         block.forEach((stmt) => {
           console.log(`Parsing statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-
+          
+          // Check if the statement has arguments
+          if ((stmt as AbstractStatementWithArgs).arguments) {
+            (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
+              console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
+              
+              // Push the UUID of the statement and the argument value
+              devices.push([stmt._uuid, String(arg.value)]);
+            });
+          }
+      
           if (stmt.id === 'deviceType') {
-            console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-
-            // Store the complete statement with its arguments
+            console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
+            
+            // Push the UUID of the statement and the argument value (if applicable)
             if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
-
-              // Create a deep copy of the statement to store in metadata
-              const statementCopy = JSON.parse(JSON.stringify(stmt));
-
-              devices.push({
-                uuid: stmt._uuid,
-                deviceId: String(arg.value),
-                statement: statementCopy
-              });
+              devices.push([stmt._uuid, String(arg.value)]);
             }
           }
-
+      
           if ((stmt as CompoundStatement).block) {
             parseBlockForDevices((stmt as CompoundStatement).block);
           }
         });
       };
-
+      
 
       parseBlockForDevices(userProcedureBlock);
 
@@ -296,7 +297,7 @@ export class GeBlock extends LitElement {
       const metadataEntry = {
         uuid: addedStmt._uuid,
         id: stmtKey,
-        devices, // Now using DeviceMetadata array
+        devices, // Devices is now a tuple array
       };
       this.program.header.initializedProcedures.push(metadataEntry);
 
@@ -304,9 +305,8 @@ export class GeBlock extends LitElement {
       console.log('Updated initializedProcedures:');
       this.program.header.initializedProcedures.forEach((entry) => {
         console.log(`UUID: ${entry.uuid}, ID: ${entry.id}, Devices:`);
-        entry.devices.forEach((device) => {
-          console.log(`  - Device UUID: ${device.uuid}, Device ID: ${device.deviceId}`);
-          console.log(`  - Device Statement:`, device.statement);
+        entry.devices.forEach(([deviceUuid, deviceId]) => {
+          console.log(`  - Device UUID: ${deviceUuid}, Device ID: ${deviceId}`);
         });
       });
     }
@@ -450,9 +450,9 @@ export class GeBlock extends LitElement {
 if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
-
+        
       }
-
+       
     }
 
     if (!this.skeletonizeMode) {
@@ -510,75 +510,56 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
   }
 
   showDeviceSelectionModal(clickedBlock: ProgramStatement) {
-    // Store the clicked block for later use
-    this.currentDeviceBlock = clickedBlock;
-
-    // Filter device statements
     this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+      
     });
-
     this.deviceSelectionModalRef.value.showModal();
   }
 
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
-
+  
     this.deviceSelectionModalRef.value.hideModal();
 
-    // Use the stored device block
-    const clickedBlock = this.currentDeviceBlock;
+    const clickedBlock = this.block.find((stmt) => stmt.id === 'deviceType');
     if (clickedBlock) {
       console.log(`Replacing deviceType block with selected statement: ${stmtKey}`);
-
-      // Create a new statement with the selected device type
-      const newStatement: ProgramStatement = {
+      const selectedStatement = {
+        ...this.language.statements[stmtKey],
         id: stmtKey,
         _uuid: clickedBlock._uuid, // Retain the UUID of the original block
-        arguments: clickedBlock.id === 'deviceType' && (clickedBlock as AbstractStatementWithArgs).arguments ?
-          JSON.parse(JSON.stringify((clickedBlock as AbstractStatementWithArgs).arguments)) : [],
-        isInvalid: false
       };
-
-      // Find the index of the clicked block in the current block
       const index = this.block.indexOf(clickedBlock);
       if (index !== -1) {
-        // Replace the block with the new statement
-        this.block[index] = newStatement;
+        this.block[index] = selectedStatement;
 
         // Debugging log to confirm block replacement
-        console.log(`Block at index ${index} replaced with selected statement:`, newStatement);
+        console.log(`Block at index ${index} replaced with selected statement:`, selectedStatement);
 
         // Log the UUID of the user procedure being displayed
-        console.log(`User Procedure UUID: ${clickedBlock._uuid}`);
+        console.log(`User Procedure UUID being displayeddddd:d ${clickedBlock._uuid}`);
         this.tmpUUID = clickedBlock._uuid;
         console.log(`Assigned tmpUUID: ${this.tmpUUID}`);
         this.requestUpdate(); // Ensure UI updates with the new tmpUUID
-
+  
         // Update the metadata entry in the initializedProcedures array
         const metadataEntry = this.program.header.initializedProcedures.find(
           (entry) => entry.uuid === this.parentProcedureUuid
         );
 
         if (metadataEntry) {
-          console.log(`Found metadata entry for UUID: ${this.parentProcedureUuid}`, metadataEntry);
+          console.log(`Found metadata entry for UUID: ${clickedBlock._uuid}`, metadataEntry);
 
-          // Update the device metadata
-          metadataEntry.devices = metadataEntry.devices.map(device => {
-            if (device.uuid === clickedBlock._uuid) {
-              console.log(`Updating device - UUID: ${device.uuid}, Old ID: ${device.deviceId}, New ID: ${stmtKey}`);
-              return {
-                uuid: device.uuid,
-                deviceId: stmtKey,
-                statement: newStatement
-              };
-            }
-            return device;
+          metadataEntry.devices = metadataEntry.devices.map(([deviceUuid, deviceId]) => {
+            const updatedDeviceId = deviceUuid === clickedBlock._uuid ? stmtKey : deviceId;
+            console.log(`Device UUID: ${deviceUuid}, Updated Device ID: ${updatedDeviceId}`);
+            return [deviceUuid, updatedDeviceId];
           });
         } else {
-          console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
+          console.warn(`No metadata entry found for UUID: ${clickedBlock._uuid}`);
         }
 
         this.requestUpdate();
@@ -626,7 +607,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
         (stmt, i) =>
           html`
             <ge-statement
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}" 
               .statement="${stmt}"
               .index="${i}"
               .isProcBody="${this.isProcBody}"
@@ -634,7 +615,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
-              .uuidMetadata="${this.tmpUUID}"
+              .uuidMetadata="${this.tmpUUID}" 
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);

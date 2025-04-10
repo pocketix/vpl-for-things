@@ -8,7 +8,6 @@ import {
   ProgramStatement,
   initDefaultArgumentType,
   assignUuidToBlock,
-  DeviceMetadata,
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
@@ -368,7 +367,7 @@ export class GEStatement extends LitElement {
       //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
       const initializedProcedures = this.program.header.initializedProcedures;
       const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
-
+      
       //parse the procedureEntry devices array and print its contents properly
       console.log('------------------> Procedure Entry:', procedureEntry);
       if (procedureEntry) {
@@ -378,42 +377,48 @@ export class GEStatement extends LitElement {
       }
 
 
-      const parseBlock = (block: any[]) => {
-        block.forEach((stmt: any, index: number) => {
+      const parseBlock = (block) => {
+        block.forEach((stmt, index) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
             // Look for an entry in the devices array of the procedureEntry that has the same uuid as the one in the statement
-            const deviceEntry = procedureEntry.devices.find(device => device.uuid === stmt._uuid);
-
+            const deviceEntry = procedureEntry.devices.find(([uuid]) => uuid === stmt._uuid);
+            var deviceID;
             if (deviceEntry) {
               console.log('------------------> Device Entry:', deviceEntry);
-              const deviceID = deviceEntry.deviceId;
-              console.log('------------------> Device ID:', deviceID);
-              const deviceIDName = deviceID.split('.')[0];
+              deviceID = deviceEntry[1]; // Update the value with the ID (second element of the tuple)
+              console.log('------------------> Updated Statement:', deviceID);
+              const  deviceIDName = deviceID.split('.')[0];
               console.log('------------------> Device ID Name:', deviceIDName);
 
               // Check if deviceID exists in the program header's deviceList or language's deviceList
-              if (!this.language.deviceList.includes(deviceIDName) && deviceID !== 'deviceType') {
-                console.log('------------------> Device not found in deviceList, using deviceType');
-                // Skip replacing if the device is not found
-                return;
+              if (!this.language.deviceList.includes(deviceIDName)) {
+                deviceID = 'deviceType'; // Fallback to 'deviceType' if not found
               }
-
-              // Replace the deviceType block with the stored statement from metadata
-              console.log('Replacing deviceType block with stored statement');
-
-              // Create a deep copy of the stored statement to avoid reference issues
-              const statementCopy = JSON.parse(JSON.stringify(deviceEntry.statement));
-
-              // Ensure the UUID is preserved
-              statementCopy._uuid = stmt._uuid;
-
-              // Replace the block with the stored statement
-              block[index] = statementCopy;
             } else {
               console.log('------------------> Device Entry not found');
-              // Keep the original deviceType block if no entry is found
+              deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
             }
+            // Replace the deviceType block with the updated block
+            console.log('Replacing deviceType block with type block');
+
+            //check if deviceID is in the program header devicelist array and if it is not, set the deviceID to 'deviceType'
+            //splcie the deviceID by . and take the first part of the string
+  
+
+            
+            block[index] = {
+              id: deviceID,
+              _uuid: stmt._uuid,
+              arguments: [
+                {
+                  type: Types.string,
+                  value: stmt.arguments[0].value,
+                  isInvalid: false,
+                },
+              ],
+              isInvalid: false,
+            };
           }
           if (stmt.block && Array.isArray(stmt.block)) {
             parseBlock(stmt.block); // Recursively parse nested blocks
