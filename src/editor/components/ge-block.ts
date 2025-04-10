@@ -19,6 +19,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+
 import { stat } from 'fs';
 
 @customElement('ge-block')
@@ -131,6 +132,12 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false;
+  @property({ type: Boolean }) isHighlighted: boolean = false;
+  @property() filteredDeviceStatements: string[] = [];
+  @property() tmpUUID :string = '';
+  @property() parentProcedureUuid: string; // Add property to store the UUID
+  @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false;
   @property() filteredDeviceStatements: string[] = [];
@@ -625,6 +632,24 @@ export class GeBlock extends LitElement {
 if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+
+      }
+
+    }
+
+    if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No action taken.');
+      return;
+    }
+  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
+    console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
+
+    const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
+    if (clickedBlock && clickedBlock.id === 'deviceType') {
+      console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+      this.showDeviceSelectionModal(clickedBlock);
+        console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
         
       }
        
@@ -636,6 +661,125 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
     }
 
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
+    if (!stmt) {
+      console.log(`Statement with UUID ${stmtUuid} not found.`);
+      return;
+    }
+
+    const addedUuids: string[] = [];
+    const removedUuids: string[] = [];
+
+    const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      if (isSelected) {
+        if (!this.selectedStatements.has(stmt._uuid)) {
+          console.log(`Selecting statement with UUID: ${stmt._uuid}`);
+          this.selectedStatements.add(stmt._uuid);
+          this.program.header.skeletonize_uuid.push(stmt._uuid);
+          addedUuids.push(stmt._uuid);
+          this.requestUpdate();
+        }
+      } else {
+        if (this.selectedStatements.has(stmt._uuid)) {
+          console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
+          this.selectedStatements.delete(stmt._uuid);
+          this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+            (uuid) => uuid !== stmt._uuid
+          );
+          removedUuids.push(stmt._uuid);
+          this.requestUpdate();
+        }
+      }
+
+      if ((stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
+      }
+    };
+
+    const isSelected = !this.selectedStatements.has(stmtUuid);
+    propagateSelection(stmt, isSelected);
+
+    console.log('Skeletonize UUIDs:', this.program.header.skeletonize_uuid);
+    if (addedUuids.length > 0) {
+      console.log('Added UUIDs:', addedUuids);
+    }
+    if (removedUuids.length > 0) {
+      console.log('Removed UUIDs:', removedUuids);
+    }
+
+    this.requestUpdate(); // Trigger UI rerender
+  }
+
+  showDeviceSelectionModal(clickedBlock: ProgramStatement) {
+    // Store the clicked block for later use
+    this.currentDeviceBlock = clickedBlock;
+
+    // Filter device statements
+    this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
+      const statement = this.language.statements[stmtKey];
+      return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+    });
+
+    this.deviceSelectionModalRef.value.showModal();
+  }
+
+  handleDeviceStatementSelected(stmtKey: string) {
+    console.log(`Selected device statement: ${stmtKey}`);
+
+    this.deviceSelectionModalRef.value.hideModal();
+
+    // Use the stored device block
+    const clickedBlock = this.currentDeviceBlock;
+    if (clickedBlock) {
+      console.log(`Replacing deviceType block with selected statement: ${stmtKey}`);
+
+      // Create a new statement with the selected device type
+      const newStatement: ProgramStatement = {
+        id: stmtKey,
+        _uuid: clickedBlock._uuid, // Retain the UUID of the original block
+        arguments: clickedBlock.id === 'deviceType' && (clickedBlock as AbstractStatementWithArgs).arguments ?
+          JSON.parse(JSON.stringify((clickedBlock as AbstractStatementWithArgs).arguments)) : [],
+        isInvalid: false
+      };
+
+      // Find the index of the clicked block in the current block
+      const index = this.block.indexOf(clickedBlock);
+      if (index !== -1) {
+        // Replace the block with the new statement
+        this.block[index] = newStatement;
+
+        // Debugging log to confirm block replacement
+        console.log(`Block at index ${index} replaced with selected statement:`, newStatement);
+
+        // Log the UUID of the user procedure being displayed
+        console.log(`User Procedure UUID: ${clickedBlock._uuid}`);
+        this.tmpUUID = clickedBlock._uuid;
+        console.log(`Assigned tmpUUID: ${this.tmpUUID}`);
+        this.requestUpdate(); // Ensure UI updates with the new tmpUUID
+
+        // Update the metadata entry in the initializedProcedures array
+        const metadataEntry = this.program.header.initializedProcedures.find(
+          (entry) => entry.uuid === this.parentProcedureUuid
+        );
+
+        if (metadataEntry) {
+          console.log(`Found metadata entry for UUID: ${this.parentProcedureUuid}`, metadataEntry);
+
+          // Update the device metadata
+          metadataEntry.devices = metadataEntry.devices.map(device => {
+            if (device.uuid === clickedBlock._uuid) {
+              console.log(`Updating device - UUID: ${device.uuid}, Old ID: ${device.deviceId}, New ID: ${stmtKey}`);
+              return {
+                uuid: device.uuid,
+                deviceId: stmtKey,
+                statement: newStatement
+              };
+            }
+            return device;
+          });
+        } else {
+          console.warn(`No metadata entry found for UUID: ${this.parentProcedureUuid}`);
+        }
     if (!stmt) {
       console.log(`Statement with UUID ${stmtUuid} not found.`);
       return;
