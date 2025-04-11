@@ -342,7 +342,7 @@ export class GeBlock extends LitElement {
       this.program.header.initializedProcedures.push(newEntry);
       //print all initializedProcedures and their conent
       console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-      
+
     }
 
     
@@ -563,7 +563,7 @@ export class GeBlock extends LitElement {
   handleSelectedDeviceChange(e: Event) {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
-
+//----------------------------------
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
@@ -668,6 +668,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
     this.requestUpdate(); // Trigger UI rerender
   }
 
+  //----------------------------------
   showDeviceSelectionModal(clickedBlock: ProgramStatement) {
     // Store the clicked block for later use
     this.currentDeviceBlock = clickedBlock;
@@ -1219,6 +1220,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
   }
 
   render() {
+
     return html`
       ${this.isExample
         ? html`${this.statementsTemplate()}`
