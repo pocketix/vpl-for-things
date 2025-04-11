@@ -254,7 +254,7 @@ export class GEStatement extends LitElement {
 
   constructor() {
     super();
-    this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
+    this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (_e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
         (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].type = this.program.header
           .userVariables[
@@ -293,11 +293,17 @@ export class GEStatement extends LitElement {
     );
 
     if (this.statementNestedBlockRef.value) {
+      // Get the background color
+      const bgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor;
+      const fgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor;
+
+      // Apply transparency only when not in skeletonize mode or not a user procedure
+      const isUserProcedure = this.language.statements[this.statement.id]?.isUserProcedure;
+      const transparency = (this.skeletonizeMode && isUserProcedure) ? '' : '3a';
+
       this.statementNestedBlockRef.value.setAttribute(
         'style',
-        `background-color: ${
-          this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
-        }3a; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor};`
+        `background-color: ${bgColor}${transparency}; color: ${fgColor};`
       );
     }
   }
@@ -386,15 +392,15 @@ export class GEStatement extends LitElement {
       }
 
 
-      const parseBlock = (block) => {
-        block.forEach((stmt, index) => {
+      const parseBlock = (block: any[]) => {
+        block.forEach((stmt: any, index: number) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
 
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            var deviceID;
+            let deviceID: string = 'deviceType'; // Default value
             if (deviceEntry) {
-              deviceID = deviceEntry.deviceId; // Update the value with the ID (second element of the tuple)
+              deviceID = deviceEntry.deviceId || 'deviceType'; // Update the value with the ID (second element of the tuple)
               //deviceIDName shoult be spliced by . and the first part should be saved
               var deviceIDName = deviceID.split('.')[0];
 
@@ -435,7 +441,7 @@ export class GEStatement extends LitElement {
               };
             }
 
-            
+
           }
           if (stmt.block && Array.isArray(stmt.block)) {
             parseBlock(stmt.block); // Recursively parse nested blocks

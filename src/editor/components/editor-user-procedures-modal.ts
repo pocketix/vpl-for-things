@@ -267,8 +267,37 @@ export class EditorUserProceduresModal extends LitElement {
         // Create a copy of the statement to modify
         let modifiedStmt = { ...stmt };
 
+        // Check if this is a user procedure
+        if (this.language.statements[stmt.id]?.isUserProcedure) {
+          console.log('Found user procedure:', stmt.id, 'UUID:', stmt._uuid);
+
+          // Get the procedure body from userProcedures
+          const procedureBody = this.program.header.userProcedures[stmt.id];
+
+          if (procedureBody && Array.isArray(procedureBody)) {
+            console.log('Replacing user procedure with its body');
+
+            // Create deep copies of all statements in the procedure body
+            const bodyCopy = JSON.parse(JSON.stringify(procedureBody));
+
+            // Process each statement in the procedure body
+            const processedBody = parseBlock(bodyCopy);
+
+            // Add all statements from the processed body to our result
+            for (const bodyStmt of processedBody) {
+              // Assign a new UUID to each statement to avoid conflicts
+              bodyStmt._uuid = bodyStmt._uuid || uuidv4();
+              modifiedBlock.push(bodyStmt);
+            }
+
+            // Skip adding the current statement since we've replaced it with its body
+            continue;
+          } else {
+            console.warn('User procedure body not found or invalid:', stmt.id);
+          }
+        }
         // If the device name is in the deviceList, replace it with a deviceType block
-        if (deviceList.includes(deviceName)) {
+        else if (deviceList.includes(deviceName)) {
           console.log('Replacing block with ID:', stmt.id);
           modifiedStmt = {
             id: 'deviceType',
