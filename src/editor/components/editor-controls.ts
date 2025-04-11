@@ -22,6 +22,7 @@ import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userV
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
+  procedureEditorCustomEvent,
   statementCustomEvent,
   textEditorCustomEvent,
 } from '../editor-custom-events';
@@ -376,6 +377,59 @@ export class EditorControls extends LitElement {
   inputProgramFileRef: Ref<HTMLInputElement> = createRef();
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
   programsModalRef: Ref<EditorProgramsModal> = createRef();
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    // Add event listener for procedure modal closed event
+    this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, this.handleProcedureModalClosed);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    // Remove event listener when component is disconnected
+    this.removeEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, this.handleProcedureModalClosed);
+  }
+
+  // Handle procedure modal closed event
+  handleProcedureModalClosed = () => {
+    // Turn off skeletonize mode
+    if (this.skeletonizeMode) {
+      this.handleSkeletonize();
+    }
+
+    // Close all modals
+    this.closeAllModals();
+  }
+
+  // Close all modals
+  closeAllModals() {
+    // Close user variables modal if open
+    if (this.userVariablesModalRef.value?.isVisible) {
+      this.userVariablesModalRef.value.hideModal();
+    }
+
+    // Close add variable modal if open
+    if (this.addVariableModalRef.value?.isVisible) {
+      this.addVariableModalRef.value.hideModal();
+    }
+
+    // Close add variable expression modal if open
+    if (this.addVariableExpressionModalRef.value?.isVisible) {
+      this.addVariableExpressionModalRef.value.hideModal();
+    }
+
+    // Close user procedures modal if open
+    if (this.userProceduresModalRef.value?.userProceduresModalRef.value?.isVisible) {
+      this.userProceduresModalRef.value.userProceduresModalRef.value.hideModal();
+    }
+
+    // Close programs modal if open
+    if (this.programsModalRef.value?.isVisible) {
+      this.programsModalRef.value.hideModal();
+    }
+  }
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
