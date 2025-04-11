@@ -223,7 +223,7 @@ export class GeBlock extends LitElement {
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
     }
-    this.tmpUUID = '';
+    // Don't reset tmpUUID here as it might be passed from parent component
   }
   //   if (this.parentProcedureUuid) {
   //     console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
@@ -261,7 +261,7 @@ export class GeBlock extends LitElement {
       assignUuidToBlock(userProcedureBlock);
 
       console.log(`Added User Procedure - ID: ${stmtKey}, UUID: ${addedStmt._uuid}`);
-      
+
 
       // Parse the block to populate the devices array
       const devices: DeviceMetadata[] = [];
@@ -271,7 +271,7 @@ export class GeBlock extends LitElement {
           // if ((stmt as AbstractStatementWithArgs).arguments) {
           //   (stmt as AbstractStatementWithArgs).arguments.forEach((arg, index) => {
           //     console.log(`Argument ${index}: Type = ${arg.type}, Value = ${arg.value}`);
-              
+
           //     // Push the UUID of the statement and the argument value
           //     devices.push({
           //       uuid: stmt._uuid,
@@ -280,7 +280,7 @@ export class GeBlock extends LitElement {
           //     });
           //   });
           // }
-      
+
           if (stmt.id === 'deviceType') {
             console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
             if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
@@ -311,7 +311,7 @@ export class GeBlock extends LitElement {
 
     }
 
-    
+
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -452,9 +452,9 @@ export class GeBlock extends LitElement {
 if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
-        
+
       }
-       
+
     }
 
     if (!this.skeletonizeMode) {
@@ -517,7 +517,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
       const statement = this.language.statements[stmtKey];
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
-      
+
     });
     this.deviceSelectionModalRef.value.showModal();
   }
@@ -525,7 +525,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
   //this---------------------------------------
   handleDeviceStatementSelected(stmtKey: string) {
     console.log(`Selected device statement: ${stmtKey}`);
-  
+
     this.deviceSelectionModalRef.value.hideModal();
 
     const clickedBlock = this.block.find((stmt) => stmt.id === 'deviceType');
@@ -544,23 +544,36 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
         console.log(`Block at index ${index} replaced with selected statement:`, selectedStatement);
 
         // Log the UUID of the user procedure being displayed
-        console.log(`User Procedure UUID being displayeddddd:d ${clickedBlock._uuid}`);
+        console.log(`User Procedure UUID being displayed: ${this.tmpUUID}`);
+        console.log(`Is tmpUUID empty or undefined? ${!this.tmpUUID}`);
         //check is clickedBlock is in the initializedProcedures array
 
-        
-       
+
+
         this.requestUpdate(); // Ensure UI updates with the new tmpUUID
-  
+
         // Update the metadata entry in the initializedProcedures array
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.parentProcedureUuid
-        );
+        if (this.tmpUUID) {
+          const metadataEntry = this.program.header.initializedProcedures.find(
+            (entry) => entry.uuid === this.tmpUUID
+          );
 
-        if (metadataEntry) {
-          console.log(`Found metadata entry for UUID: ${clickedBlock._uuid}`, metadataEntry);
+          if (metadataEntry) {
+            console.log(`Found metadata entry for UUID: ${this.tmpUUID}`, metadataEntry);
 
+            // Update the device entry in the metadata
+            const deviceIndex = metadataEntry.devices.findIndex(device => device.uuid === clickedBlock._uuid);
+            if (deviceIndex !== -1) {
+              // Update the existing device entry
+              metadataEntry.devices[deviceIndex].deviceId = stmtKey;
+              metadataEntry.devices[deviceIndex].statement = selectedStatement;
+              console.log(`Updated device entry at index ${deviceIndex}:`, metadataEntry.devices[deviceIndex]);
+            }
+          } else {
+            console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+          }
         } else {
-          console.warn(`No metadata entry found for UUID: ${clickedBlock._uuid}`);
+          console.warn('tmpUUID is empty or undefined, cannot update metadata');
         }
 
         this.requestUpdate();
@@ -578,8 +591,13 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      this.selectedStatements.clear();statementCustomEvent
+      this.selectedStatements.clear();
       this.requestUpdate();
+    }
+
+    // Log when tmpUUID changes
+    if (changedProperties.has('tmpUUID')) {
+      console.log('tmpUUID updated in ge-block:', this.tmpUUID);
     }
   }
   //#endregion
@@ -608,7 +626,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
         (stmt, i) =>
           html`
             <ge-statement
-              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}" 
+              class="${this.selectedStatements.has(stmt._uuid) ? 'highlighted' : ''}"
               .statement="${stmt}"
               .index="${i}"
               .isProcBody="${this.isProcBody}"
@@ -616,7 +634,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
-              .uuidMetadata="${this.tmpUUID}" 
+              .uuidMetadata="${this.tmpUUID}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);
@@ -734,7 +752,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
   }
 
   render() {
-
+    console.log('Rendering ge-block with tmpUUID:', this.tmpUUID);
     return html`
       ${this.isExample
         ? html`${this.statementsTemplate()}`
