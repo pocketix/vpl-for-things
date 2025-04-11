@@ -154,6 +154,7 @@ export type DeviceMetadata = {
   uuid: string;
   deviceId: string;
   statement: ProgramStatement; // Store the complete statement with arguments
+  value?: string; // Optional attribute to store the selected value of the device
 };
 
 export type MetadataInit = {
