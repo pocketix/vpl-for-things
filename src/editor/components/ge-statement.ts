@@ -394,41 +394,48 @@ export class GEStatement extends LitElement {
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
             var deviceID;
             if (deviceEntry) {
-              console.log('------------------> Device Entry:', deviceEntry);
               deviceID = deviceEntry.deviceId; // Update the value with the ID (second element of the tuple)
+              //deviceIDName shoult be spliced by . and the first part should be saved
+              var deviceIDName = deviceID.split('.')[0];
+
+              console.log('------------------> Device Entry:', deviceEntry);
               console.log('------------------> Updated Statement:', deviceID);
-              const  deviceIDName = deviceEntry.statement.id;
               console.log('------------------> Device ID Name:', deviceIDName);
 
-              // Check if deviceID exists in the program header's deviceList or language's deviceList
               if (!this.language.deviceList.includes(deviceIDName)) {
+                console.log('------------------> Device ID not found in deviceList');
                 deviceID = 'deviceType'; // Fallback to 'deviceType' if not found
               }
             } else {
               console.log('------------------> Device Entry not found');
               deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
             }
-            // Replace the deviceType block with the updated block
             console.log('Replacing deviceType block with type block');
-
-            //check if deviceID is in the program header devicelist array and if it is not, set the deviceID to 'deviceType'
-            //splcie the deviceID by . and take the first part of the string
             if  (deviceEntry.statement.id === 'deviceType'){
               deviceID = 'deviceType';
+              block[index] = {
+                ... this.language.statements[deviceID],
+                id: deviceID,
+                _uuid: stmt._uuid,
+                arguments: [
+                  {
+                    type: Types.string,
+                    value: stmt.arguments[0].value,
+                    isInvalid: false,
+                  },
+                ],
+                isInvalid: false,
+              };
+            } else {
+              block[index] = {
+                ... this.language.statements[deviceID],
+                id: deviceID,
+                _uuid: stmt._uuid,
+                isInvalid: false,
+              };
             }
-            block[index] = {
-              ... this.language.statements[deviceID],
-              id: deviceID,
-              _uuid: stmt._uuid,
-              arguments: [
-                {
-                  type: Types.string,
-                  value: stmt.arguments[0].value,
-                  isInvalid: false,
-                },
-              ],
-              isInvalid: false,
-            };
+
+            
           }
           if (stmt.block && Array.isArray(stmt.block)) {
             parseBlock(stmt.block); // Recursively parse nested blocks
