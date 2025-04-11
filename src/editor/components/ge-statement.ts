@@ -648,6 +648,11 @@ export class GEStatement extends LitElement {
         class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
+            // Skip invalid blocks in skeletonize mode
+            if (this.statement.isInvalid) {
+              console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
+              return;
+            }
             const event = new CustomEvent('toggle-statement-selection', {
               bubbles: true,
               composed: true,

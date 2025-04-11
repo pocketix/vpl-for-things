@@ -13,6 +13,8 @@ import { graphicalEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
+  // Property to store the skeletonize result
+  _skeletonizeResult: any[] = [];
   static styles = [
     globalStyles,
     css`
@@ -194,14 +196,14 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   formatSkeletonize() {
-    // Copy the contents of program.block from program to program.header.skeletonize
-    this.program.header.skeletonize = JSON.parse(JSON.stringify(this.program.block));
+    // Copy the contents of program.block from program to a temporary variable
+    const skeletonizeCopy = JSON.parse(JSON.stringify(this.program.block));
 
     // Log the skeletonize content for debugging
-    console.log('Skeletonize Content:', this.program.header.skeletonize);
+    console.log('Skeletonize Content:', skeletonizeCopy);
 
     // If skeletonize is empty, log a warning and return
-    if (!this.program.header.skeletonize || this.program.header.skeletonize.length === 0) {
+    if (!skeletonizeCopy || skeletonizeCopy.length === 0) {
       console.warn('Skeletonize is empty. Ensure program.block contains data.');
       return;
     }
@@ -217,11 +219,15 @@ export class EditorUserProceduresModal extends LitElement {
       const filteredBlock = block.filter(stmt => {
         console.log('Processing block with UUID:', stmt._uuid); // Log the UUID of the current block
 
-        // Check if the UUID is valid
-        const isValid = validUuids.has(stmt._uuid);
+        // Check if the UUID is valid and the block is not marked as invalid
+        const isValid = validUuids.has(stmt._uuid) && !stmt.isInvalid;
 
         if (!isValid) {
-          console.log('Removing block with invalid UUID:', stmt._uuid);
+          if (!validUuids.has(stmt._uuid)) {
+            console.log('Removing block with invalid UUID:', stmt._uuid);
+          } else if (stmt.isInvalid) {
+            console.log('Removing invalid block with UUID:', stmt._uuid);
+          }
           return false; // Remove this block
         }
 
@@ -236,8 +242,8 @@ export class EditorUserProceduresModal extends LitElement {
       return filteredBlock; // Return the filtered array
     };
 
-    // Update the skeletonize array with the filtered blocks
-    this.program.header.skeletonize = filterInvalidBlocks(this.program.header.skeletonize);
+    // Filter the skeletonize copy
+    const filteredSkeletonize = filterInvalidBlocks(skeletonizeCopy);
 
     // Recursive function to parse blocks, replace matching IDs, and print every id and uuid
     const parseBlock = (block: any[]) => {
@@ -325,8 +331,12 @@ export class EditorUserProceduresModal extends LitElement {
       return modifiedBlock;
     };
 
-    // Update the skeletonize array with the parsed blocks
-    this.program.header.skeletonize = parseBlock(this.program.header.skeletonize);
+    // Parse the filtered skeletonize copy
+    const parsedSkeletonize = parseBlock(filteredSkeletonize);
+
+    // Store the result in a property that can be used later
+    // We don't assign directly to program.header.skeletonize due to type constraints
+    this._skeletonizeResult = parsedSkeletonize;
 
     this.requestUpdate();
   }
@@ -366,7 +376,7 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    this.program.header.userProcedures[newProcId] = JSON.parse(JSON.stringify(this.program.header.skeletonize));
+    this.program.header.userProcedures[newProcId] = JSON.parse(JSON.stringify(this._skeletonizeResult));
 
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
