@@ -360,10 +360,17 @@ export class GEStatement extends LitElement {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
 
       // Use the existing logic to assign UUIDs to the copied block
-      //assignUuidToBlock(this.procedureBlockCopy);
+      assignUuidToBlock(this.procedureBlockCopy);
 
       // Parse the entire block, including nested ones, and replace all deviceType blocks
       console.log('------------------> ID:', this.statement._uuid);
+
+      //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
+      if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
+        this.uuidMetadata = this.statement._uuid;
+        console.log('------------------> UUID Metadata set:', this.uuidMetadata);
+      }
+      console.log('------------------> initlizedProcedures:', this.program.header.initializedProcedures);
       //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
       const initializedProcedures = this.program.header.initializedProcedures;
       const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
@@ -371,9 +378,9 @@ export class GEStatement extends LitElement {
       //parse the procedureEntry devices array and print its contents properly
       console.log('------------------> Procedure Entry:', procedureEntry);
       if (procedureEntry) {
-        procedureEntry.devices.forEach((device) => {
-          console.log('------------------> Device:', device);
-        });
+        console.log('Procedure Entry Found:', procedureEntry);
+      
+   
       }
 
 
@@ -381,15 +388,14 @@ export class GEStatement extends LitElement {
         block.forEach((stmt, index) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-            // Look for an entry in the devices array of the procedureEntry that has the same uuid as the one in the statement
-            //const deviceEntry = procedureEntry.devices.find(([uuid]) => uuid === stmt._uuid);
-            const deviceEntry = "";
+            
+            const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
             var deviceID;
             if (deviceEntry) {
               console.log('------------------> Device Entry:', deviceEntry);
-              deviceID = deviceEntry[1]; // Update the value with the ID (second element of the tuple)
+              deviceID = deviceEntry.deviceId; // Update the value with the ID (second element of the tuple)
               console.log('------------------> Updated Statement:', deviceID);
-              const  deviceIDName = deviceID.split('.')[0];
+              const  deviceIDName = deviceEntry.statement.id;
               console.log('------------------> Device ID Name:', deviceIDName);
 
               // Check if deviceID exists in the program header's deviceList or language's deviceList
@@ -405,10 +411,11 @@ export class GEStatement extends LitElement {
 
             //check if deviceID is in the program header devicelist array and if it is not, set the deviceID to 'deviceType'
             //splcie the deviceID by . and take the first part of the string
-  
-
-            
+            if  (deviceEntry.statement.id === 'deviceType'){
+              deviceID = 'deviceType';
+            }
             block[index] = {
+              ... this.language.statements[deviceID],
               id: deviceID,
               _uuid: stmt._uuid,
               arguments: [

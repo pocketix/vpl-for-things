@@ -223,6 +223,7 @@ export class GeBlock extends LitElement {
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
     }
+    this.tmpUUID = '';
   }
   //   if (this.parentProcedureUuid) {
   //     console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
@@ -307,7 +308,7 @@ export class GeBlock extends LitElement {
       this.program.header.initializedProcedures.push(newEntry);
       //print all initializedProcedures and their conent
       console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-      
+
     }
 
     
@@ -441,7 +442,7 @@ export class GeBlock extends LitElement {
   handleSelectedDeviceChange(e: Event) {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
-
+//----------------------------------
   toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
@@ -510,6 +511,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
     this.requestUpdate(); // Trigger UI rerender
   }
 
+  //----------------------------------
   showDeviceSelectionModal(clickedBlock: ProgramStatement) {
     this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
@@ -543,8 +545,10 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
 
         // Log the UUID of the user procedure being displayed
         console.log(`User Procedure UUID being displayeddddd:d ${clickedBlock._uuid}`);
-        this.tmpUUID = clickedBlock._uuid;
-        console.log(`Assigned tmpUUID: ${this.tmpUUID}`);
+        //check is clickedBlock is in the initializedProcedures array
+
+        
+       
         this.requestUpdate(); // Ensure UI updates with the new tmpUUID
   
         // Update the metadata entry in the initializedProcedures array
@@ -730,6 +734,7 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
   }
 
   render() {
+
     return html`
       ${this.isExample
         ? html`${this.statementsTemplate()}`
