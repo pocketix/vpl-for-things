@@ -195,6 +195,12 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
+
+    // Handle initializedProcedures if present in the imported program
+    if (programExport.header.initializedProcedures) {
+      this.header.initializedProcedures = programExport.header.initializedProcedures;
+    }
+
     this.block = programExport.block;
   }
 
@@ -247,6 +253,7 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
+        initializedProcedures: this.header.initializedProcedures || [], // Include initializedProcedures
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -298,6 +305,7 @@ export class Program {
       header: {
         userVariables: programCopy.header.userVariables,
         userProcedures: {}, // Empty since all procedures are inlined
+        initializedProcedures: programCopy.header.initializedProcedures || [], // Include initializedProcedures
       },
       block: this.exportProgramBlock(programCopy.block),
     };
