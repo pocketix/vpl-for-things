@@ -447,16 +447,18 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-    if (clickedBlock && clickedBlock.id === 'deviceType') {
+
+    // Handle deviceType blocks in non-skeletonize mode
+    if (clickedBlock && clickedBlock.id === 'deviceType' && !this.skeletonizeMode) {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
-      this.showDeviceSelectionModal(clickedBlock);
+      if (clickedBlock._uuid !== undefined) {
+        this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
-
+        return; // Exit early to prevent further processing
       }
-
     }
 
+    // Exit if not in skeletonize mode
     if (!this.skeletonizeMode) {
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
@@ -591,7 +593,19 @@ if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
+      // Clear selected statements when exiting skeletonize mode
       this.selectedStatements.clear();
+
+      // Make sure the skeletonize_uuid array is also cleared
+      if (this.program && this.program.header) {
+        this.program.header.skeletonize_uuid = [];
+        console.log('Cleared skeletonize_uuid array:', this.program.header.skeletonize_uuid);
+      }
+
+      // Log the clearing of selected statements
+      console.log('Skeletonize mode turned off, cleared selected statements');
+
+      // Request update to refresh the UI
       this.requestUpdate();
     }
 

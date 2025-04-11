@@ -425,10 +425,10 @@ export class EditorControls extends LitElement {
       this.userProceduresModalRef.value.userProceduresModalRef.value.hideModal();
     }
 
-    // Close programs modal if open
-    if (this.programsModalRef.value?.isVisible) {
-      this.programsModalRef.value.hideModal();
-    }
+    // // Close programs modal if open
+    // if (this.programsModalRef.value?.isVisible) {
+    //   this.programsModalRef.value.hideModal();
+    // }
   }
 
   get filteredVariables() {

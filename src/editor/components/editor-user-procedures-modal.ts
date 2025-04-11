@@ -212,60 +212,92 @@ export class EditorUserProceduresModal extends LitElement {
     // Recursive function to remove blocks not in skeletonize_uuid
     const filterInvalidBlocks = (block: any[]) => {
       console.log('Skeletonize UUIDs:', Array.from(validUuids)); // Log the skeletonize_uuid array
-      block.forEach((stmt, index) => {
+
+      // Use filter instead of forEach with splice to avoid skipping elements
+      const filteredBlock = block.filter(stmt => {
         console.log('Processing block with UUID:', stmt._uuid); // Log the UUID of the current block
-        if (!validUuids.has(stmt._uuid)) {
+
+        // Check if the UUID is valid
+        const isValid = validUuids.has(stmt._uuid);
+
+        if (!isValid) {
           console.log('Removing block with invalid UUID:', stmt._uuid);
-          block.splice(index, 1); // Remove block if UUID is not valid
-          this.requestUpdate();
-          return; // Skip further processing for this block
+          return false; // Remove this block
         }
 
+        // Process nested blocks if they exist
         if (stmt.block && Array.isArray(stmt.block)) {
-          filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
+          stmt.block = filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
         }
+
+        return true; // Keep this block
       });
+
+      return filteredBlock; // Return the filtered array
     };
+
+    // Update the skeletonize array with the filtered blocks
+    this.program.header.skeletonize = filterInvalidBlocks(this.program.header.skeletonize);
 
     // Recursive function to parse blocks, replace matching IDs, and print every id and uuid
     const parseBlock = (block: any[]) => {
-      block.forEach((stmt, index) => {
-        if (stmt.id) {
-          const idParts = stmt.id.split('.'); // Split the id by '.'
-          const deviceName = idParts[0]; // Extract the first part as the device name
-          //create a parser to go  through the tuple array  deviceListWithTypes adn fint the device type based on the device name
-          const deviceType = this.language.deviceListWithTypes[deviceName]; // Get the device type from the language context
-          console.log('Device Type:', deviceType);
-          console.log('Parsed Name:', deviceName);
-          console.log('Parsed ID:', stmt._uuid ? stmt._uuid : 'No UUID');
-          if (deviceList.includes(deviceName)) {
-            console.log('Replacing block with ID:', stmt.id);
-            block[index] = {
-              id: 'deviceType',
-              arguments: [
-                {
-                  type: 'deviceType',
-                  value: deviceType, 
-                },
-              ],
-            }; // Replace with a new block containing the matched device name
-          } else {
-            console.log('Parsed ID:', stmt.id, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
-          }
-        } else {
+      // Create a new array to hold the modified blocks
+      const modifiedBlock = [];
+
+      // Process each statement in the block
+      for (let i = 0; i < block.length; i++) {
+        const stmt = block[i];
+
+        // Skip statements without an ID
+        if (!stmt.id) {
           console.warn('Block without ID:', stmt, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
+          modifiedBlock.push(stmt); // Keep the statement as is
+          continue;
         }
+
+        // Process the statement ID
+        const idParts = stmt.id.split('.'); // Split the id by '.'
+        const deviceName = idParts[0]; // Extract the first part as the device name
+        const deviceType = this.language.deviceListWithTypes[deviceName]; // Get the device type from the language context
+
+        console.log('Device Type:', deviceType);
+        console.log('Parsed Name:', deviceName);
+        console.log('Parsed ID:', stmt._uuid ? stmt._uuid : 'No UUID');
+
+        // Create a copy of the statement to modify
+        let modifiedStmt = { ...stmt };
+
+        // If the device name is in the deviceList, replace it with a deviceType block
+        if (deviceList.includes(deviceName)) {
+          console.log('Replacing block with ID:', stmt.id);
+          modifiedStmt = {
+            id: 'deviceType',
+            _uuid: stmt._uuid, // Preserve the UUID
+            arguments: [
+              {
+                type: 'deviceType',
+                value: deviceType,
+              },
+            ],
+          };
+        } else {
+          console.log('Keeping block with ID:', stmt.id, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
+        }
+
+        // Process nested blocks if they exist
         if (stmt.block && Array.isArray(stmt.block)) {
-          parseBlock(stmt.block); // Recursively parse nested blocks
+          modifiedStmt.block = parseBlock(stmt.block); // Recursively parse nested blocks
         }
-      });
+
+        // Add the modified statement to the result
+        modifiedBlock.push(modifiedStmt);
+      }
+
+      return modifiedBlock;
     };
 
-    // First, filter out invalid blocks
-    filterInvalidBlocks(this.program.header.skeletonize);
-
-    // Then, parse the skeletonize block to replace device blocks
-    parseBlock(this.program.header.skeletonize);
+    // Update the skeletonize array with the parsed blocks
+    this.program.header.skeletonize = parseBlock(this.program.header.skeletonize);
 
     this.requestUpdate();
   }
