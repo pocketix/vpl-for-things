@@ -368,7 +368,9 @@ export class GEStatement extends LitElement {
       //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
       if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
         this.uuidMetadata = this.statement._uuid;
-        console.log('------------------> UUID Metadata set:', this.uuidMetadata);
+        console.log('------------------> UUID Metadata set in ge-statement:', this.uuidMetadata);
+        console.log('------------------> Will pass to ge-block as tmpUUID');
+        this.requestUpdate();
       }
       console.log('------------------> initlizedProcedures:', this.program.header.initializedProcedures);
       //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
@@ -379,8 +381,8 @@ export class GEStatement extends LitElement {
       console.log('------------------> Procedure Entry:', procedureEntry);
       if (procedureEntry) {
         console.log('Procedure Entry Found:', procedureEntry);
-      
-   
+
+
       }
 
 
@@ -388,7 +390,7 @@ export class GEStatement extends LitElement {
         block.forEach((stmt: any, index: number) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-            
+
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
             var deviceID;
             if (deviceEntry) {
@@ -667,6 +669,7 @@ export class GEStatement extends LitElement {
                 .isProcBody="${this.isProcBody}"
                 .skeletonizeMode="${this.skeletonizeMode}"
                 .restrainedMode="${this.restrainedMode}"
+                .tmpUUID="${this.uuidMetadata}"
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
@@ -701,6 +704,7 @@ export class GEStatement extends LitElement {
                   .block="${this.procedureBlockCopy }"
                   .skeletonizeMode="${this.skeletonizeMode}"
                   .restrainedMode="${this.restrainedMode}"
+                  .tmpUUID="${this.uuidMetadata}"
                   .parentProcedureUuid="${this.statement._uuid}" <!-- Pass the UUID -->
                 ></ge-block>
               </editor-modal>
