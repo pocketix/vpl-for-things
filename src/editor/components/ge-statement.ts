@@ -16,7 +16,6 @@ import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
   statementCustomEvent,
-  deviceStatementCustomEvent,
 } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
@@ -279,43 +278,6 @@ export class GEStatement extends LitElement {
           composed: true,
         });
         this.dispatchEvent(event);
-      }
-    });
-
-    // Add event listener for device argument value changes
-    this.addEventListener(deviceStatementCustomEvent.ARGUMENT_VALUE_CHANGED, (e: CustomEvent) => {
-      console.log('Device argument value changed event received in ge-statement:', e.detail);
-
-      // Check if this statement has a UUID and is part of a procedure
-      if (this.statement._uuid && this.uuidMetadata) {
-        console.log(`Statement UUID: ${this.statement._uuid}, Procedure UUID: ${this.uuidMetadata}`);
-
-        // Find the metadata entry for this procedure
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.uuidMetadata
-        );
-
-        if (metadataEntry) {
-          // Find the device metadata entry for this statement
-          const deviceEntry = metadataEntry.devices.find(device => device.uuid === this.statement._uuid);
-
-          if (deviceEntry) {
-            // Update the value in the device metadata
-            deviceEntry.value = e.detail.value;
-            console.log(`Updated device metadata value to: ${deviceEntry.value}`);
-
-            // Dispatch a program updated event to ensure changes are saved
-            const updateEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-              bubbles: true,
-              composed: true,
-            });
-            this.dispatchEvent(updateEvent);
-          } else {
-            console.warn(`No device metadata entry found for UUID: ${this.statement._uuid}`);
-          }
-        } else {
-          console.warn(`No metadata entry found for procedure UUID: ${this.uuidMetadata}`);
-        }
       }
     });
   }
@@ -675,7 +637,6 @@ export class GEStatement extends LitElement {
     return html`
             <div
         class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
-        uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
             // Skip invalid blocks in skeletonize mode

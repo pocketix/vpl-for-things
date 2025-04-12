@@ -43,6 +43,6 @@ export const editorExpressionOperandCustomEvent = {
   CANCEL_ADD_OPD: 'e-expr-opd-cancel-add-opd',
 } as const;
 
-export const deviceStatementCustomEvent = {
-  ARGUMENT_VALUE_CHANGED: 'device-argument-value-changed',
+export const procedureEditorCustomEvent = {
+  PROCEDURE_MODAL_CLOSED: 'procedure-modal-closed',
 } as const;
