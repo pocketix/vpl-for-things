@@ -4,6 +4,7 @@ import { modalCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import { xLg } from '../icons';
+import { preventDialogEscClose } from '../utils/prevent-esc-close';
 
 type DisplayType = 'modal' | 'dialog';
 
@@ -145,6 +146,8 @@ export class EditorModal extends LitElement {
   showModal() {
     if (this.displayType === 'modal') {
       this.dialogRef.value.showModal();
+      // Prevent ESC key from closing the dialog
+      preventDialogEscClose(this.dialogRef.value);
     } else if (this.displayType === 'dialog') {
       this.dialogRef.value.show();
     } else {
