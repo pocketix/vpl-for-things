@@ -227,6 +227,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
+  @property({ type: Boolean }) isSelected: boolean = false; // Track if the statement is selected in skeletonize mode
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
   //#endregion
@@ -283,6 +284,11 @@ export class GEStatement extends LitElement {
   }
 
   updated() {
+    // Check if the statement UUID is in the skeletonize_uuid array
+    if (this.skeletonizeMode && this.statement._uuid && this.program) {
+      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    }
+
     this.statementHeaderRef.value.setAttribute(
       'style',
       `background-color: ${
@@ -363,7 +369,7 @@ export class GEStatement extends LitElement {
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
-      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); 
+      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
 
       //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
@@ -636,7 +642,8 @@ export class GEStatement extends LitElement {
   render() {
     return html`
             <div
-        class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
+        class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
+        uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
             // Skip invalid blocks in skeletonize mode
