@@ -118,14 +118,24 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleValueChange(e: Event) {
+    // Store the old value for comparison
+    const oldValue = this.argument.value;
+
+    // Update the argument value
     if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
       this.argument.value = Number((e.currentTarget as HTMLSelectElement).value);
     } else {
       this.argument.value = (e.currentTarget as HTMLSelectElement).value;
     }
 
-    // Update the device metadata if this is a device statement in an initialized procedure
-    this.updateDeviceMetadataValue();
+    // Only update metadata if the value actually changed
+    if (oldValue !== this.argument.value) {
+      // Update the device metadata if this is a device statement in an initialized procedure
+      this.updateDeviceMetadataValue();
+
+      // Log the value change
+      console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
+    }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -138,23 +148,56 @@ export class GeStatementArgument extends LitElement {
   updateDeviceMetadataValue() {
     // Find the parent statement element to get the UUID
     const parentStatement = this.closest('ge-statement');
-    if (!parentStatement) return;
+    if (!parentStatement) {
+      console.warn('Could not find parent statement element');
+      return;
+    }
 
     // Get the statement UUID from the parent
     const stmtUuid = parentStatement.getAttribute('uuid');
-    if (!stmtUuid) return;
+    if (!stmtUuid) {
+      console.warn('Parent statement has no UUID attribute');
+      return;
+    }
+
+    console.log(`Updating device metadata for statement UUID: ${stmtUuid}, argument position: ${this.argPosition}, value: ${this.argument.value}`);
 
     // Find the procedure UUID by looking for the initialized procedure that contains this device
     for (const metadataEntry of this.program.header.initializedProcedures) {
       // Find the device metadata entry for this statement
       const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
       if (deviceEntry) {
+        console.log(`Found device entry in metadata:`, deviceEntry);
+
         // Update the value in the device metadata
         deviceEntry.value = String(this.argument.value);
+
+        // Also update the argument value in the statement stored in the metadata
+        if (deviceEntry.statement &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments) {
+
+          // Make sure the argument position exists
+          if ((deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
+            // Update the argument value in the statement
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition].value = this.argument.value;
+            console.log(`Updated argument value in device statement at position ${this.argPosition}: ${this.argument.value}`);
+          } else {
+            console.warn(`Argument position ${this.argPosition} does not exist in device statement`);
+          }
+        } else {
+          console.warn('Device statement has no arguments array');
+        }
+
         console.log(`Updated device metadata value for UUID ${stmtUuid} to ${deviceEntry.value}`);
+
+        // Log the entire initializedProcedures array for debugging
+        console.log('Updated initializedProcedures:', JSON.stringify(this.program.header.initializedProcedures));
+
         return; // Exit after updating
       }
     }
+
+    console.warn(`No device entry found for UUID ${stmtUuid} in initializedProcedures`);
   }
 
   handleDeselectUserVariable() {
@@ -226,17 +269,39 @@ export class GeStatementArgument extends LitElement {
     for (const metadataEntry of this.program.header.initializedProcedures) {
       // Find the device metadata entry for this statement
       const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
-      if (deviceEntry && deviceEntry.value) {
-        // Use the value from the device metadata
-        console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
+      if (deviceEntry) {
+        // First check if there's a value in the device metadata
+        if (deviceEntry.value) {
+          console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
 
-        // Set the argument value based on the type
-        if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
-          this.argument.value = Number(deviceEntry.value);
-        } else {
-          this.argument.value = deviceEntry.value;
+          // Set the argument value based on the type
+          if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
+            this.argument.value = Number(deviceEntry.value);
+          } else {
+            this.argument.value = deviceEntry.value;
+          }
+          return; // Exit after updating
         }
-        return; // Exit after updating
+
+        // If no value in metadata, check if there's a value in the statement arguments
+        if (deviceEntry.statement &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
+
+          const argValue = (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition].value;
+          if (argValue !== null && argValue !== undefined) {
+            console.log(`Found argument value in device statement: ${argValue}`);
+
+            // Set the argument value based on the type
+            this.argument.value = argValue;
+
+            // Also update the device metadata value for consistency
+            deviceEntry.value = String(argValue);
+            console.log(`Updated device metadata value to match argument: ${deviceEntry.value}`);
+
+            return; // Exit after updating
+          }
+        }
       }
     }
   }

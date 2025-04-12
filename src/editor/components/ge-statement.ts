@@ -309,6 +309,50 @@ export class GEStatement extends LitElement {
         this.requestUpdate();
       }
     });
+
+    // Listen for argument value changes
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      // Only process if this is a device statement in an initialized procedure
+      if (this.statement._uuid && this.editorMode === 'initialize') {
+        // Check if this statement is in an initialized procedure
+        const isInInitializedProcedure = this.program.header.initializedProcedures.some(entry => {
+          return entry.devices.some(device => device.uuid === this.statement._uuid);
+        });
+
+        if (isInInitializedProcedure) {
+          this.updateDeviceMetadataValue();
+        }
+      }
+    });
+  }
+
+  // Update the device metadata value when an argument value changes
+  updateDeviceMetadataValue() {
+    if (!this.statement._uuid) return;
+
+    // Find the procedure UUID by looking for the initialized procedure that contains this device
+    for (const metadataEntry of this.program.header.initializedProcedures) {
+      // Find the device metadata entry for this statement
+      const deviceEntry = metadataEntry.devices.find(device => device.uuid === this.statement._uuid);
+      if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+        // Update the value in the device metadata based on the first argument
+        const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+        if (argValue !== undefined && argValue !== null) {
+          deviceEntry.value = String(argValue);
+
+          // Also update the argument value in the statement stored in the metadata
+          if (deviceEntry.statement &&
+              (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+              (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
+            // Update the argument value in the statement
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
+          }
+
+          console.log(`Updated device metadata value for UUID ${this.statement._uuid} to ${deviceEntry.value}`);
+        }
+        return; // Exit after updating
+      }
+    }
   }
 
   updated() {
