@@ -16,6 +16,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
 import { EditorControls } from './editor-controls';
+import { initPreventEscClose } from '../init-prevent-esc';
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -102,6 +103,9 @@ export class VplEditor extends LitElement {
     );
 
     this.addEventListener('skeletonize-mode-changed', this.handleSkeletonizeModeChanged);
+
+    // Initialize ESC key prevention
+    initPreventEscClose();
   }
   //#endregion
 

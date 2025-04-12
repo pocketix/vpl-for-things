@@ -1,5 +1,13 @@
 import './index.css';
 
+// Initialize ESC key prevention
+import { initPreventEscClose } from './editor/init-prevent-esc';
+
+// Initialize ESC key prevention when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  initPreventEscClose();
+});
+
 export * from '@components/vpl-editor';
 export * from '@components/graphical-editor';
 export * from '@components/text-editor';
