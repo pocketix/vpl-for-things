@@ -3,6 +3,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -17,6 +18,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+
 
 
 
@@ -137,23 +139,8 @@ export class GeBlock extends LitElement {
   @property() filteredDeviceStatements: string[] = [];
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
-  @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
-  @property({ type: Boolean }) restrainedMode: boolean = false;
-  @property({ type: Boolean }) isHighlighted: boolean = false;
-  @property() filteredDeviceStatements: string[] = [];
-  @property() tmpUUID :string = '';
-  @property() parentProcedureUuid: string; // Add property to store the UUID
-  @property({ type: Boolean }) restrainedMode: boolean = false;
-  @property({ type: Boolean }) isHighlighted: boolean = false;
-  @property() filteredDeviceStatements: string[] = [];
-  @property() tmpUUID :string = '';
-  @property() parentProcedureUuid: string; // Add property to store the UUID
-  @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
-  @property({ type: Boolean }) restrainedMode: boolean = false;
-  @property({ type: Boolean }) isHighlighted: boolean = false;
-  @property() filteredDeviceStatements: string[] = [];
-  @property() tmpUUID :string = '';
-  @property() parentProcedureUuid: string; // Add property to store the UUID
+  @property() clickedBlockDeviceInit: string='';
+  @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
   //#endregion
 
@@ -603,7 +590,6 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-    
 
     if (clickedBlock) {
       console.log(`Clicked block:`, clickedBlock.id);
@@ -612,18 +598,27 @@ export class GeBlock extends LitElement {
       var isDevice = false;
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
-      if (clickedBlock.id === 'deviceType' || isDevice) {
-        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+      // Handle device selection in initialize mode
+      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize') {
+        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid} in initialize mode`);
         this.clickedBlockDeviceInit = stmtUuid;
-        if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+        if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);
           console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+          return; // Exit early after showing device selection modal
         }
       }
     }
 
+    // In initialize mode with restrainedMode, don't allow any other interactions
+    if (this.editorMode === 'initialize' && this.restrainedMode) {
+      console.log('In initialize mode with restrainedMode. No other actions taken.');
+      return;
+    }
+
+    // For skeletonize mode
     if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No action taken.');
+      console.log('Skeletonize mode is disabled. No selection action taken.');
       return;
     }
 
@@ -634,7 +629,10 @@ export class GeBlock extends LitElement {
     }
 
     // For invalid blocks, we still want to process their nested blocks
+    // For invalid blocks, we still want to process their nested blocks
     if (stmt.isInvalid) {
+      console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
+      // Don't return here - we'll process nested blocks but not select the invalid block itself
       console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
       // Don't return here - we'll process nested blocks but not select the invalid block itself
     }
@@ -643,6 +641,13 @@ export class GeBlock extends LitElement {
     const removedUuids: string[] = [];
 
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      // For invalid blocks, we still want to process their nested blocks
+      // but we don't select the invalid block itself
+      const isInvalid = stmt.isInvalid;
+
+      if (isInvalid) {
+        console.log(`Found invalid block during propagation with UUID: ${stmt._uuid}`);
+        // Don't return here - continue to process nested blocks
       // For invalid blocks, we still want to process their nested blocks
       // but we don't select the invalid block itself
       const isInvalid = stmt.isInvalid;
@@ -670,9 +675,28 @@ export class GeBlock extends LitElement {
             );
             removedUuids.push(stmt._uuid);
           }
+      // Only select/deselect the statement if it's not invalid
+      if (!isInvalid) {
+        if (isSelected) {
+          if (!this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Selecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.add(stmt._uuid);
+            this.program.header.skeletonize_uuid.push(stmt._uuid);
+            addedUuids.push(stmt._uuid);
+          }
+        } else {
+          if (this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.delete(stmt._uuid);
+            this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+              (uuid) => uuid !== stmt._uuid
+            );
+            removedUuids.push(stmt._uuid);
+          }
         }
       }
 
+      // Always process nested blocks, even for invalid blocks
       // Always process nested blocks, even for invalid blocks
       if ((stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
@@ -689,6 +713,26 @@ export class GeBlock extends LitElement {
     if (removedUuids.length > 0) {
       console.log('Removed UUIDs:', removedUuids);
     }
+
+    // Dispatch a custom event to notify all components about the skeletonize selection change
+    const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        skeletonizeUuids: this.program.header.skeletonize_uuid,
+        addedUuids,
+        removedUuids
+      }
+    });
+    this.dispatchEvent(selectionEvent);
+
+    // Also dispatch a program updated event to ensure all components are in sync
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUpdated: true }
+    });
+    this.dispatchEvent(programEvent);
 
     // Dispatch a custom event to notify all components about the skeletonize selection change
     const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
@@ -777,6 +821,25 @@ export class GeBlock extends LitElement {
           }
         });
         this.dispatchEvent(deviceSelectionEvent);
+        console.log(`User Procedure UUID being displayeddddd:d ${this.tmpUUID}`);
+        //check is clickedBlock is in the initializedProcedures array
+
+
+
+        // Ensure UI updates with the new tmpUUID
+        this.requestUpdate();
+
+        // Notify other components about the device selection change
+        const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            deviceUuid: clickedBlock._uuid,
+            procedureUuid: this.tmpUUID,
+            selectedDeviceId: stmtKey
+          }
+        });
+        this.dispatchEvent(deviceSelectionEvent);
 
         // Update the metadata entry in the initializedProcedures array
         const metadataEntry = this.program.header.initializedProcedures.find(
@@ -827,6 +890,16 @@ export class GeBlock extends LitElement {
       });
       this.dispatchEvent(event);
 
+      this.selectedStatements.clear();
+
+      // Dispatch event to notify other components about cleared selection
+      const event = new CustomEvent('skeletonize-selection-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      });
+      this.dispatchEvent(event);
+
       this.requestUpdate();
     }
   }
@@ -834,8 +907,9 @@ export class GeBlock extends LitElement {
 
   //#region Templates
   addStatementButtonTemplate() {
+    // Don't show add statement button in skeletonize mode or initialize mode with restrainedMode
     return html`
-      ${!this.skeletonizeMode && !this.restrainedMode // Hide button in restrained mode
+      ${!this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
         ? html`
             <editor-button
               @click="${this.handleShowAddNewStatementDialog}"
@@ -868,10 +942,11 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              .restrainedMode="${this.restrainedMode}"
+              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
               .uuidMetadata="${this.tmpUUID}"
               .uuidMetadata="${this.tmpUUID}"
+              .editorMode="${this.editorMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);

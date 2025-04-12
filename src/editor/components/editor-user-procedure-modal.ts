@@ -71,6 +71,7 @@ export class EditorUserProcedureModal extends LitElement {
       console.log('Opening modal for procedure:', this.stmtKey);
       console.log('Modal reference:', this.userProcedureBodyModalRef.value);
 
+
       if (this.userProcedureBodyModalRef.value) {
         this.userProcedureBodyModalRef.value.showModal();
       } else {
@@ -125,7 +126,7 @@ export class EditorUserProcedureModal extends LitElement {
         <editor-button class="delete-proc-button" @click="${this.handleDeleteProcedure}">
           <editor-icon .icon="${icons['trash']}" .color="${'var(--red-600)'}"></editor-icon>
         </editor-button>
-        <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}"></ge-block>
+        <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}" .editorMode="${'edit'}"></ge-block>
       </editor-modal>
     `;
   }
