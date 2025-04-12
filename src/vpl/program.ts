@@ -9,7 +9,6 @@ export function parseOperandToString(operand: ExpressionOperand, negated: boolea
 }
 
 export function parseExpressionToString(expression: Expression) {
-  console.log(expression);
 
   let operandsStrings: string[] = expression.value.map((operand) => {
     if (Array.isArray((operand as Expression).value)) {

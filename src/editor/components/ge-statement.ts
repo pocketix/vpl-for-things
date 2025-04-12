@@ -401,19 +401,12 @@ export class GEStatement extends LitElement {
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
-      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
-
-      // Use the existing logic to assign UUIDs to the copied block
+      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); 
       assignUuidToBlock(this.procedureBlockCopy);
-
-      // Parse the entire block, including nested ones, and replace all deviceType blocks
-      console.log('------------------> ID:', this.statement._uuid);
 
       //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
       if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
         this.uuidMetadata = this.statement._uuid;
-        console.log('------------------> UUID Metadata set in ge-statement:', this.uuidMetadata);
-        console.log('------------------> Will pass to ge-block as tmpUUID');
         this.requestUpdate();
       }
       console.log('------------------> initlizedProcedures:', this.program.header.initializedProcedures);
@@ -443,8 +436,6 @@ export class GEStatement extends LitElement {
               var deviceIDName = deviceID.split('.')[0];
 
               console.log('------------------> Device Entry:', deviceEntry);
-              console.log('------------------> Updated Statement:', deviceID);
-              console.log('------------------> Device ID Name:', deviceIDName);
 
               if (!this.language.deviceList.includes(deviceIDName)) {
                 console.log('------------------> Device ID not found in deviceList');
