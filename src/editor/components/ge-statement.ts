@@ -687,10 +687,10 @@ export class GEStatement extends LitElement {
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
-            // Skip invalid blocks in skeletonize mode
+            // For invalid blocks, we still want to process their nested blocks
             if (this.statement.isInvalid) {
-              console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
-              return;
+              console.log(`Found invalid block with UUID: ${this.statement._uuid} - will process its nested blocks`);
+              // We still dispatch the event to allow processing nested blocks
             }
             const event = new CustomEvent('toggle-statement-selection', {
               bubbles: true,

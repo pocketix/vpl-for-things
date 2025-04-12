@@ -211,35 +211,49 @@ export class EditorUserProceduresModal extends LitElement {
     const deviceList = this.language.deviceList || []; // Get deviceList from language context
     const validUuids = new Set(this.program.header.skeletonize_uuid); // Get valid UUIDs
 
-    // Recursive function to remove blocks not in skeletonize_uuid
+    // Recursive function to remove blocks not in skeletonize_uuid while preserving nested blocks
     const filterInvalidBlocks = (block: any[]) => {
       console.log('Skeletonize UUIDs:', Array.from(validUuids)); // Log the skeletonize_uuid array
 
-      // Use filter instead of forEach with splice to avoid skipping elements
-      const filteredBlock = block.filter(stmt => {
+      let result: any[] = [];
+
+      // Process each statement in the block
+      for (let i = 0; i < block.length; i++) {
+        const stmt = block[i];
         console.log('Processing block with UUID:', stmt._uuid); // Log the UUID of the current block
 
         // Check if the UUID is valid and the block is not marked as invalid
         const isValid = validUuids.has(stmt._uuid) && !stmt.isInvalid;
 
-        if (!isValid) {
-          if (!validUuids.has(stmt._uuid)) {
-            console.log('Removing block with invalid UUID:', stmt._uuid);
-          } else if (stmt.isInvalid) {
-            console.log('Removing invalid block with UUID:', stmt._uuid);
+        if (isValid) {
+          // If the block is valid, keep it and process its nested blocks
+          if (stmt.block && Array.isArray(stmt.block)) {
+            stmt.block = filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
           }
-          return false; // Remove this block
+          result.push(stmt);
+        } else {
+          // If the block is invalid, log the reason
+          if (!validUuids.has(stmt._uuid)) {
+            console.log('Found block with invalid UUID:', stmt._uuid);
+          } else if (stmt.isInvalid) {
+            console.log('Found invalid block with UUID:', stmt._uuid);
+          }
+
+          // If the invalid block has nested blocks, process and keep them
+          if (stmt.block && Array.isArray(stmt.block) && stmt.block.length > 0) {
+            console.log('Preserving nested blocks from invalid block with UUID:', stmt._uuid);
+            const nestedBlocks = filterInvalidBlocks(stmt.block);
+
+            // Add all valid nested blocks to the result
+            if (nestedBlocks.length > 0) {
+              console.log(`Adding ${nestedBlocks.length} preserved nested blocks to parent`);
+              result = result.concat(nestedBlocks);
+            }
+          }
         }
+      }
 
-        // Process nested blocks if they exist
-        if (stmt.block && Array.isArray(stmt.block)) {
-          stmt.block = filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
-        }
-
-        return true; // Keep this block
-      });
-
-      return filteredBlock; // Return the filtered array
+      return result; // Return the processed array
     };
 
     // Filter the skeletonize copy

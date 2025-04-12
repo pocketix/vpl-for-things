@@ -16,7 +16,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
-import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent, deviceStatementCustomEvent } from '../editor-custom-events';
+import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
 import { pencilSquare, plusLg, threeDots } from '../icons';
 import Types from '@vpl/types.ts';
@@ -118,38 +118,16 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleValueChange(e: Event) {
-    const newValue = (e.currentTarget as HTMLSelectElement).value;
-
     if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
-      this.argument.value = Number(newValue);
+      this.argument.value = Number((e.currentTarget as HTMLSelectElement).value);
     } else {
-      this.argument.value = newValue;
+      this.argument.value = (e.currentTarget as HTMLSelectElement).value;
     }
-
-    // Dispatch the standard program updated event
-    const updateEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(updateEvent);
-
-    // Dispatch a device argument value changed event for device statements
-    // Check if this is a device statement by looking at the statement ID
-    if (this.stmtId.includes('.') && (this.argument.type === 'str_opt' || this.argument.type === 'num_opt')) {
-      console.log(`Device argument value changed: ${this.stmtId}, value: ${newValue}`);
-
-      const deviceEvent = new CustomEvent(deviceStatementCustomEvent.ARGUMENT_VALUE_CHANGED, {
-        bubbles: true,
-        composed: true,
-        detail: {
-          stmtId: this.stmtId,
-          argPosition: this.argPosition,
-          value: newValue,
-          uuid: this.parentElement?.parentElement?.getAttribute('uuid') || ''
-        },
-      });
-      this.dispatchEvent(deviceEvent);
-    }
+    this.dispatchEvent(event);
   }
 
   handleDeselectUserVariable() {
