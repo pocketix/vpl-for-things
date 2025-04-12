@@ -2,8 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -18,6 +17,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+
 
 
 
@@ -139,6 +139,8 @@ export class GeBlock extends LitElement {
   @property() filteredDeviceStatements: string[] = [];
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
+  @property() clickedBlockDeviceInit: string='';
+  @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   @property() clickedBlockDeviceInit: string='';
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
@@ -323,16 +325,69 @@ export class GeBlock extends LitElement {
           //   });
           // }
 
-          if (stmt.id === 'deviceType') {
-            console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-            if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
+          // Check for device statements (either deviceType or actual device statements)
+          const deviceName = stmt.id.split('.')[0];
+          const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+          if (isDeviceStatement) {
+            console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
+
+            if (stmt.id === 'deviceType' && (stmt as AbstractStatementWithArgs).arguments?.[0]) {
+              // For deviceType statements, use the argument value as the deviceId
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
-              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
+              console.log(`Device statement with argument value: ${arg.value}`);
+
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
                 statement: stmt,
-                value: String(arg.value), // Initialize with undefined, will be set when a value is selected
+                value: undefined // Will be set when a value is selected
+              });
+            } else if (this.language.deviceList.includes(deviceName)) {
+              // For actual device statements, use the statement ID as the deviceId
+              console.log(`Found device statement with ID: ${stmt.id}`);
+
+              // Get the language statement definition to ensure correct argument structure
+              const deviceStatement = {
+                ...stmt,
+                arguments: []
+              };
+
+              // If the language statement has arguments, initialize them properly
+              const langStatement = this.language.statements[stmt.id];
+              if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+                const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+
+                // Initialize each argument with the correct type and default value
+                argDefs.forEach((argDef, index) => {
+                  const newArg = {
+                    type: argDef.type,
+                    value: null
+                  };
+
+                  // Set default value based on type
+                  if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    newArg.value = argDef.options[0].id;
+                  } else {
+                    newArg.value = initDefaultArgumentType(argDef.type);
+                  }
+
+                  // Use existing argument value if available
+                  if ((stmt as AbstractStatementWithArgs).arguments &&
+                      (stmt as AbstractStatementWithArgs).arguments[index]) {
+                    newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                  }
+
+                  // Add the argument to the statement
+                  deviceStatement.arguments.push(newArg);
+                });
+              }
+
+              devices.push({
+                uuid: stmt._uuid,
+                deviceId: stmt.id,
+                statement: deviceStatement,
+                value: undefined // Will be set when a value is selected
               });
             }
           }
@@ -607,6 +662,23 @@ export class GeBlock extends LitElement {
           console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
           return; // Exit early after showing device selection modal
         }
+
+    if (clickedBlock) {
+      console.log(`Clicked block:`, clickedBlock.id);
+      const deviceName = clickedBlock?.id.split('.')[0];
+      //if device name in device list, set var true
+      var isDevice = false;
+      if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
+
+      // Handle device selection in initialize mode
+      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize') {
+        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid} in initialize mode`);
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined) {
+          this.showDeviceSelectionModal(clickedBlock);
+          console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+          return; // Exit early after showing device selection modal
+        }
       }
     }
 
@@ -617,7 +689,15 @@ export class GeBlock extends LitElement {
     }
 
     // For skeletonize mode
+    // In initialize mode with restrainedMode, don't allow any other interactions
+    if (this.editorMode === 'initialize' && this.restrainedMode) {
+      console.log('In initialize mode with restrainedMode. No other actions taken.');
+      return;
+    }
+
+    // For skeletonize mode
     if (!this.skeletonizeMode) {
+      console.log('Skeletonize mode is disabled. No selection action taken.');
       console.log('Skeletonize mode is disabled. No selection action taken.');
       return;
     }
@@ -630,7 +710,10 @@ export class GeBlock extends LitElement {
 
     // For invalid blocks, we still want to process their nested blocks
     // For invalid blocks, we still want to process their nested blocks
+    // For invalid blocks, we still want to process their nested blocks
     if (stmt.isInvalid) {
+      console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
+      // Don't return here - we'll process nested blocks but not select the invalid block itself
       console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
       // Don't return here - we'll process nested blocks but not select the invalid block itself
       console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
@@ -641,6 +724,13 @@ export class GeBlock extends LitElement {
     const removedUuids: string[] = [];
 
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      // For invalid blocks, we still want to process their nested blocks
+      // but we don't select the invalid block itself
+      const isInvalid = stmt.isInvalid;
+
+      if (isInvalid) {
+        console.log(`Found invalid block during propagation with UUID: ${stmt._uuid}`);
+        // Don't return here - continue to process nested blocks
       // For invalid blocks, we still want to process their nested blocks
       // but we don't select the invalid block itself
       const isInvalid = stmt.isInvalid;
@@ -698,6 +788,28 @@ export class GeBlock extends LitElement {
 
       // Always process nested blocks, even for invalid blocks
       // Always process nested blocks, even for invalid blocks
+      // Only select/deselect the statement if it's not invalid
+      if (!isInvalid) {
+        if (isSelected) {
+          if (!this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Selecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.add(stmt._uuid);
+            this.program.header.skeletonize_uuid.push(stmt._uuid);
+            addedUuids.push(stmt._uuid);
+          }
+        } else {
+          if (this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.delete(stmt._uuid);
+            this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+              (uuid) => uuid !== stmt._uuid
+            );
+            removedUuids.push(stmt._uuid);
+          }
+        }
+      }
+
+      // Always process nested blocks, even for invalid blocks
       if ((stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
       }
@@ -713,6 +825,26 @@ export class GeBlock extends LitElement {
     if (removedUuids.length > 0) {
       console.log('Removed UUIDs:', removedUuids);
     }
+
+    // Dispatch a custom event to notify all components about the skeletonize selection change
+    const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        skeletonizeUuids: this.program.header.skeletonize_uuid,
+        addedUuids,
+        removedUuids
+      }
+    });
+    this.dispatchEvent(selectionEvent);
+
+    // Also dispatch a program updated event to ensure all components are in sync
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUpdated: true }
+    });
+    this.dispatchEvent(programEvent);
 
     // Dispatch a custom event to notify all components about the skeletonize selection change
     const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
@@ -840,6 +972,25 @@ export class GeBlock extends LitElement {
           }
         });
         this.dispatchEvent(deviceSelectionEvent);
+        console.log(`User Procedure UUID being displayeddddd:d ${this.tmpUUID}`);
+        //check is clickedBlock is in the initializedProcedures array
+
+
+
+        // Ensure UI updates with the new tmpUUID
+        this.requestUpdate();
+
+        // Notify other components about the device selection change
+        const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            deviceUuid: clickedBlock._uuid,
+            procedureUuid: this.tmpUUID,
+            selectedDeviceId: stmtKey
+          }
+        });
+        this.dispatchEvent(deviceSelectionEvent);
 
         // Update the metadata entry in the initializedProcedures array
         const metadataEntry = this.program.header.initializedProcedures.find(
@@ -900,6 +1051,16 @@ export class GeBlock extends LitElement {
       });
       this.dispatchEvent(event);
 
+      this.selectedStatements.clear();
+
+      // Dispatch event to notify other components about cleared selection
+      const event = new CustomEvent('skeletonize-selection-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      });
+      this.dispatchEvent(event);
+
       this.requestUpdate();
     }
   }
@@ -908,7 +1069,9 @@ export class GeBlock extends LitElement {
   //#region Templates
   addStatementButtonTemplate() {
     // Don't show add statement button in skeletonize mode or initialize mode with restrainedMode
+    // Don't show add statement button in skeletonize mode or initialize mode with restrainedMode
     return html`
+      ${!this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
       ${!this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
         ? html`
             <editor-button
@@ -943,9 +1106,11 @@ export class GeBlock extends LitElement {
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
+              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
               .uuidMetadata="${this.tmpUUID}"
               .uuidMetadata="${this.tmpUUID}"
+              .editorMode="${this.editorMode}"
               .editorMode="${this.editorMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
