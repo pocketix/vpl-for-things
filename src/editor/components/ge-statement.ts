@@ -283,48 +283,29 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Add event listener for device argument value changes
-    this.addEventListener(deviceStatementCustomEvent.ARGUMENT_VALUE_CHANGED, (e: CustomEvent) => {
-      console.log('Device argument value changed event received in ge-statement:', e.detail);
+    // Listen for skeletonize selection changes
+    this.addEventListener('skeletonize-selection-changed', (_e: CustomEvent) => {
+      if (this.skeletonizeMode && this.statement._uuid && this.program) {
+        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
+        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+        this.requestUpdate();
+      }
+    });
 
-      // Check if this statement has a UUID and is part of a procedure
-      if (this.statement._uuid && this.uuidMetadata) {
-        console.log(`Statement UUID: ${this.statement._uuid}, Procedure UUID: ${this.uuidMetadata}`);
-
-        // Find the metadata entry for this procedure
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.uuidMetadata
-        );
-
-        if (metadataEntry) {
-          // Find the device metadata entry for this statement
-          const deviceEntry = metadataEntry.devices.find(device => device.uuid === this.statement._uuid);
-
-          if (deviceEntry) {
-            // Update the value in the device metadata
-            deviceEntry.value = e.detail.value;
-            console.log(`Updated device metadata value to: ${deviceEntry.value}`);
-
-            // Dispatch a program updated event to ensure changes are saved
-            const updateEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-              bubbles: true,
-              composed: true,
-            });
-            this.dispatchEvent(updateEvent);
-          } else {
-            console.warn(`No device metadata entry found for UUID: ${this.statement._uuid}`);
-          }
-        } else {
-          console.warn(`No metadata entry found for procedure UUID: ${this.uuidMetadata}`);
-        }
+    // Listen for skeletonize mode changes
+    this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
+      if (this.statement._uuid && this.program) {
+        // Update highlighting when skeletonize mode changes
+        this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+        this.requestUpdate();
       }
     });
   }
 
   updated() {
     // Check if the statement UUID is in the skeletonize_uuid array
-    if (this.skeletonizeMode && this.statement._uuid && this.program) {
-      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    if (this.statement._uuid && this.program) {
+      this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
     }
 
     this.statementHeaderRef.value.setAttribute(
@@ -681,9 +662,15 @@ export class GEStatement extends LitElement {
 
   //#region Render
   render() {
+    // Check if this statement is in the skeletonize selection
+    const isInSkeletonizeSelection = this.skeletonizeMode &&
+                                    this.statement._uuid &&
+                                    this.program &&
+                                    this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+
     return html`
             <div
-        class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
+        class="statement-wrapper ${isInSkeletonizeSelection || this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
