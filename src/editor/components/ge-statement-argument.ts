@@ -123,11 +123,38 @@ export class GeStatementArgument extends LitElement {
     } else {
       this.argument.value = (e.currentTarget as HTMLSelectElement).value;
     }
+
+    // Update the device metadata if this is a device statement in an initialized procedure
+    this.updateDeviceMetadataValue();
+
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(event);
+  }
+
+  // Update the device metadata value when an argument value changes
+  updateDeviceMetadataValue() {
+    // Find the parent statement element to get the UUID
+    const parentStatement = this.closest('ge-statement');
+    if (!parentStatement) return;
+
+    // Get the statement UUID from the parent
+    const stmtUuid = parentStatement.getAttribute('uuid');
+    if (!stmtUuid) return;
+
+    // Find the procedure UUID by looking for the initialized procedure that contains this device
+    for (const metadataEntry of this.program.header.initializedProcedures) {
+      // Find the device metadata entry for this statement
+      const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
+      if (deviceEntry) {
+        // Update the value in the device metadata
+        deviceEntry.value = String(this.argument.value);
+        console.log(`Updated device metadata value for UUID ${stmtUuid} to ${deviceEntry.value}`);
+        return; // Exit after updating
+      }
+    }
   }
 
   handleDeselectUserVariable() {
@@ -264,6 +291,7 @@ export class GeStatementArgument extends LitElement {
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
+                @click="${(e: Event) => e.stopPropagation()}"
                 class="expr-arg">
                 <option value="true">True</option>
                 <option value="false">False</option>
@@ -313,7 +341,8 @@ export class GeStatementArgument extends LitElement {
                 type="number"
                 placeholder="123"
                 .value="${this.argument.value}"
-                @input="${this.handleValueChange}" />
+                @input="${this.handleValueChange}"
+                @click="${(e: Event) => e.stopPropagation()}" />
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
@@ -327,7 +356,10 @@ export class GeStatementArgument extends LitElement {
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
-                @click="${this.handleValueChange}">
+                @click="${(e: Event) => {
+                  e.stopPropagation(); // Stop event from bubbling up to parent
+                  this.handleValueChange(e);
+                }}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
@@ -350,7 +382,8 @@ export class GeStatementArgument extends LitElement {
                 placeholder="abc"
                 type="text"
                 .value="${this.argument.value}"
-                @input="${this.handleValueChange}" />
+                @input="${this.handleValueChange}"
+                @click="${(e: Event) => e.stopPropagation()}" />
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
@@ -366,7 +399,10 @@ export class GeStatementArgument extends LitElement {
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
-                @click="${this.handleValueChange}">
+                @click="${(e: Event) => {
+                  e.stopPropagation(); // Stop event from bubbling up to parent
+                  this.handleValueChange(e);
+                }}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs

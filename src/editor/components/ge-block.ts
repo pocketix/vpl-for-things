@@ -459,7 +459,9 @@ export class GeBlock extends LitElement {
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
       // Handle device selection in initialize mode
-      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize') {
+      // Only show device selection modal if the click is directly on the statement (isParentClick=true)
+      // This prevents the modal from opening when clicking on dropdowns or inputs inside the statement
+      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize' && isParentClick) {
         console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid} in initialize mode`);
         this.clickedBlockDeviceInit = stmtUuid;
         if (clickedBlock._uuid !== undefined) {
