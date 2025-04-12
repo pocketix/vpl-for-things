@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -283,16 +283,69 @@ export class GeBlock extends LitElement {
           //   });
           // }
 
-          if (stmt.id === 'deviceType') {
-            console.log(`Found device statementssssssssss - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
-            if ((stmt as AbstractStatementWithArgs).arguments?.[0]) {
+          // Check for device statements (either deviceType or actual device statements)
+          const deviceName = stmt.id.split('.')[0];
+          const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+          if (isDeviceStatement) {
+            console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id}`);
+
+            if (stmt.id === 'deviceType' && (stmt as AbstractStatementWithArgs).arguments?.[0]) {
+              // For deviceType statements, use the argument value as the deviceId
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
-              console.log(`Found device statement - UUID: ${stmt._uuid}, ID: ${stmt.id} with argument value: ${arg.value}`);
+              console.log(`Device statement with argument value: ${arg.value}`);
+
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
                 statement: stmt,
-                value: String(arg.value), // Initialize with undefined, will be set when a value is selected
+                value: undefined // Will be set when a value is selected
+              });
+            } else if (this.language.deviceList.includes(deviceName)) {
+              // For actual device statements, use the statement ID as the deviceId
+              console.log(`Found device statement with ID: ${stmt.id}`);
+
+              // Get the language statement definition to ensure correct argument structure
+              const deviceStatement = {
+                ...stmt,
+                arguments: []
+              };
+
+              // If the language statement has arguments, initialize them properly
+              const langStatement = this.language.statements[stmt.id];
+              if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+                const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+
+                // Initialize each argument with the correct type and default value
+                argDefs.forEach((argDef, index) => {
+                  const newArg = {
+                    type: argDef.type,
+                    value: null
+                  };
+
+                  // Set default value based on type
+                  if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    newArg.value = argDef.options[0].id;
+                  } else {
+                    newArg.value = initDefaultArgumentType(argDef.type);
+                  }
+
+                  // Use existing argument value if available
+                  if ((stmt as AbstractStatementWithArgs).arguments &&
+                      (stmt as AbstractStatementWithArgs).arguments[index]) {
+                    newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                  }
+
+                  // Add the argument to the statement
+                  deviceStatement.arguments.push(newArg);
+                });
+              }
+
+              devices.push({
+                uuid: stmt._uuid,
+                deviceId: stmt.id,
+                statement: deviceStatement,
+                value: undefined // Will be set when a value is selected
               });
             }
           }
@@ -640,12 +693,38 @@ export class GeBlock extends LitElement {
             // Update the device ID in the metadata
             deviceEntry.deviceId = stmtKey;
 
-            // Update the complete statement in the metadata
+            // Update the complete statement in the metadata with the correct argument structure
+            // Get the language statement definition to get the correct argument structure
+            const langStatement = this.language.statements[stmtKey];
+
+            // Create a proper statement with the correct argument structure
             deviceEntry.statement = {
               ...selectedStatement,
-              // Preserve any existing arguments if needed
-              arguments: (deviceEntry.statement as AbstractStatementWithArgs).arguments || []
+              arguments: []
             };
+
+            // If the language statement has arguments, initialize them properly
+            if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+              const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+
+              // Initialize each argument with the correct type and default value
+              argDefs.forEach(argDef => {
+                const newArg = {
+                  type: argDef.type,
+                  value: null
+                };
+
+                // Set default value based on type
+                if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                  newArg.value = argDef.options[0].id;
+                } else {
+                  newArg.value = initDefaultArgumentType(argDef.type);
+                }
+
+                // Add the argument to the statement
+                (deviceEntry.statement as AbstractStatementWithArgs).arguments.push(newArg);
+              });
+            }
 
             console.log(`Device statement selected: ${stmtKey}`);
             console.log(`Updated device metadata:`, deviceEntry);

@@ -194,6 +194,12 @@ export class GeStatementArgument extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
+    // Check if this is a device statement in an initialized procedure
+    // and if there's a stored value in the metadata
+    this.checkForDeviceMetadataValue();
+
+    // Set default value if needed
     if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
       this.argument.value = (
         this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
@@ -203,6 +209,35 @@ export class GeStatementArgument extends LitElement {
         composed: true,
       });
       this.dispatchEvent(event);
+    }
+  }
+
+  // Check if there's a stored value in the device metadata and use it
+  checkForDeviceMetadataValue() {
+    // Find the parent statement element to get the UUID
+    const parentStatement = this.closest('ge-statement');
+    if (!parentStatement) return;
+
+    // Get the statement UUID from the parent
+    const stmtUuid = parentStatement.getAttribute('uuid');
+    if (!stmtUuid) return;
+
+    // Find the procedure UUID by looking for the initialized procedure that contains this device
+    for (const metadataEntry of this.program.header.initializedProcedures) {
+      // Find the device metadata entry for this statement
+      const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
+      if (deviceEntry && deviceEntry.value) {
+        // Use the value from the device metadata
+        console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
+
+        // Set the argument value based on the type
+        if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
+          this.argument.value = Number(deviceEntry.value);
+        } else {
+          this.argument.value = deviceEntry.value;
+        }
+        return; // Exit after updating
+      }
     }
   }
 
