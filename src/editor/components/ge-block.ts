@@ -132,6 +132,7 @@ export class GeBlock extends LitElement {
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
   @property() clickedBlockDeviceInit: string='';
+  @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   //#endregion
 
   //#region Refs
@@ -449,7 +450,6 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-    
 
     if (clickedBlock) {
       console.log(`Clicked block:`, clickedBlock.id);
@@ -458,18 +458,27 @@ export class GeBlock extends LitElement {
       var isDevice = false;
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
-      if (clickedBlock.id === 'deviceType' || isDevice) {
-        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+      // Handle device selection in initialize mode
+      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize') {
+        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid} in initialize mode`);
         this.clickedBlockDeviceInit = stmtUuid;
-        if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+        if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);
           console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+          return; // Exit early after showing device selection modal
         }
       }
     }
 
+    // In initialize mode with restrainedMode, don't allow any other interactions
+    if (this.editorMode === 'initialize' && this.restrainedMode) {
+      console.log('In initialize mode with restrainedMode. No other actions taken.');
+      return;
+    }
+
+    // For skeletonize mode
     if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No action taken.');
+      console.log('Skeletonize mode is disabled. No selection action taken.');
       return;
     }
 
@@ -683,8 +692,9 @@ export class GeBlock extends LitElement {
 
   //#region Templates
   addStatementButtonTemplate() {
+    // Don't show add statement button in skeletonize mode or initialize mode with restrainedMode
     return html`
-      ${!this.skeletonizeMode
+      ${!this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
         ? html`
             <editor-button
               @click="${this.handleShowAddNewStatementDialog}"
@@ -710,9 +720,10 @@ export class GeBlock extends LitElement {
               .isProcBody="${this.isProcBody}"
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
-              .restrainedMode="${this.restrainedMode}"
+              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
               .uuidMetadata="${this.tmpUUID}"
+              .editorMode="${this.editorMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
                 console.log(`Block clicked: UUID ${stmt._uuid}`);

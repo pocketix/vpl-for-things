@@ -230,6 +230,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) isSelected: boolean = false; // Track if the statement is selected in skeletonize mode
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
+  @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   //#endregion
 
   //#region Context
@@ -392,6 +393,17 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
+
+    // Determine if this is an initialization (second use case)
+    const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
+
+    // Set the editor mode based on whether this is an initialization
+    this.editorMode = isInitialization ? 'initialize' : 'edit';
+
+    // If this is an initialization, set restrainedMode to true
+    if (isInitialization) {
+      this.restrainedMode = true;
+    }
 
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
@@ -637,7 +649,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample && !this.skeletonizeMode
+            ${!this.isExample && !this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
               ? html`
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
@@ -672,7 +684,7 @@ export class GEStatement extends LitElement {
                 `
               : nothing}
           </div>
-          ${(this.statement as CompoundStatement).block && !this.skeletonizeMode
+          ${(this.statement as CompoundStatement).block && !this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
             ? html`
                 <div @click="${this.handleToggleNestedBlockVisibility}" class="expand-nested-block-button">
                   <editor-icon
@@ -707,19 +719,20 @@ export class GEStatement extends LitElement {
         class="statement-wrapper ${isInSkeletonizeSelection || this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
-          if (this.skeletonizeMode) {
-            // Skip invalid blocks in skeletonize mode
-            if (this.statement.isInvalid) {
-              console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
-              return;
-            }
-            const event = new CustomEvent('toggle-statement-selection', {
-              bubbles: true,
-              composed: true,
-              detail: { uuid: this.statement._uuid },
-            });
-            this.dispatchEvent(event);
+          // Always dispatch the toggle-statement-selection event
+          // The parent component will decide what to do based on the mode
+          if (this.statement.isInvalid) {
+            console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
+            return;
           }
+
+          // For device statements in initialize mode, or for any statement in skeletonize mode
+          const event = new CustomEvent('toggle-statement-selection', {
+            bubbles: true,
+            composed: true,
+            detail: { uuid: this.statement._uuid },
+          });
+          this.dispatchEvent(event);
         }}">
         ${(this.statement as CompoundStatement).block
           ? html`
@@ -734,6 +747,7 @@ export class GEStatement extends LitElement {
                 .skeletonizeMode="${this.skeletonizeMode}"
                 .restrainedMode="${this.restrainedMode}"
                 .tmpUUID="${this.uuidMetadata}"
+                .editorMode="${this.editorMode}"
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
@@ -769,6 +783,7 @@ export class GEStatement extends LitElement {
                   .skeletonizeMode="${this.skeletonizeMode}"
                   .restrainedMode="${this.restrainedMode}"
                   .tmpUUID="${this.uuidMetadata}"
+                  .editorMode="${this.editorMode}"
                   .parentProcedureUuid="${this.statement._uuid}" <!-- Pass the UUID -->
                 ></ge-block>
               </editor-modal>

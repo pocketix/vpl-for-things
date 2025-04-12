@@ -6,7 +6,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { EditorModal, Language, Program } from '@/index';
 import * as icons from '@/editor/icons';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
-import { graphicalEditorCustomEvent } from '../editor-custom-events';
+import { graphicalEditorCustomEvent, procedureEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedure-init-modal')
 export class EditorUserProcedureInitModal extends LitElement {
@@ -44,6 +44,30 @@ export class EditorUserProcedureInitModal extends LitElement {
     @property() stmtKey: string;
 
     procedureInitModalRef: Ref<EditorModal> = createRef();
+
+    connectedCallback() {
+        super.connectedCallback();
+
+        // Add event listener for modal close event
+        this.addEventListener('modal-close', this.handleProcedureModalClose);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+
+        // Remove event listener when component is disconnected
+        this.removeEventListener('modal-close', this.handleProcedureModalClose);
+    }
+
+    // Handle procedure modal close event
+    handleProcedureModalClose = () => {
+        // Dispatch custom event to turn off skeletonize mode
+        const event = new CustomEvent(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, {
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
 
     handleOpenProcedureInitModal() {
         // Wait for next render cycle to ensure modal is ready
@@ -104,7 +128,7 @@ export class EditorUserProcedureInitModal extends LitElement {
             <editor-button class="delete-proc-button" @click="${this.handleDeleteProcedure}">
             <editor-icon .icon="${icons['trash']}" .color="${'var(--red-600)'}"></editor-icon>
             </editor-button>
-            <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}"></ge-block>
+            <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}" .editorMode="${'initialize'}" .restrainedMode="${true}"></ge-block>
         </editor-modal>
         `;
     }
