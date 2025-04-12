@@ -348,6 +348,7 @@ export class GeBlock extends LitElement {
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
                 statement: stmt,
+                value: String(arg.value), // Initialize with undefined, will be set when a value is selected
               });
             }
           }
@@ -605,18 +606,15 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-
-    // Handle deviceType blocks in non-skeletonize mode
-    if (clickedBlock && clickedBlock.id === 'deviceType' && !this.skeletonizeMode) {
+    if (clickedBlock && clickedBlock.id === 'deviceType') {
       console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-      if (clickedBlock._uuid !== undefined) {
+      this.clickedBlockDeviceInit = stmtUuid;
+      if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
         this.showDeviceSelectionModal(clickedBlock);
         console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
-        return; // Exit early to prevent further processing
       }
     }
 
-    // Exit if not in skeletonize mode
     if (!this.skeletonizeMode) {
       console.log('Skeletonize mode is disabled. No action taken.');
       return;
@@ -628,10 +626,22 @@ export class GeBlock extends LitElement {
       return;
     }
 
+    // Skip invalid blocks in skeletonize mode
+    if (stmt.isInvalid) {
+      console.log(`Skipping invalid block with UUID: ${stmt._uuid}`);
+      return;
+    }
+
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      // Skip invalid blocks during propagation
+      if (stmt.isInvalid) {
+        console.log(`Skipping invalid block during propagation with UUID: ${stmt._uuid}`);
+        return;
+      }
+
       if (isSelected) {
         if (!this.selectedStatements.has(stmt._uuid)) {
           console.log(`Selecting statement with UUID: ${stmt._uuid}`);
@@ -723,10 +733,9 @@ export class GeBlock extends LitElement {
 
 
         // Update the metadata entry in the initializedProcedures array
-        if (this.tmpUUID) {
-          const metadataEntry = this.program.header.initializedProcedures.find(
-            (entry) => entry.uuid === this.tmpUUID
-          );
+        const metadataEntry = this.program.header.initializedProcedures.find(
+          (entry) => entry.uuid === this.tmpUUID
+        );
 
         if (metadataEntry) {
           console.log(`Found metadata entry for UUID: ${this.parentProcedureUuid}`, metadataEntry);
@@ -762,25 +771,8 @@ export class GeBlock extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      // Clear selected statements when exiting skeletonize mode
-      this.selectedStatements.clear();
-
-      // Make sure the skeletonize_uuid array is also cleared
-      if (this.program && this.program.header) {
-        this.program.header.skeletonize_uuid = [];
-        console.log('Cleared skeletonize_uuid array:', this.program.header.skeletonize_uuid);
-      }
-
-      // Log the clearing of selected statements
-      console.log('Skeletonize mode turned off, cleared selected statements');
-
-      // Request update to refresh the UI
+      this.selectedStatements.clear();statementCustomEvent
       this.requestUpdate();
-    }
-
-    // Log when tmpUUID changes
-    if (changedProperties.has('tmpUUID')) {
-      console.log('tmpUUID updated in ge-block:', this.tmpUUID);
     }
   }
   //#endregion
@@ -977,7 +969,7 @@ export class GeBlock extends LitElement {
   }
 
   render() {
-    console.log('Rendering ge-block with tmpUUID:', this.tmpUUID);
+
     return html`
       ${this.isExample
         ? html`${this.statementsTemplate()}`
