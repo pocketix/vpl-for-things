@@ -228,6 +228,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
+  @property({ type: Boolean }) isSelected: boolean = false; // Track if the statement is selected in skeletonize mode
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
   //#endregion
@@ -321,9 +322,10 @@ export class GEStatement extends LitElement {
   }
 
   updated() {
-    const bgColor = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].backgroundColor;
-    const color = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].foregroundColor;
-    const invalidStyle = this.statement.isInvalid ? "outline: 4px dashed #facc15; outline-offset: -4px; border-left: 4px solid transparent;" : "";
+    // Check if the statement UUID is in the skeletonize_uuid array
+    if (this.skeletonizeMode && this.statement._uuid && this.program) {
+      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    }
 
     this.statementHeaderRef.value.setAttribute(
       'style',
@@ -401,9 +403,7 @@ export class GEStatement extends LitElement {
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
-      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock)); // Deep copy
-
-      // Use the existing logic to assign UUIDs to the copied block
+      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
 
       // Parse the entire block, including nested ones, and replace all deviceType blocks
@@ -683,7 +683,7 @@ export class GEStatement extends LitElement {
   render() {
     return html`
             <div
-        class="statement-wrapper ${this.isHighlighted ? 'highlight-active' : ''}"
+        class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {
