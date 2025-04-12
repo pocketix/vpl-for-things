@@ -281,12 +281,30 @@ export class GEStatement extends LitElement {
         this.dispatchEvent(event);
       }
     });
+
+    // Listen for skeletonize selection changes
+    this.addEventListener('skeletonize-selection-changed', (_e: CustomEvent) => {
+      if (this.skeletonizeMode && this.statement._uuid && this.program) {
+        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
+        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+        this.requestUpdate();
+      }
+    });
+
+    // Listen for skeletonize mode changes
+    this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
+      if (this.statement._uuid && this.program) {
+        // Update highlighting when skeletonize mode changes
+        this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+        this.requestUpdate();
+      }
+    });
   }
 
   updated() {
     // Check if the statement UUID is in the skeletonize_uuid array
-    if (this.skeletonizeMode && this.statement._uuid && this.program) {
-      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    if (this.statement._uuid && this.program) {
+      this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
     }
 
     this.statementHeaderRef.value.setAttribute(
@@ -640,9 +658,15 @@ export class GEStatement extends LitElement {
 
   //#region Render
   render() {
+    // Check if this statement is in the skeletonize selection
+    const isInSkeletonizeSelection = this.skeletonizeMode &&
+                                    this.statement._uuid &&
+                                    this.program &&
+                                    this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+
     return html`
             <div
-        class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
+        class="statement-wrapper ${isInSkeletonizeSelection || this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
           if (this.skeletonizeMode) {

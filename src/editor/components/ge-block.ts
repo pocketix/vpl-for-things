@@ -469,42 +469,47 @@ export class GeBlock extends LitElement {
       return;
     }
 
-    // Skip invalid blocks in skeletonize mode
+    // For invalid blocks, we still want to process their nested blocks
     if (stmt.isInvalid) {
-      console.log(`Skipping invalid block with UUID: ${stmt._uuid}`);
-      return;
+      console.log(`Found invalid block with UUID: ${stmt._uuid} - will process its nested blocks`);
+      // Don't return here - we'll process nested blocks but not select the invalid block itself
     }
 
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
-      // Skip invalid blocks during propagation
-      if (stmt.isInvalid) {
-        console.log(`Skipping invalid block during propagation with UUID: ${stmt._uuid}`);
-        return;
+      // For invalid blocks, we still want to process their nested blocks
+      // but we don't select the invalid block itself
+      const isInvalid = stmt.isInvalid;
+
+      if (isInvalid) {
+        console.log(`Found invalid block during propagation with UUID: ${stmt._uuid}`);
+        // Don't return here - continue to process nested blocks
       }
 
-      if (isSelected) {
-        if (!this.selectedStatements.has(stmt._uuid)) {
-          console.log(`Selecting statement with UUID: ${stmt._uuid}`);
-          this.selectedStatements.add(stmt._uuid);
-          this.program.header.skeletonize_uuid.push(stmt._uuid);
-          addedUuids.push(stmt._uuid);
-          this.requestUpdate();
-        }
-      } else {
-        if (this.selectedStatements.has(stmt._uuid)) {
-          console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
-          this.selectedStatements.delete(stmt._uuid);
-          this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
-            (uuid) => uuid !== stmt._uuid
-          );
-          removedUuids.push(stmt._uuid);
-          this.requestUpdate();
+      // Only select/deselect the statement if it's not invalid
+      if (!isInvalid) {
+        if (isSelected) {
+          if (!this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Selecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.add(stmt._uuid);
+            this.program.header.skeletonize_uuid.push(stmt._uuid);
+            addedUuids.push(stmt._uuid);
+          }
+        } else {
+          if (this.selectedStatements.has(stmt._uuid)) {
+            console.log(`Deselecting statement with UUID: ${stmt._uuid}`);
+            this.selectedStatements.delete(stmt._uuid);
+            this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+              (uuid) => uuid !== stmt._uuid
+            );
+            removedUuids.push(stmt._uuid);
+          }
         }
       }
 
+      // Always process nested blocks, even for invalid blocks
       if ((stmt as CompoundStatement).block) {
         (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
       }
@@ -520,6 +525,14 @@ export class GeBlock extends LitElement {
     if (removedUuids.length > 0) {
       console.log('Removed UUIDs:', removedUuids);
     }
+
+    // Dispatch a custom event to notify all components about the skeletonize selection change
+    const event = new CustomEvent('skeletonize-selection-changed', {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+    });
+    this.dispatchEvent(event);
 
     this.requestUpdate(); // Trigger UI rerender
   }

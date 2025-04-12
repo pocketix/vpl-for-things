@@ -723,12 +723,21 @@ export class EditorControls extends LitElement {
       this.program.header.skeletonize_uuid = [];
     }
 
-    const event = new CustomEvent('skeletonize-mode-changed', {
+    // Dispatch event to notify about skeletonize mode change
+    const modeChangedEvent = new CustomEvent('skeletonize-mode-changed', {
       bubbles: true,
       composed: true,
       detail: { active: this.skeletonizeMode }
     });
-    this.dispatchEvent(event);
+    this.dispatchEvent(modeChangedEvent);
+
+    // Dispatch event to update highlighting in all components
+    const selectionChangedEvent = new CustomEvent('skeletonize-selection-changed', {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+    });
+    this.dispatchEvent(selectionChangedEvent);
   }
 
   handleAddToSelectedUUIDs(uuid: string) {
