@@ -224,7 +224,7 @@ export class GeBlock extends LitElement {
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
     }
-    this.tmpUUID = '';
+    //this.tmpUUID = '';
   }
   //   if (this.parentProcedureUuid) {
   //     console.log(`Parent Procedure UUID: ${this.parentProcedureUuid}`); // Debugging log
@@ -526,6 +526,10 @@ export class GeBlock extends LitElement {
 
   //----------------------------------
   showDeviceSelectionModal(clickedBlock: ProgramStatement) {
+    // Store the clicked block UUID for later use
+    this.clickedBlockDeviceInit = clickedBlock._uuid;
+    console.log(`Storing clicked block UUID: ${clickedBlock._uuid} for device selection`);
+
     this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
@@ -537,7 +541,7 @@ export class GeBlock extends LitElement {
 
   //this---------------------------------------
   handleDeviceStatementSelected(stmtKey: string) {
-    console.log(`UUID of the clicked block: ${this.clickedBlockDeviceInit} Selected device statement: ${stmtKey}`); 
+    console.log(`UUID of the clicked block: ${this.clickedBlockDeviceInit} Selected device statement: ${stmtKey}`);
     this.deviceSelectionModalRef.value.hideModal();
 
     const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
@@ -569,15 +573,23 @@ export class GeBlock extends LitElement {
         );
 
         if (metadataEntry) {
-          console.log(`Found metadata entry for UUID: ${this.tmpUUID}`, metadataEntry);
+          console.log(`Found metadata entry for UUID: ${this.clickedBlockDeviceInit}`, metadataEntry);
 
           // Find the device metadata entry for the clicked block
           const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
-            // We don't set the value attribute here anymore
-            // The value attribute will only be set when the user selects an argument value
-            // in the ge-statement-argument component
+            // Update the device ID in the metadata
+            deviceEntry.deviceId = stmtKey;
+
+            // Update the complete statement in the metadata
+            deviceEntry.statement = {
+              ...selectedStatement,
+              // Preserve any existing arguments if needed
+              arguments: (deviceEntry.statement as AbstractStatementWithArgs).arguments || []
+            };
+
             console.log(`Device statement selected: ${stmtKey}`);
+            console.log(`Updated device metadata:`, deviceEntry);
 
             // Clear any previously set value
             if (deviceEntry.value) {
