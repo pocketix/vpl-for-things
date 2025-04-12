@@ -154,6 +154,8 @@ export class GeStatementArgument extends LitElement {
       });
       this.dispatchEvent(deviceEvent);
     }
+
+    console.warn(`No device entry found for UUID ${stmtUuid} in initializedProcedures`);
   }
 
   handleDeselectUserVariable() {
@@ -225,17 +227,39 @@ export class GeStatementArgument extends LitElement {
     for (const metadataEntry of this.program.header.initializedProcedures) {
       // Find the device metadata entry for this statement
       const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
-      if (deviceEntry && deviceEntry.value) {
-        // Use the value from the device metadata
-        console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
+      if (deviceEntry) {
+        // First check if there's a value in the device metadata
+        if (deviceEntry.value) {
+          console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
 
-        // Set the argument value based on the type
-        if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
-          this.argument.value = Number(deviceEntry.value);
-        } else {
-          this.argument.value = deviceEntry.value;
+          // Set the argument value based on the type
+          if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
+            this.argument.value = Number(deviceEntry.value);
+          } else {
+            this.argument.value = deviceEntry.value;
+          }
+          return; // Exit after updating
         }
-        return; // Exit after updating
+
+        // If no value in metadata, check if there's a value in the statement arguments
+        if (deviceEntry.statement &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
+
+          const argValue = (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition].value;
+          if (argValue !== null && argValue !== undefined) {
+            console.log(`Found argument value in device statement: ${argValue}`);
+
+            // Set the argument value based on the type
+            this.argument.value = argValue;
+
+            // Also update the device metadata value for consistency
+            deviceEntry.value = String(argValue);
+            console.log(`Updated device metadata value to match argument: ${deviceEntry.value}`);
+
+            return; // Exit after updating
+          }
+        }
       }
     }
   }
