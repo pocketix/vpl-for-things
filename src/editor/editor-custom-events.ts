@@ -46,3 +46,7 @@ export const editorExpressionOperandCustomEvent = {
 export const procedureEditorCustomEvent = {
   PROCEDURE_MODAL_CLOSED: 'procedure-modal-closed',
 } as const;
+
+export const deviceStatementCustomEvent = {
+  ARGUMENT_VALUE_CHANGED: 'device-argument-value-changed',
+} as const;
