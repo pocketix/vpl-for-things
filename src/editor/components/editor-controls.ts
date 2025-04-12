@@ -738,6 +738,14 @@ export class EditorControls extends LitElement {
       detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
     });
     this.dispatchEvent(selectionChangedEvent);
+
+    // Also dispatch a program updated event to ensure all components are in sync
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeModeChanged: true }
+    });
+    this.dispatchEvent(programEvent);
   }
 
   handleAddToSelectedUUIDs(uuid: string) {

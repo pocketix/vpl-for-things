@@ -299,6 +299,15 @@ export class GEStatement extends LitElement {
         this.requestUpdate();
       }
     });
+
+    // Listen for device selection changes
+    this.addEventListener('device-selection-changed', (e: CustomEvent) => {
+      // Check if this statement is the device that was changed
+      if (this.statement._uuid && this.statement._uuid === e.detail.deviceUuid) {
+        // Update the statement to reflect the device selection
+        this.requestUpdate();
+      }
+    });
   }
 
   updated() {
@@ -484,6 +493,30 @@ export class GEStatement extends LitElement {
 
   toggleHighlight() {
     this.isHighlighted = !this.isHighlighted;
+
+    // If in skeletonize mode, update the program's skeletonize_uuid array
+    if (this.skeletonizeMode && this.statement._uuid && this.program) {
+      if (this.isHighlighted) {
+        // Add to skeletonize_uuid if not already there
+        if (!this.program.header.skeletonize_uuid.includes(this.statement._uuid)) {
+          this.program.header.skeletonize_uuid.push(this.statement._uuid);
+        }
+      } else {
+        // Remove from skeletonize_uuid
+        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+          (uuid) => uuid !== this.statement._uuid
+        );
+      }
+
+      // Notify other components about the change
+      const event = new CustomEvent('skeletonize-selection-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      });
+      this.dispatchEvent(event);
+    }
+
     this.requestUpdate();
   }
   //#endregion
@@ -663,6 +696,11 @@ export class GEStatement extends LitElement {
                                     this.statement._uuid &&
                                     this.program &&
                                     this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+
+    // Update isHighlighted based on skeletonize selection
+    if (this.skeletonizeMode && this.statement._uuid && this.program) {
+      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    }
 
     return html`
             <div

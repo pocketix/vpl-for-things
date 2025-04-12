@@ -527,12 +527,24 @@ export class GeBlock extends LitElement {
     }
 
     // Dispatch a custom event to notify all components about the skeletonize selection change
-    const event = new CustomEvent('skeletonize-selection-changed', {
+    const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
       bubbles: true,
       composed: true,
-      detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      detail: {
+        skeletonizeUuids: this.program.header.skeletonize_uuid,
+        addedUuids,
+        removedUuids
+      }
     });
-    this.dispatchEvent(event);
+    this.dispatchEvent(selectionEvent);
+
+    // Also dispatch a program updated event to ensure all components are in sync
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUpdated: true }
+    });
+    this.dispatchEvent(programEvent);
 
     this.requestUpdate(); // Trigger UI rerender
   }
@@ -578,7 +590,20 @@ export class GeBlock extends LitElement {
 
 
 
-        this.requestUpdate(); // Ensure UI updates with the new tmpUUID
+        // Ensure UI updates with the new tmpUUID
+        this.requestUpdate();
+
+        // Notify other components about the device selection change
+        const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            deviceUuid: clickedBlock._uuid,
+            procedureUuid: this.tmpUUID,
+            selectedDeviceId: stmtKey
+          }
+        });
+        this.dispatchEvent(deviceSelectionEvent);
 
         // Update the metadata entry in the initializedProcedures array
         const metadataEntry = this.program.header.initializedProcedures.find(
@@ -631,7 +656,16 @@ export class GeBlock extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
-      this.selectedStatements.clear();statementCustomEvent
+      this.selectedStatements.clear();
+
+      // Dispatch event to notify other components about cleared selection
+      const event = new CustomEvent('skeletonize-selection-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      });
+      this.dispatchEvent(event);
+
       this.requestUpdate();
     }
   }
