@@ -449,12 +449,22 @@ export class GeBlock extends LitElement {
     console.log(`toggleStatementSelection called with UUID: ${stmtUuid}, isParentClick: ${isParentClick}`);
 
     const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
-    if (clickedBlock && clickedBlock.id === 'deviceType') {
-      console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
-      this.clickedBlockDeviceInit = stmtUuid;
-      if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
-        this.showDeviceSelectionModal(clickedBlock);
-        console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+    
+
+    if (clickedBlock) {
+      console.log(`Clicked block:`, clickedBlock.id);
+      const deviceName = clickedBlock?.id.split('.')[0];
+      //if device name in device list, set var true
+      var isDevice = false;
+      if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
+
+      if (clickedBlock.id === 'deviceType' || isDevice) {
+        console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid}`);
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined && !this.skeletonizeMode) {
+          this.showDeviceSelectionModal(clickedBlock);
+          console.log(`Showing device selection modal for UUID: ${stmtUuid}`);
+        }
       }
     }
 
