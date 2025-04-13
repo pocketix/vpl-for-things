@@ -18,7 +18,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent, deviceStatementCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
-import { pencilSquare, plusLg, threeDots } from '../icons';
+import { plusLg } from '../icons';
 import Types from '@vpl/types.ts';
 import { classMap } from 'lit/directives/class-map.js';
 
@@ -290,7 +290,7 @@ export class GeStatementArgument extends LitElement {
   }
 
   useVariableTemplate() {
-    let permittedVarType;
+    let permittedVarType: string | ArgumentType;
     if (this.argument.type === Types.variable && this.argument.value !== null) {
       if (this.program.header.userVariables[this.argument.value as string] === undefined) {
         permittedVarType = (
@@ -330,6 +330,24 @@ export class GeStatementArgument extends LitElement {
           : nothing}
         <editor-variables-modal ${ref(this.selectArgumentVariableModalRef)} .permittedVarType="${permittedVarType}">
         </editor-variables-modal>
+      </div>
+    `;
+  }
+
+  // Special template for deviceType blocks
+  deviceTypeTemplate(argumentElementId: string) {
+    // Get the background color from the deviceType statement
+    const bgColor = this.language.statements['deviceType'].backgroundColor;
+
+    return html`
+      <div class="argument-wrapper">
+        ${this.argumentLabelTemplate(argumentElementId)}
+        <div class="argument-var-wrapper">
+          <div
+            style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold;">
+            ${this.argument.value}
+          </div>
+        </div>
       </div>
     `;
   }
