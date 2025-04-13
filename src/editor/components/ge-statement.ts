@@ -635,6 +635,10 @@ export class GEStatement extends LitElement {
             console.log('Replacing deviceType block with type block');
             if  (deviceEntry.statement.id === 'deviceType'){
               deviceID = 'deviceType';
+              // Preserve the original device type value
+              const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
+              console.log(`Found deviceType block with value: ${deviceTypeValue}`);
+
               block[index] = {
                 ... this.language.statements[deviceID],
                 id: deviceID,
@@ -642,7 +646,7 @@ export class GEStatement extends LitElement {
                 arguments: [
                   {
                     type: Types.string,
-                    value: stmt.arguments[0].value,
+                    value: deviceTypeValue,
                     isInvalid: false,
                   },
                 ],

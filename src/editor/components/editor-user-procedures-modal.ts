@@ -7,6 +7,7 @@ import { plusLg } from '../icons';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
 import { Icon, Language, Program } from '@/index';
+import Types from '@vpl/types.ts';
 import * as icons from '@/editor/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { graphicalEditorCustomEvent } from '../editor-custom-events';
@@ -340,11 +341,12 @@ export class EditorUserProceduresModal extends LitElement {
             _uuid: stmt._uuid, // Preserve the UUID
             arguments: [
               {
-                type: 'deviceType',
+                type: Types.string,
                 value: deviceType,
               },
             ],
           };
+          console.log(`Created deviceType block with value: ${deviceType}`);
         } else {
           console.log('Keeping block with ID:', stmt.id, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
         }
