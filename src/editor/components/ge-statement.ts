@@ -16,6 +16,7 @@ import { languageContext, programContext } from '@/editor/context/editor-context
 import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
+  procedureEditorCustomEvent,
   statementCustomEvent,
   deviceStatementCustomEvent,
 } from '@/editor/editor-custom-events';
@@ -312,7 +313,7 @@ export class GEStatement extends LitElement {
     });
 
     // Listen for argument value changes
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       // Only process if this is a device statement in an initialized procedure
       if (this.statement._uuid && this.editorMode === 'initialize') {
         // Check if this statement is in an initialized procedure
@@ -324,6 +325,15 @@ export class GEStatement extends LitElement {
           this.updateDeviceMetadataValue();
         }
       }
+    });
+
+    // Listen for procedure modal closed event
+    this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
+      // Reset restrainedMode and editorMode when the procedure modal is closed
+      // This ensures the burger menu is re-enabled for the procedure block itself
+      this.restrainedMode = false;
+      this.editorMode = 'edit';
+      this.requestUpdate();
     });
   }
 
@@ -697,7 +707,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample && !this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
+            ${!this.isExample && !this.skeletonizeMode && !(this.isProcBody && this.editorMode === 'initialize' && this.restrainedMode)
               ? html`
                   <editor-button
                     @click="${this.handleToggleStatementControlsModal}"
@@ -732,7 +742,7 @@ export class GEStatement extends LitElement {
                 `
               : nothing}
           </div>
-          ${(this.statement as CompoundStatement).block && !this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
+          ${(this.statement as CompoundStatement).block && !this.skeletonizeMode && !(this.isProcBody && this.editorMode === 'initialize' && this.restrainedMode)
             ? html`
                 <div @click="${this.handleToggleNestedBlockVisibility}" class="expand-nested-block-button">
                   <editor-icon
