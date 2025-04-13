@@ -641,15 +641,15 @@ export const baseLanguageStatements: Statements = {
   deviceType: {
     type: 'unit_with_args',
     group: 'iot',
-    label: 'DeviceType',
+    label: 'Device Type',
     icon: 'bracesAsterisk',
-    foregroundColor: '#ffff0f',
+    foregroundColor: '#000000',
     backgroundColor: '#d977f6',
     arguments: [
-      { type: Types.string, label: 'DeviceType' },
+      { type: Types.string, label: 'Type' },
     ],
     description: {
-      brief: 'Testing New Device Group',
+      brief: 'Represents a device type that can be initialized with a specific device',
     },
   },
 };
