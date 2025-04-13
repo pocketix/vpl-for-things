@@ -312,16 +312,24 @@ export class GEStatement extends LitElement {
     });
 
     // Listen for argument value changes
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
       // Only process if this is a device statement in an initialized procedure
       if (this.statement._uuid && this.editorMode === 'initialize') {
-        // Check if this statement is in an initialized procedure
-        const isInInitializedProcedure = this.program.header.initializedProcedures.some(entry => {
-          return entry.devices.some(device => device.uuid === this.statement._uuid);
-        });
+        // Check if this event was triggered by a change in this specific statement's argument value
+        // by checking if the sourceUuid in the event detail matches this statement's UUID
+        const isSourceOfChange = e.detail?.sourceUuid === this.statement._uuid;
 
-        if (isInInitializedProcedure) {
-          this.updateDeviceMetadataValue();
+        // Only update the device metadata value if this statement is the source of the change
+        // or if there's no sourceUuid in the event detail (for backward compatibility)
+        if (isSourceOfChange || !e.detail?.sourceUuid) {
+          // Check if this statement is in an initialized procedure
+          const isInInitializedProcedure = this.program.header.initializedProcedures.some(entry => {
+            return entry.devices.some(device => device.uuid === this.statement._uuid);
+          });
+
+          if (isInInitializedProcedure) {
+            this.updateDeviceMetadataValue();
+          }
         }
       }
     });
@@ -602,7 +610,7 @@ export class GEStatement extends LitElement {
             (arg, i) =>
               html`
                 <ge-statement-argument
-                  .argument="${arg}"
+                  .argument="${JSON.parse(JSON.stringify(arg))}"
                   .argPosition="${i}"
                   .stmtId="${this.statement.id}"
                   .showLabel="${true}"
@@ -691,7 +699,7 @@ export class GEStatement extends LitElement {
             ? html`
                 <ge-statement-argument
                   ?disabled="${this.statement.isInvalid || this.skeletonizeMode}"
-                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]}"
+                  .argument="${JSON.parse(JSON.stringify((this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]))}"
                   .argPosition="${0}"
                   .stmtId="${this.statement.id}"
                   .isExample="${this.isExample}">

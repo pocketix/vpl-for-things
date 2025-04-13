@@ -634,7 +634,6 @@ export class GeBlock extends LitElement {
       if (index !== -1) {
         this.block[index] = selectedStatement;
 
-        this.requestUpdate();
         const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
           bubbles: true,
           composed: true,
@@ -672,6 +671,7 @@ export class GeBlock extends LitElement {
                 };
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                   newArg.value = argDef.options[0].id;
+                  console.log(`Set default value for argument: ${newArg.value}`);
                 } else {
                   newArg.value = initDefaultArgumentType(argDef.type);
                 }
@@ -692,6 +692,7 @@ export class GeBlock extends LitElement {
           console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
         }
 
+        // Single requestUpdate after all changes are made
         this.requestUpdate();
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,

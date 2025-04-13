@@ -9,6 +9,7 @@ import {
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
   parseExpressionToString,
+  AbstractStatementWithArgs,
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -135,13 +136,58 @@ export class GeStatementArgument extends LitElement {
 
       // Log the value change
       console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
+
+      // Also update the original argument in the statement
+      this.updateOriginalArgument();
     }
+
+    // Get the statement UUID to include in the event detail
+    const parentStatement = this.closest('ge-statement');
+    const stmtUuid = parentStatement ? parentStatement.getAttribute('uuid') : null;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
+      detail: {
+        sourceUuid: stmtUuid,
+        argPosition: this.argPosition,
+        newValue: this.argument.value
+      }
     });
     this.dispatchEvent(event);
+  }
+
+  // Update the original argument in the statement
+  updateOriginalArgument() {
+    // Find the parent statement element to get the UUID
+    const parentStatement = this.closest('ge-statement');
+    if (!parentStatement) {
+      console.warn('Could not find parent statement element');
+      return;
+    }
+
+    // Get the statement UUID from the parent
+    const stmtUuid = parentStatement.getAttribute('uuid');
+    if (!stmtUuid) {
+      console.warn('Parent statement has no UUID attribute');
+      return;
+    }
+
+    // Get the statement from the parent
+    const statement = parentStatement['statement'];
+    if (!statement) {
+      console.warn('Could not find statement in parent element');
+      return;
+    }
+
+    // Update the original argument in the statement
+    if ((statement as AbstractStatementWithArgs).arguments &&
+        (statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
+      (statement as AbstractStatementWithArgs).arguments[this.argPosition].value = this.argument.value;
+      console.log(`Updated original argument value in statement at position ${this.argPosition}: ${this.argument.value}`);
+    } else {
+      console.warn(`Argument position ${this.argPosition} does not exist in statement`);
+    }
   }
 
   // Update the device metadata value when an argument value changes
