@@ -9,6 +9,7 @@ import {
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
   parseExpressionToString,
+  AbstractStatementWithArgs
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -137,11 +138,12 @@ export class GeStatementArgument extends LitElement {
       console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
     }
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    // const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    //   bubbles: true,
+    //   composed: true,
+    // });
+    //this.dispatchEvent(event);
+    this.requestUpdate();
   }
 
   // Update the device metadata value when an argument value changes
