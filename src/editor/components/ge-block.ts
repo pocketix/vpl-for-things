@@ -511,9 +511,6 @@ export class GeBlock extends LitElement {
       var isDevice = false;
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
-      // Handle device selection in initialize mode
-      // Only show device selection modal if the click is directly on the statement (isParentClick=true)
-      // This prevents the modal from opening when clicking on dropdowns or inputs inside the statement
       if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize' && isParentClick) {
         console.log(`Clicked block is a deviceType statement with UUID: ${stmtUuid} in initialize mode`);
         this.clickedBlockDeviceInit = stmtUuid;
@@ -524,16 +521,7 @@ export class GeBlock extends LitElement {
         }
       }
     }
-
-    // In initialize mode with restrainedMode, don't allow any other interactions
-    if (this.editorMode === 'initialize' && this.restrainedMode) {
-      console.log('In initialize mode with restrainedMode. No other actions taken.');
-      return;
-    }
-
-    // For skeletonize mode
     if (!this.skeletonizeMode) {
-      console.log('Skeletonize mode is disabled. No selection action taken.');
       return;
     }
 
@@ -553,16 +541,7 @@ export class GeBlock extends LitElement {
     const removedUuids: string[] = [];
 
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
-      // For invalid blocks, we still want to process their nested blocks
-      // but we don't select the invalid block itself
       const isInvalid = stmt.isInvalid;
-
-      if (isInvalid) {
-        console.log(`Found invalid block during propagation with UUID: ${stmt._uuid}`);
-        // Don't return here - continue to process nested blocks
-      }
-
-      // Only select/deselect the statement if it's not invalid
       if (!isInvalid) {
         if (isSelected) {
           if (!this.selectedStatements.has(stmt._uuid)) {
@@ -655,19 +634,7 @@ export class GeBlock extends LitElement {
       if (index !== -1) {
         this.block[index] = selectedStatement;
 
-        // Debugging log to confirm block replacement
-        console.log(`Block at index ${index} replaced with selected statement:`, selectedStatement);
-
-        // Log the UUID of the user procedure being displayed
-        console.log(`User Procedure UUID being displayeddddd:d ${this.tmpUUID}`);
-        //check is clickedBlock is in the initializedProcedures array
-
-
-
-        // Ensure UI updates with the new tmpUUID
         this.requestUpdate();
-
-        // Notify other components about the device selection change
         const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
           bubbles: true,
           composed: true,
@@ -686,48 +653,32 @@ export class GeBlock extends LitElement {
 
         if (metadataEntry) {
           console.log(`Found metadata entry for UUID: ${this.clickedBlockDeviceInit}`, metadataEntry);
-
-          // Find the device metadata entry for the clicked block
           const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
-            // Update the device ID in the metadata
             deviceEntry.deviceId = stmtKey;
-
-            // Update the complete statement in the metadata with the correct argument structure
-            // Get the language statement definition to get the correct argument structure
             const langStatement = this.language.statements[stmtKey];
 
-            // Create a proper statement with the correct argument structure
             deviceEntry.statement = {
               ...selectedStatement,
               arguments: []
             };
 
-            // If the language statement has arguments, initialize them properly
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-
-              // Initialize each argument with the correct type and default value
               argDefs.forEach(argDef => {
                 const newArg = {
                   type: argDef.type,
                   value: null
                 };
-
-                // Set default value based on type
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                   newArg.value = argDef.options[0].id;
                 } else {
                   newArg.value = initDefaultArgumentType(argDef.type);
                 }
 
-                // Add the argument to the statement
                 (deviceEntry.statement as AbstractStatementWithArgs).arguments.push(newArg);
               });
             }
-
-            console.log(`Device statement selected: ${stmtKey}`);
-            console.log(`Updated device metadata:`, deviceEntry);
 
             // Clear any previously set value
             if (deviceEntry.value) {
