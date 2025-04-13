@@ -19,7 +19,7 @@ import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
 import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
-import { plusLg } from '../icons';
+import { plusLg, pencilSquare } from '../icons';
 import Types from '@vpl/types.ts';
 
 @customElement('ge-statement-argument')
@@ -379,6 +379,25 @@ export class GeStatementArgument extends LitElement {
     `;
   }
 
+  // Handle editing the deviceType value
+  handleEditDeviceType() {
+    // Prompt the user for a new device type value
+    const currentValue = String(this.argument.value || '');
+    const newValue = prompt('Enter device type:', currentValue);
+
+    // If the user provided a value, update it
+    if (newValue !== null) {
+      this.argument.value = newValue;
+
+      // Dispatch an event to update the program
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
   // Special template for deviceType blocks
   deviceTypeTemplate(argumentElementId: string) {
     // Get the background color from the deviceType statement
@@ -389,8 +408,14 @@ export class GeStatementArgument extends LitElement {
         ${this.argumentLabelTemplate(argumentElementId)}
         <div class="argument-var-wrapper">
           <div
-            style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold;">
-            ${this.argument.value}
+            style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span>${this.argument.value}</span>
+            <span
+              @click="${this.handleEditDeviceType}"
+              style="cursor: pointer; display: inline-flex; align-items: center;"
+              title="Edit device type">
+              <editor-icon .icon="${pencilSquare}" .width="${14}" .height="${14}"></editor-icon>
+            </span>
           </div>
         </div>
       </div>
