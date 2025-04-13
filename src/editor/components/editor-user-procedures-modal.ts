@@ -300,13 +300,29 @@ export class EditorUserProceduresModal extends LitElement {
             // Create deep copies of all statements in the procedure body
             const bodyCopy = JSON.parse(JSON.stringify(procedureBody));
 
+            // Assign new UUIDs to all statements in the procedure body before processing
+            const assignUuidsRecursively = (block: any[]) => {
+              for (let stmt of block) {
+                const oldUuid = stmt._uuid;
+                stmt._uuid = uuidv4();
+                console.log(`Reassigned UUID in UDF body: ${oldUuid} -> ${stmt._uuid} for statement ID: ${stmt.id}`);
+
+                if (stmt.block && Array.isArray(stmt.block)) {
+                  assignUuidsRecursively(stmt.block);
+                }
+              }
+            };
+
+            // Assign new UUIDs to the procedure body
+            assignUuidsRecursively(bodyCopy);
+
             // Process each statement in the procedure body
             const processedBody = parseBlock(bodyCopy);
 
             // Add all statements from the processed body to our result
             for (const bodyStmt of processedBody) {
-              // Assign a new UUID to each statement to avoid conflicts
-              bodyStmt._uuid = bodyStmt._uuid || uuidv4();
+              // Always assign a new UUID to each statement to avoid conflicts
+              bodyStmt._uuid = uuidv4();
               modifiedBlock.push(bodyStmt);
             }
 
@@ -347,6 +363,55 @@ export class EditorUserProceduresModal extends LitElement {
 
     // Parse the filtered skeletonize copy
     const parsedSkeletonize = parseBlock(filteredSkeletonize);
+
+    console.log('Parsed skeletonize result:', parsedSkeletonize);
+
+    // Assign new UUIDs to all statements in the skeletonized result
+    const assignNewUuids = (block: any[]) => {
+      for (let stmt of block) {
+        // Store the old UUID for logging
+        const oldUuid = stmt._uuid;
+
+        // Assign a new UUID to each statement
+        stmt._uuid = uuidv4();
+
+        console.log(`Reassigned UUID: ${oldUuid} -> ${stmt._uuid} for statement ID: ${stmt.id}`);
+
+        // Process arguments if they exist
+        if (stmt.arguments) {
+          for (let arg of stmt.arguments) {
+            if (arg.type === 'boolean_expression' && Array.isArray(arg.value)) {
+              // Assign UUIDs to expression operands
+              arg.value.forEach((expr: any) => {
+                if (expr && typeof expr === 'object') {
+                  const oldExprUuid = expr._uuid;
+                  expr._uuid = uuidv4();
+                  console.log(`Reassigned expression UUID: ${oldExprUuid} -> ${expr._uuid}`);
+
+                  if (expr.value && Array.isArray(expr.value)) {
+                    expr.value.forEach((opd: any) => {
+                      if (opd && typeof opd === 'object') {
+                        const oldOpdUuid = opd._uuid;
+                        opd._uuid = uuidv4();
+                        console.log(`Reassigned operand UUID: ${oldOpdUuid} -> ${opd._uuid}`);
+                      }
+                    });
+                  }
+                }
+              });
+            }
+          }
+        }
+
+        // Recursively process nested blocks
+        if (stmt.block && Array.isArray(stmt.block)) {
+          assignNewUuids(stmt.block);
+        }
+      }
+    };
+
+    // Assign new UUIDs to all statements in the skeletonized result
+    assignNewUuids(parsedSkeletonize);
 
     // Store the result in a property that can be used later
     // We don't assign directly to program.header.skeletonize due to type constraints
@@ -390,7 +455,14 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    this.program.header.userProcedures[newProcId] = JSON.parse(JSON.stringify(this._skeletonizeResult));
+    // Create a deep copy of the skeletonize result
+    const skeletonizeCopy = JSON.parse(JSON.stringify(this._skeletonizeResult));
+
+    // Log the UDF body before storing it
+    console.log('Creating new UDF with body:', skeletonizeCopy);
+
+    // Store the UDF body in the program header
+    this.program.header.userProcedures[newProcId] = skeletonizeCopy;
 
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
