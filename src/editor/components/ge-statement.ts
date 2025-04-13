@@ -55,6 +55,21 @@ export class GEStatement extends LitElement {
         height: 100%;
       }
 
+      .device-count {
+        display: flex;
+        align-items: center;
+        margin-right: 0.5rem;
+        font-weight: bold;
+      }
+
+      .device-count-incomplete {
+        color: var(--red-600);
+      }
+
+      .device-count-complete {
+        color: var(--green-600);
+      }
+
       .statement-label-wrapper {
         display: flex;
         align-items: center;
@@ -232,6 +247,8 @@ export class GEStatement extends LitElement {
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
+  @property() initializedDeviceCount: number = 0; // Count of initialized devices
+  @property() totalDeviceCount: number = 0; // Total count of device blocks
   //#endregion
 
   //#region Context
@@ -257,6 +274,9 @@ export class GEStatement extends LitElement {
 
   constructor() {
     super();
+
+    // Update device counts when component is constructed
+    setTimeout(() => this.updateDeviceCounts(), 0);
     this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (_e: CustomEvent) => {
       if (this.statement.id === 'setvar') {
         (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[1].type = this.program.header
@@ -309,6 +329,14 @@ export class GEStatement extends LitElement {
         // Update the statement to reflect the device selection
         this.requestUpdate();
       }
+
+      // If this is a user procedure and the procedure UUID matches the one in the event
+      // update the device counts as a device was initialized/changed
+      if (this.language?.statements[this.statement.id]?.isUserProcedure &&
+          this.statement._uuid === e.detail.procedureUuid) {
+        this.updateDeviceCounts();
+        this.requestUpdate();
+      }
     });
 
     // Listen for argument value changes
@@ -323,6 +351,11 @@ export class GEStatement extends LitElement {
         if (isInInitializedProcedure) {
           this.updateDeviceMetadataValue();
         }
+      }
+
+      // Update device counts for user procedures when program is updated
+      if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
+        this.updateDeviceCounts();
       }
     });
 
@@ -365,10 +398,103 @@ export class GEStatement extends LitElement {
     }
   }
 
-  updated() {
+  // Count the total number of device-related blocks in a procedure
+  countDeviceTypeBlocks(block: any[]): number {
+    let count = 0;
+
+    const countDevicesInBlock = (blockToCount: any[]) => {
+      if (!blockToCount || !Array.isArray(blockToCount)) return;
+
+      for (const stmt of blockToCount) {
+        // Check if this is a deviceType block or a device from the device list
+        if (stmt.id === 'deviceType') {
+          count++;
+        } else if (stmt.id && this.language?.deviceList) {
+          // Check if the statement ID starts with a device name from the device list
+          const deviceName = stmt.id.split('.')[0];
+          if (this.language.deviceList.includes(deviceName)) {
+            count++;
+          }
+        }
+
+        // Recursively check nested blocks
+        if (stmt.block && Array.isArray(stmt.block)) {
+          countDevicesInBlock(stmt.block);
+        }
+      }
+    };
+
+    countDevicesInBlock(block);
+    return count;
+  }
+
+  // Count the number of initialized devices in a procedure
+  countInitializedDevices(procedureUuid: string): number {
+    if (!this.program || !procedureUuid) return 0;
+
+    // Find the procedure entry in initializedProcedures
+    const procedureEntry = this.program.header.initializedProcedures.find(
+      entry => entry.uuid === procedureUuid
+    );
+
+    if (!procedureEntry) return 0;
+
+    // Count devices that have been initialized (have a deviceId that's not 'deviceType')
+    const initializedCount = procedureEntry.devices.filter(device => {
+      // Check if the device has been initialized (not a deviceType)
+      if (device.deviceId === 'deviceType') {
+        return false;
+      }
+
+      // Check if the device ID is in the language statements
+      if (this.language.statements[device.deviceId]) {
+        return true;
+      }
+
+      return false;
+    }).length;
+
+    return initializedCount;
+  }
+
+  // Check if all devices are initialized
+  areAllDevicesInitialized(): boolean {
+    return this.initializedDeviceCount === this.totalDeviceCount && this.totalDeviceCount > 0;
+  }
+
+  // Update device counts when needed
+  updateDeviceCounts() {
+    if (!this.language?.statements || !this.statement?.id) return;
+
+    // Only process for user procedures that aren't in procedure body view
+    if (this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
+      // Get the procedure block
+      const procedureBlock = this.program.header.userProcedures[this.statement.id];
+      if (procedureBlock) {
+        // Count total device blocks
+        this.totalDeviceCount = this.countDeviceTypeBlocks(procedureBlock);
+
+        // Count initialized devices
+        this.initializedDeviceCount = this.countInitializedDevices(this.statement._uuid);
+
+        // Log for debugging
+        console.log(`Device count for procedure ${this.statement.id}: ${this.initializedDeviceCount}/${this.totalDeviceCount}`);
+      }
+    }
+  }
+
+  updated(changedProperties: Map<string, any>) {
     // Check if the statement UUID is in the skeletonize_uuid array
     if (this.statement._uuid && this.program) {
       this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    }
+
+    // Update device counts
+    this.updateDeviceCounts();
+
+    // If this is a new statement or the statement ID has changed, update device counts
+    if (changedProperties.has('statement') || changedProperties.has('statement.id')) {
+      this.updateDeviceCounts();
     }
 
     this.statementHeaderRef.value.setAttribute(
@@ -702,6 +828,15 @@ export class GEStatement extends LitElement {
               )
           : nothing}
         <div class="statement-controls">
+          ${this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
+            ? html`
+              <div class="device-count ${this.areAllDevicesInitialized() ? 'device-count-complete' : 'device-count-incomplete'}"
+                   title="Initialized devices / Total device blocks">
+                ${this.initializedDeviceCount}/${this.totalDeviceCount}
+              </div>
+            `
+            : nothing
+          }
           <div class="statement-controls-modal-wrapper">
             ${!this.isExample && !this.skeletonizeMode && !(this.isProcBody && this.editorMode === 'initialize' && this.restrainedMode)
               ? html`
