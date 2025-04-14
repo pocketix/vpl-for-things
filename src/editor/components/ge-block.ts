@@ -35,6 +35,11 @@ export class GeBlock extends LitElement {
         background-color: var(--blue-100);
       }
 
+      .highlight-active {
+        box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8); /* Highlight effect */
+        border: 2px solid rgba(255, 255, 0, 0.8);
+      }
+
       .add-new-statement-btn {
         width: fit-content;
         align-self: flex-end;
@@ -540,6 +545,8 @@ export class GeBlock extends LitElement {
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
+    // We don't need the findAndUpdateStatements function anymore as we'll update all statements at once
+
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
       const isInvalid = stmt.isInvalid;
       if (!isInvalid) {
@@ -579,19 +586,40 @@ export class GeBlock extends LitElement {
       console.log('Removed UUIDs:', removedUuids);
     }
 
-    // Dispatch a custom event to notify all components about the skeletonize selection change
-    const selectionEvent = new CustomEvent('skeletonize-selection-changed', {
+    // Instead of trying to update DOM elements directly, we'll update the program state
+    // and let the components re-render based on that state
+
+    // Create a new custom event to force all ge-statement components to update their highlighting
+    const highlightEvent = new CustomEvent('update-highlight-state', {
       bubbles: true,
       composed: true,
       detail: {
         skeletonizeUuids: this.program.header.skeletonize_uuid,
-        addedUuids,
-        removedUuids
+        forceUpdate: true
       }
     });
-    this.dispatchEvent(selectionEvent);
+    this.dispatchEvent(highlightEvent);
 
-    // Also dispatch a program updated event to ensure all components are in sync
+    // Find all ge-statement elements and update their highlighting state
+    // This is a more direct approach to ensure all elements are updated
+    const updateNestedBlocks = (element: Element) => {
+      if (element.shadowRoot) {
+        const statements = element.shadowRoot.querySelectorAll('ge-statement');
+        statements.forEach(stmt => {
+          const uuid = stmt.getAttribute('uuid');
+          if (uuid && this.program.header.skeletonize_uuid.includes(uuid)) {
+            (stmt as any).isHighlighted = true;
+            // Recursively update nested blocks
+            updateNestedBlocks(stmt);
+          }
+        });
+      }
+    };
+
+    // Start the update from the document root
+    updateNestedBlocks(document.documentElement);
+
+    // Dispatch a program updated event to ensure all components are in sync
     const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
@@ -754,6 +782,7 @@ export class GeBlock extends LitElement {
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
               .isSelected="${this.selectedStatements.has(stmt._uuid)}"
+              .isHighlighted="${this.program.header.skeletonize_uuid.includes(stmt._uuid)}"
               .uuidMetadata="${this.tmpUUID}"
               .editorMode="${this.editorMode}"
               @click="${(e: Event) => {

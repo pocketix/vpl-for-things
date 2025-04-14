@@ -42,6 +42,12 @@ export class GEStatement extends LitElement {
         border: 2px solid rgba(255, 255, 0, 0.8);
       }
 
+      /* Apply highlight to nested blocks when parent is highlighted */
+      .highlight-active .nested {
+        box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8); /* Highlight effect */
+        border: 2px solid rgba(255, 255, 0, 0.8);
+      }
+
       .expr-arg {
         white-space: nowrap;
         overflow-x: auto;
@@ -304,12 +310,26 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Listen for skeletonize selection changes
-    this.addEventListener('skeletonize-selection-changed', (_e: CustomEvent) => {
-      if (this.skeletonizeMode && this.statement._uuid && this.program) {
+    // Listen for program updates to update highlighting
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      if (this.skeletonizeMode && this.statement._uuid && this.program && e.detail.skeletonizeUpdated) {
         // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
         this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
         this.requestUpdate();
+      }
+    });
+
+    // Listen for the new update-highlight-state event
+    this.addEventListener('update-highlight-state', (_e: CustomEvent) => {
+      if (this.skeletonizeMode && this.statement._uuid && this.program) {
+        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
+        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+
+        // If this is a compound statement with nested blocks, we need to update the nested blocks too
+        if ((this.statement as CompoundStatement).block && this.isHighlighted) {
+          // Force a re-render to ensure nested blocks get updated
+          this.requestUpdate();
+        }
       }
     });
 
@@ -486,7 +506,10 @@ export class GEStatement extends LitElement {
   updated(changedProperties: Map<string, any>) {
     // Check if the statement UUID is in the skeletonize_uuid array
     if (this.statement._uuid && this.program) {
-      this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+      // Update isHighlighted when skeletonizeMode or statement changes
+      if (changedProperties.has('skeletonizeMode') || changedProperties.has('statement')) {
+        this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+      }
     }
 
     // Update device counts
@@ -896,20 +919,12 @@ export class GEStatement extends LitElement {
 
   //#region Render
   render() {
-    // Check if this statement is in the skeletonize selection
-    const isInSkeletonizeSelection = this.skeletonizeMode &&
-                                    this.statement._uuid &&
-                                    this.program &&
-                                    this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-
-    // Update isHighlighted based on skeletonize selection
-    if (this.skeletonizeMode && this.statement._uuid && this.program) {
-      this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-    }
+    // We'll use isHighlighted directly for highlighting, which is set by the toggleStatementSelection function
+    // This ensures child blocks are highlighted when a parent is selected
 
     return html`
             <div
-        class="statement-wrapper ${isInSkeletonizeSelection || this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
+        class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
           // Always dispatch the toggle-statement-selection event
@@ -933,7 +948,7 @@ export class GEStatement extends LitElement {
               <ge-block
                 ${ref(this.statementNestedBlockRef)}
                 style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
-                class="nested ${this.nestedBlockVisible ? '' : 'hidden'}"
+                class="nested ${this.nestedBlockVisible ? '' : 'hidden'} ${this.isHighlighted ? 'highlight-active' : ''}"
                 .block="${(this.statement as CompoundStatement).block}"
                 .parentStmt="${this.statement}"
                 .isProcBody="${this.isProcBody}"
