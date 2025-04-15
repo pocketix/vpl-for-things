@@ -311,39 +311,6 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Listen for program updates to update highlighting
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
-      if (this.skeletonizeMode && this.statement._uuid && this.program && e.detail.skeletonizeUpdated) {
-        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
-        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-        this.requestUpdate();
-      }
-    });
-
-    // Listen for the new update-highlight-state event
-    this.addEventListener('update-highlight-state', (_e: CustomEvent) => {
-      if (this.skeletonizeMode && this.statement._uuid && this.program) {
-        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
-        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-
-        // If this is a compound statement with nested blocks, we need to update the nested blocks too
-        if ((this.statement as CompoundStatement).block && this.isHighlighted) {
-          // Force a re-render to ensure nested blocks get updated
-          this.requestUpdate();
-        }
-      }
-    });
-
-    // Listen for skeletonize mode changes
-    this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
-      if (this.statement._uuid && this.program) {
-        // Update highlighting when skeletonize mode changes
-        this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-        this.requestUpdate();
-      }
-    });
-
-    // Listen for device selection changes
     this.addEventListener('device-selection-changed', (e: CustomEvent) => {
       // Check if this statement is the device that was changed
       if (this.statement._uuid && this.statement._uuid === e.detail.deviceUuid) {
@@ -373,14 +340,8 @@ export class GEStatement extends LitElement {
           this.updateDeviceMetadataValue();
         }
       }
-
-      // Update device counts for user procedures when program is updated
-      if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
-        this.updateDeviceCounts();
-      }
     });
 
-    // Listen for procedure modal closed event
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
       // Reset restrainedMode and editorMode when the procedure modal is closed
       // This ensures the burger menu is re-enabled for the procedure block itself
@@ -393,33 +354,23 @@ export class GEStatement extends LitElement {
   // Update the device metadata value when an argument value changes
   updateDeviceMetadataValue() {
     if (!this.statement._uuid) return;
-
-    // Find the procedure UUID by looking for the initialized procedure that contains this device
-    for (const metadataEntry of this.program.header.initializedProcedures) {
-      // Find the device metadata entry for this statement
-      const deviceEntry = metadataEntry.devices.find(device => device.uuid === this.statement._uuid);
-      if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-        // Update the value in the device metadata based on the first argument
-        const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
-        if (argValue !== undefined && argValue !== null) {
-          deviceEntry.value = String(argValue);
-
-          // Also update the argument value in the statement stored in the metadata
-          if (deviceEntry.statement &&
-              (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-              (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-            // Update the argument value in the statement
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
-          }
-
-          console.log(`Updated device metadata value for UUID ${this.statement._uuid} to ${deviceEntry.value}`);
+    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
+    
+    if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+      const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+      if (argValue !== undefined && argValue !== null) {
+        deviceEntry.value = String(argValue);
+        if (deviceEntry.statement &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
+          (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
         }
-        return; // Exit after updating
       }
+      return; 
     }
   }
 
-  // Count the total number of device-related blocks in a procedure
   countDeviceTypeBlocks(block: any[]): number {
     let count = 0;
 

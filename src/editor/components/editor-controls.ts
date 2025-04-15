@@ -667,16 +667,12 @@ export class EditorControls extends LitElement {
         fr.onload = (e) => {
           const importedProgram = JSON.parse(e.target.result as string);
 
-          // Validate the imported program structure
           if (!importedProgram.header || !importedProgram.block) {
             alert("The imported file does not contain a valid program structure.");
             return;
           }
-
-          // Use the Program's loadProgram method to properly load the program with UUIDs
           this.program.loadProgram(importedProgram);
 
-          // Integrate custom procedures into the language context
           for (let proc of Object.keys(importedProgram.header.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
@@ -689,7 +685,6 @@ export class EditorControls extends LitElement {
             };
           }
 
-          // Dispatch events to update the program and UI
           const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
@@ -728,7 +723,6 @@ export class EditorControls extends LitElement {
     }
   }
 
-  // Removed handleLinearizeProgram method
 
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
@@ -848,9 +842,9 @@ export class EditorControls extends LitElement {
     }
   }
 
-  // handleLoadProgram and handleDeleteLoadedProgram methods removed
+ 
 
-  // programsModalTemplate method removed
+  
 
   userVariablesModalTemplate() {
     return html`
