@@ -16,6 +16,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
 import { EditorControls } from './editor-controls';
+import { initPreventEscClose } from '../init-prevent-esc';
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -30,7 +31,7 @@ export class VplEditor extends LitElement {
         gap: 0.5rem;
         position: relative;
         width: 100%;
-        max-width: 1600px;
+        max-width: 1200px;
       }
 
       .editor-view-wrapper {
@@ -47,6 +48,7 @@ export class VplEditor extends LitElement {
   @property() height?: number;
   @property() isSmallScreen: boolean = document.body.clientWidth < 800;
   @property() viewMode: string = 'split';
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
   //#endregion
 
   //#region Refs
@@ -87,9 +89,9 @@ export class VplEditor extends LitElement {
       }
     });
 
-    // window.onbeforeunload = function () {
-    //   return 'Changes may be lost!';
-    // };
+    window.onbeforeunload = function () {
+      return 'Changes may be lost!';
+    };
   }
 
   connectedCallback() {
@@ -99,6 +101,11 @@ export class VplEditor extends LitElement {
       'style',
       this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
     );
+
+    this.addEventListener('skeletonize-mode-changed', this.handleSkeletonizeModeChanged);
+
+    // Initialize ESC key prevention
+    initPreventEscClose();
   }
   //#endregion
 
@@ -174,14 +181,19 @@ export class VplEditor extends LitElement {
         break;
     }
   }
+
+  handleSkeletonizeModeChanged(e: CustomEvent) {
+    this.skeletonizeMode = e.detail.active;
+    this.requestUpdate();
+  }
   //#endregion
 
   //#region Render
   render() {
     return html`
-      <editor-controls></editor-controls>
+      <editor-controls .skeletonizeMode="${this.skeletonizeMode}"></editor-controls>
       <div class="editor-view-wrapper">
-        <graphical-editor ${ref(this.graphicalEditorRef)}></graphical-editor>
+        <graphical-editor .skeletonizeMode="${this.skeletonizeMode}" ${ref(this.graphicalEditorRef)}></graphical-editor>
         <text-editor
           ${ref(this.textEditorRef)}
           style="${this.isSmallScreen && this.viewMode !== 'te' ? 'display: none;' : ''}"></text-editor>

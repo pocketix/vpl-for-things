@@ -86,18 +86,19 @@ export class EditorExpressionOperandList extends LitElement {
         margin-right: 12px;
       }
 
-      .expr-control-button::part(btn) {
+      .expr-control-button {
+        width: 100%;
         justify-content: center;
         gap: 2px;
       }
 
-      .remove-button::part(btn) {
+      .remove-button {
         color: var(--red-600);
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
       }
 
-      .group-button::part(btn) {
+      .group-button {
         color: var(--green-600);
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
@@ -115,7 +116,7 @@ export class EditorExpressionOperandList extends LitElement {
         width: 100%;
       }
 
-      .go-back-button::part(btn) {
+      .go-back-button {
         justify-content: center;
         gap: 4px;
       }
@@ -154,7 +155,7 @@ export class EditorExpressionOperandList extends LitElement {
         gap: 8px;
       }
 
-      .opr-list-item::part(btn) {
+      .opr-list-item {
         justify-content: center;
         font-family: var(--mono-font);
       }
@@ -446,14 +447,12 @@ export class EditorExpressionOperandList extends LitElement {
                         <div class="expr-group-controls">
                           <div class="expr-group-actions">
                             <editor-button
-                              style="width: 100%;"
                               class="expr-control-button remove-button"
                               @click="${this.handleDeleteSelectedExpressions}">
                               <editor-icon .icon="${trash}"></editor-icon>
                               <span>Remove</span>
                             </editor-button>
                             <editor-button
-                              style="width: 100%;"
                               class="expr-control-button group-button"
                               @click="${this.handleShowSelectOprModal}">
                               <editor-icon .icon="${stack}"></editor-icon>
@@ -469,7 +468,7 @@ export class EditorExpressionOperandList extends LitElement {
                                     id="opr-type-select"
                                     .value="${this.selectedOprType}"
                                     @change="${this.handleSelectOprType}">
-                                    <option value="boolean">Logical</option>
+                                    <option value="bool">Logical</option>
                                     <option value="compare">Compare</option>
                                     <option value="numeric">Numeric</option>
                                   </select>

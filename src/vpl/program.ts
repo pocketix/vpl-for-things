@@ -9,6 +9,7 @@ export function parseOperandToString(operand: ExpressionOperand, negated: boolea
 }
 
 export function parseExpressionToString(expression: Expression) {
+
   let operandsStrings: string[] = expression.value.map((operand) => {
     if (Array.isArray((operand as Expression).value)) {
       return parseExpressionToString(operand as Expression);
@@ -51,6 +52,8 @@ export function initDefaultArgumentType(argumentType: ArgumentType) {
       return 0;
     case Types.string:
       return '';
+    case Types.multi_device:
+        return [] as Devices[];
     default:
       return null;
   }
@@ -129,7 +132,9 @@ export function assignUuidToExprOperands(expr: Expression) {
 
 export function assignUuidToBlock(block: Block) {
   for (let stmt of block) {
-    stmt._uuid = uuidv4();
+    if (stmt._uuid === undefined) {
+      stmt._uuid = uuidv4();
+    }
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
         if (isExpressionArray(arg)) {
@@ -144,6 +149,18 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
+export type DeviceMetadata = {
+  uuid: string;
+  deviceId: string;
+  statement: ProgramStatement; // Store the complete statement with arguments
+  value?: string; // Optional attribute to store the selected value of the device
+};
+
+export type MetadataInit = {
+  uuid: string;
+  id: string;
+  devices: DeviceMetadata[]; // Store complete device statements
+};
 export class Program {
   header: Header;
   block: Block;
@@ -152,6 +169,10 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
+      initializedProcedures: [], // Update initializedProcedures to use MetadataInit type
+      skeletonize: [],
+      skeletonize_uuid: [],
+      selected_uuids: [],
     };
     this.block = [];
   }
@@ -169,6 +190,12 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
+
+    // Handle initializedProcedures if present in the imported program
+    if (programExport.header.initializedProcedures) {
+      this.header.initializedProcedures = programExport.header.initializedProcedures;
+    }
+
     this.block = programExport.block;
   }
 
@@ -177,11 +204,6 @@ export class Program {
 
     function removeUuidFromExprOperands(expr: Expression) {
       delete expr._uuid;
-
-      if (!expr.value) {
-        return;
-      }
-
       for (let opd of expr.value) {
         delete opd._uuid;
         if (Array.isArray((opd as Expression).value)) {
@@ -221,6 +243,7 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
+        initializedProcedures: this.header.initializedProcedures || [], // Include initializedProcedures
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -233,6 +256,8 @@ export class Program {
 
     return programExport;
   }
+
+  // exportLinearizedProgram method has been removed
 
   addStatement(block: Block, statement: stmt) {
     let resultStatement: any = {};
@@ -269,6 +294,52 @@ export class Program {
   }
 }
 
+export function getBlockDependencies(block: Block, langStmts: Statements): Set<string> {
+  const dependencies = new Set<string>();
+
+  const addDependencies = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.predecessors) {
+      langStmt.predecessors.forEach((pred) => {
+        dependencies.add(pred);
+        const predStmt = block.find((s) => s.id === pred);
+        if (predStmt) {
+          addDependencies(predStmt);
+        }
+      });
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependencies);
+    }
+  };
+
+  block.forEach(addDependencies);
+  return dependencies;
+}
+
+export function getBlockDependents(block: Block, langStmts: Statements): Set<string> {
+  const dependents = new Set<string>();
+
+  const addDependents = (stmt: ProgramStatement) => {
+    const langStmt = langStmts[stmt.id];
+    if (langStmt && langStmt.successors) {
+      langStmt.successors.forEach((succ) => {
+        dependents.add(succ);
+        const succStmt = block.find((s) => s.id === succ);
+        if (succStmt) {
+          addDependents(succStmt);
+        }
+      });
+    }
+    if ((stmt as CompoundStatement).block) {
+      (stmt as CompoundStatement).block.forEach(addDependents);
+    }
+  };
+
+  block.forEach(addDependents);
+  return dependents;
+}
+
 type stmt = {
   type: LanguageStatementType;
   key: string;
@@ -284,6 +355,10 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
+  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
+  skeletonize: [];
+  skeletonize_uuid: string[];
+  selected_uuids: string[];
 };
 
 export type UserVariable = {
@@ -312,7 +387,6 @@ export type AbstractStatement = {
 export type AbstractStatementWithArgs = AbstractStatement & {
   arguments: ProgramStatementArgument[];
 };
-
 export type CompoundStatement = AbstractStatement & {
   block: Block;
 };
@@ -321,10 +395,15 @@ export type CompoundStatementWithArgs = AbstractStatement & CompoundStatement & 
 
 export type ProgramStatementArgument = {
   type: ArgumentType;
-  value: string | number | boolean | Expression[];
+  value: string | number | boolean | Expression[] | Devices[];
 };
 
 export type Expression = {
+  value: ExpressionOperands;
+  type?: ExpressionOperator;
+  _uuid?: string;
+};
+export type Devices = {
   value: ExpressionOperands;
   type?: ExpressionOperator;
   _uuid?: string;

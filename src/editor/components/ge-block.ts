@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -10,18 +10,17 @@ import {
   DeviceStatement,
   EditorModal,
   Language,
-  Statement,
   UnitLanguageStatementWithArgs,
 } from '@/index';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
-import { classMap } from 'lit/directives/class-map.js';
+
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
-  //#region Styles{{{
+  //#region Styles
   static styles = [
     globalStyles,
     css`
@@ -31,8 +30,19 @@ export class GeBlock extends LitElement {
         gap: 0.5rem;
       }
 
-      .add-new-statement-btn::part(btn) {
+      .highlighted {
+        border: 2px solid var(--blue-500);
+        background-color: var(--blue-100);
+      }
+
+      .highlight-active {
+        box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8); /* Highlight effect */
+        border: 2px solid rgba(255, 255, 0, 0.8);
+      }
+
+      .add-new-statement-btn {
         width: fit-content;
+        align-self: flex-end;
       }
 
       .add-statement-tabs {
@@ -45,7 +55,7 @@ export class GeBlock extends LitElement {
         height: 500px;
       }
 
-      .statement-type-button::part(btn) {
+      .statement-type-button {
         background-color: white;
         border: none;
         box-shadow: none;
@@ -54,7 +64,6 @@ export class GeBlock extends LitElement {
       }
 
       .add-statements-wrapper {
-        margin-top: 0.3rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -83,8 +92,9 @@ export class GeBlock extends LitElement {
         gap: 0.25rem;
       }
 
-      .add-statament-option-button.selected::part(btn) {
-        box-shadow: rgb(99, 179, 237) 0px 0px 0px 3px;
+      .add-statament-option-button {
+        display: flex;
+        gap: 0.25rem;
       }
 
       .device-select-wrapper {
@@ -107,7 +117,7 @@ export class GeBlock extends LitElement {
         color: var(--gray-500);
       }
     `,
-  ];//}}}
+  ];
   //#endregion
 
   //#region Props
@@ -119,11 +129,20 @@ export class GeBlock extends LitElement {
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
-  @property() selectedStmtIdx: number|null = 0;
+  @property() selectedStatements: Set<string> = new Set();
+  @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Boolean }) restrainedMode: boolean = false;
+  @property({ type: Boolean }) isHighlighted: boolean = false;
+  @property() filteredDeviceStatements: string[] = [];
+  @property() tmpUUID :string = '';
+  @property() parentProcedureUuid: string; // Add property to store the UUID
+  @property() clickedBlockDeviceInit: string='';
+  @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   //#endregion
 
   //#region Refs
   addStatementModalRef: Ref<EditorModal> = createRef();
+  deviceSelectionModalRef: Ref<EditorModal> = createRef();
   //#endregion
 
   //#region Context
@@ -137,7 +156,6 @@ export class GeBlock extends LitElement {
   //#endregion
 
   //#region Computed
-  // NOTE: this is inefficient
   get filteredAddStatementOptions() {
     type KeysAndLabels = {
       key: string;
@@ -145,14 +163,16 @@ export class GeBlock extends LitElement {
     };
 
     let statementKeysAndLabels: KeysAndLabels[] = [];
-    let filteredStatements: {[key: string]: Statement} = {};
+    let filteredStatements = {};
 
     for (let stmtKey in this.language.statements) {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
-      const isBasic = !(this.language.statements[stmt.key] as DeviceStatement).deviceName; // NOTE: need to change this if we want to filter through all available blocks (basic+device)
-      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure) || this.renderBasicStatements !== isBasic) {
+      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
+        return false;
+      }
+      if(stmt.key === 'deviceType'){
         return false;
       }
 
@@ -214,13 +234,87 @@ export class GeBlock extends LitElement {
   //#endregion
 
   //#region Methods
+
   addNewStatement(stmtKey: string) {
-    this.program.addStatement(this.block, {
+    const newStatement = {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
       arguments: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
         .arguments,
-    });
+    };
+
+    this.program.addStatement(this.block, newStatement);
+
+    if (this.language.statements[stmtKey].isUserProcedure) {
+      const addedStmt = this.block[this.block.length - 1]; 
+      const userProcedureBlock = this.program.header.userProcedures[stmtKey];
+      assignUuidToBlock(userProcedureBlock);
+
+      const devices: DeviceMetadata[] = [];
+      const parseBlockForDevices = (block: Block) => {
+        block.forEach((stmt) => {
+          const deviceName = stmt.id.split('.')[0];
+          const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+          if (isDeviceStatement) {
+            if (stmt.id === 'deviceType' && (stmt as AbstractStatementWithArgs).arguments?.[0]) {
+              const arg = (stmt as AbstractStatementWithArgs).arguments[0];
+              devices.push({
+                uuid: stmt._uuid,
+                deviceId: String(arg.value),
+                statement: stmt,
+                value: undefined 
+              });
+            } else if (this.language.deviceList.includes(deviceName)) {
+              const deviceStatement = {
+                ...stmt,
+                arguments: []
+              };
+              const langStatement = this.language.statements[stmt.id];
+              if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+                const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+
+                argDefs.forEach((argDef, index) => {
+                  const newArg = {
+                    type: argDef.type,
+                    value: null
+                  };
+
+                  if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    newArg.value = argDef.options[0].id;
+                  } else {
+                    newArg.value = initDefaultArgumentType(argDef.type);
+                  }
+                  if ((stmt as AbstractStatementWithArgs).arguments &&
+                      (stmt as AbstractStatementWithArgs).arguments[index]) {
+                    newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                  }
+                  deviceStatement.arguments.push(newArg);
+                });
+              }
+
+              devices.push({
+                uuid: stmt._uuid,
+                deviceId: stmt.id,
+                statement: deviceStatement,
+                value: undefined 
+              });
+            }
+          }
+          if ((stmt as CompoundStatement).block) {
+            parseBlockForDevices((stmt as CompoundStatement).block);
+          }
+        });
+      };
+      parseBlockForDevices(userProcedureBlock);
+
+      const newEntry: MetadataInit = {
+        uuid: addedStmt._uuid,
+        id: stmtKey,
+        devices: devices, 
+      };
+      this.program.header.initializedProcedures.push(newEntry);
+    }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
@@ -241,6 +335,10 @@ export class GeBlock extends LitElement {
 
   //#region Handlers
   handleMoveStatementUp(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; 
+    }
     let statementIndex = e.detail.index;
     if (statementIndex > 0) {
       let tmpStatement = this.block[statementIndex];
@@ -258,6 +356,10 @@ export class GeBlock extends LitElement {
   }
 
   handleMoveStatementDown(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; 
+    }
     let statementIndex = e.detail.index;
     if (statementIndex < this.block.length - 1) {
       let tmpStatement = this.block[statementIndex];
@@ -275,7 +377,19 @@ export class GeBlock extends LitElement {
   }
 
   handleRemoveStatement(e: CustomEvent) {
+    if (this.skeletonizeMode) {
+      e.stopPropagation();
+      return; 
+    }
     let statementIndex = e.detail.index;
+    const stmtToRemove = this.block[statementIndex];
+
+    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
+      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
+        (entry) => entry.uuid !== stmtToRemove._uuid
+      );
+    }
+
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
     e.stopPropagation();
@@ -290,13 +404,7 @@ export class GeBlock extends LitElement {
 
   handleAddNewStatement(e: Event) {
     let target = e.currentTarget as HTMLButtonElement;
-    this.addNewStatementFromDialog(target.value);
-  }
-
-  private addNewStatementFromDialog(stmtKey: string) {
-    this.selectedStmtIdx = 0;
-    this.addStatementOptionsFilter = "";
-    this.addNewStatement(stmtKey);
+    this.addNewStatement(target.value);
     this.hideAddNewStatementDialog();
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
@@ -312,38 +420,13 @@ export class GeBlock extends LitElement {
   }
 
   handleAddStatementFilter(e: Event) {
-    this.selectedStmtIdx = 0;
     this.addStatementOptionsFilter = (e.currentTarget as HTMLInputElement).value;
-  }
-
-  handleStmtSelectKeyboard(e: KeyboardEvent) {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const maxLen = Object.keys(this.filteredAddStatementOptions).length;
-      if (this.selectedStmtIdx < maxLen - 1) {
-        console.log("what", maxLen, this.selectedStmtIdx)
-        this.selectedStmtIdx++;
-      }
-    }
-    else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (this.selectedStmtIdx > 0) {
-        this.selectedStmtIdx--;
-      }
-    }
-    else if (e.key === "Enter") {
-      e.preventDefault();
-      const statements = this.filteredAddStatementOptions;
-      const key = Object.keys(statements)[this.selectedStmtIdx];
-      this.addNewStatementFromDialog(key);
-    }
   }
 
   handleRenderBasicStatements() {
     if (!this.renderBasicStatements) {
       this.renderBasicStatements = true;
       this.addStatementOptionsFilter = '';
-      this.selectedStmtIdx = 0;
     }
   }
 
@@ -351,7 +434,6 @@ export class GeBlock extends LitElement {
     if (this.renderBasicStatements) {
       this.renderBasicStatements = false;
       this.addStatementOptionsFilter = '';
-      this.selectedStmtIdx = 0;
     }
   }
 
@@ -359,19 +441,217 @@ export class GeBlock extends LitElement {
     this.selectedDevice = (e.currentTarget as HTMLInputElement).value;
   }
 
+  toggleStatementSelection(stmtUuid: string, isParentClick: boolean = false) {
+    const clickedBlock = this.block.find((s) => s._uuid === stmtUuid);
+
+    if (clickedBlock) {
+      const deviceName = clickedBlock?.id.split('.')[0];
+      var isDevice = false;
+      if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
+
+      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize' && isParentClick) {
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined) {
+          this.showDeviceSelectionModal(clickedBlock);
+          return; 
+        }
+      }
+    }
+    if (!this.skeletonizeMode) {
+      return;
+    }
+
+    const stmt = this.block.find((s) => s._uuid === stmtUuid);
+    const addedUuids: string[] = [];
+    const removedUuids: string[] = [];
+
+  
+    const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
+      const isInvalid = stmt.isInvalid;
+      if (!isInvalid) {
+        if (isSelected) {
+          if (!this.selectedStatements.has(stmt._uuid)) {
+            this.selectedStatements.add(stmt._uuid);
+            this.program.header.skeletonize_uuid.push(stmt._uuid);
+            addedUuids.push(stmt._uuid);
+          }
+        } else {
+          if (this.selectedStatements.has(stmt._uuid)) {
+            this.selectedStatements.delete(stmt._uuid);
+            this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+              (uuid) => uuid !== stmt._uuid
+            );
+            removedUuids.push(stmt._uuid);
+          }
+        }
+      }
+
+      if ((stmt as CompoundStatement).block) {
+        (stmt as CompoundStatement).block.forEach((childStmt) => propagateSelection(childStmt, isSelected));
+      }
+    };
+
+    const isSelected = !this.selectedStatements.has(stmtUuid);
+    propagateSelection(stmt, isSelected);
+
+    const highlightEvent = new CustomEvent('update-highlight-state', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        skeletonizeUuids: this.program.header.skeletonize_uuid,
+        forceUpdate: true
+      }
+    });
+    this.dispatchEvent(highlightEvent);
+
+    const updateNestedBlocks = (element: Element) => {
+      if (element.shadowRoot) {
+        const statements = element.shadowRoot.querySelectorAll('ge-statement');
+        statements.forEach(stmt => {
+          const uuid = stmt.getAttribute('uuid');
+          if (uuid && this.program.header.skeletonize_uuid.includes(uuid)) {
+            (stmt as any).isHighlighted = true;
+            updateNestedBlocks(stmt);
+          }
+        });
+      }
+    };
+
+    updateNestedBlocks(document.documentElement);
+
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { skeletonizeUpdated: true }
+    });
+    this.dispatchEvent(programEvent);
+
+    this.requestUpdate(); 
+  }
+
+
+  showDeviceSelectionModal(clickedBlock: ProgramStatement) {
+    this.clickedBlockDeviceInit = clickedBlock._uuid;
+    this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
+      const statement = this.language.statements[stmtKey];
+      return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+
+    });
+    this.deviceSelectionModalRef.value.showModal();
+  }
+
+ 
+  handleDeviceStatementSelected(stmtKey: string) {
+    this.deviceSelectionModalRef.value.hideModal();
+
+    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
+    if (clickedBlock) {
+      const selectedStatement = {
+        ...this.language.statements[stmtKey],
+        id: stmtKey,
+        _uuid: clickedBlock._uuid, 
+      };
+      const index = this.block.indexOf(clickedBlock);
+      if (index !== -1) {
+        this.block[index] = selectedStatement;
+
+        this.requestUpdate();
+        const deviceSelectionEvent = new CustomEvent('device-selection-changed', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            deviceUuid: clickedBlock._uuid,
+            procedureUuid: this.tmpUUID,
+            selectedDeviceId: stmtKey
+          }
+        });
+        this.dispatchEvent(deviceSelectionEvent);
+
+        const metadataEntry = this.program.header.initializedProcedures.find(
+          (entry) => entry.uuid === this.tmpUUID
+        );
+
+        if (metadataEntry) {
+          const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
+          if (deviceEntry) {
+            deviceEntry.deviceId = stmtKey;
+            const langStatement = this.language.statements[stmtKey];
+
+            deviceEntry.statement = {
+              ...selectedStatement,
+              arguments: []
+            };
+
+            if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+              const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+              argDefs.forEach(argDef => {
+                const newArg = {
+                  type: argDef.type,
+                  value: null
+                };
+                if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                  newArg.value = argDef.options[0].id;
+                } else {
+                  newArg.value = initDefaultArgumentType(argDef.type);
+                }
+
+                (deviceEntry.statement as AbstractStatementWithArgs).arguments.push(newArg);
+              });
+            }
+
+            if (deviceEntry.value) {
+              deviceEntry.value = undefined;
+            }
+          } else {
+            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
+          }
+        } else {
+          console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+        }
+
+        this.requestUpdate();
+        const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          bubbles: true,
+          composed: true,
+          detail: { programBodyUpdated: true },
+        });
+        this.dispatchEvent(event);
+      } else {
+        console.warn(`Clicked block not found in the block array.`);
+      }
+    }
+  }
+
+  updated(changedProperties: Map<string, any>) {
+    if (changedProperties.has('skeletonizeMode') && !this.skeletonizeMode) {
+      this.selectedStatements.clear();
+
+      const event = new CustomEvent('skeletonize-selection-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+      });
+      this.dispatchEvent(event);
+
+      this.requestUpdate();
+    }
+  }
   //#endregion
 
   //#region Templates
   addStatementButtonTemplate() {
     return html`
-      <editor-button
-        ?autofocus=${this.isProcBody}
-        @click="${this.handleShowAddNewStatementDialog}"
-        title="Add Statement"
-        style="align-self: flex-end;"
-        class="add-new-statement-btn">
-        <editor-icon .icon="${icons['plusLg']}"></editor-icon>
-      </editor-button>
+      ${!this.skeletonizeMode && !(this.editorMode === 'initialize' && this.restrainedMode)
+        ? html`
+            <editor-button
+              @click="${this.handleShowAddNewStatementDialog}"
+              title="Add Statement"
+              class="add-new-statement-btn">
+              <editor-icon .icon="${icons['plusLg']}"></editor-icon>
+            </editor-button>
+          `
+        : nothing}
     `;
   }
 
@@ -383,27 +663,40 @@ export class GeBlock extends LitElement {
         (stmt, i) =>
           html`
             <ge-statement
-              .isProcBody="${this.isProcBody}"
               .statement="${stmt}"
               .index="${i}"
-              .isExample="${this.isExample}">
+              .isProcBody="${this.isProcBody}"
+              .isExample="${this.isExample}"
+              .skeletonizeMode="${this.skeletonizeMode}"
+              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
+              .isSelected="${this.selectedStatements.has(stmt._uuid)}"
+              .isHighlighted="${this.program.header.skeletonize_uuid.includes(stmt._uuid)}"
+              .uuidMetadata="${this.tmpUUID}"
+              .editorMode="${this.editorMode}"
+              @click="${(e: Event) => {
+                e.stopPropagation();
+                console.log(`Block clicked: UUID ${stmt._uuid}`);
+                this.toggleStatementSelection(stmt._uuid, true);
+              }}"
+              @nested-click="${(e: CustomEvent) => {
+                e.stopPropagation();
+                console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
+                this.toggleStatementSelection(e.detail.uuid, false);
+              }}">
             </ge-statement>
           `
       )}
     `;
   }
 
-  addStatementOptionTemplate(stmtKey: string, idx: number = 0) {
-    // const isSelected = (this.selectedStmtKey === null && idx === 0) || stmtKey === this.selectedStmtKey;
-    const isSelected = this.selectedStmtIdx === idx;
-
+  addStatementOptionTemplate(stmtKey: string) {
     return html`
       <editor-button
         .value="${stmtKey}"
         @click="${this.handleAddNewStatement}"
         .title="${stmtKey}"
-        class="add-statament-option-button ${classMap({ selected: isSelected })}"
-        btnStyle="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
+        class="add-statament-option-button"
+        style="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
         <editor-icon .icon="${icons[this.language.statements[stmtKey].icon]}"></editor-icon>
         <span>${this.language.statements[stmtKey].label}</span>
       </editor-button>
@@ -413,10 +706,10 @@ export class GeBlock extends LitElement {
   addStatementOptionsTemplate() {
     return html`
       <div class="add-statement-options">
-        ${Object.keys(this.filteredAddStatementOptions).length
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey, idx) => {
+        ${Object.keys(this.filteredAddStatementOptions).length > 0
+          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
               if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
-                return this.addStatementOptionTemplate(stmtKey, idx);
+                return this.addStatementOptionTemplate(stmtKey);
               }
             })
           : html`<div class="no-available-statements">No available statements</div>`}
@@ -429,12 +722,12 @@ export class GeBlock extends LitElement {
       ${this.devicesTemplate()}
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length > 0
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey, idx) => {
+          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
               return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice
-                ? this.addStatementOptionTemplate(stmtKey, idx)
+                ? this.addStatementOptionTemplate(stmtKey)
                 : nothing;
             })
-          : html`<div class="no-available-statements">No available device statements</div>`}
+          : html`<div class="no-available-device-statements">No available device statements</div>`}
       </div>
     `;
   }
@@ -463,8 +756,6 @@ export class GeBlock extends LitElement {
           <div class="add-statement-search-wrapper">
             <div class="add-statement-search-input-wrapper">
               <input
-                @keydown="${this.handleStmtSelectKeyboard}"
-                autofocus
                 type="text"
                 placeholder="Search"
                 .value="${this.addStatementOptionsFilter}"
@@ -473,21 +764,21 @@ export class GeBlock extends LitElement {
             </div>
             <div class="add-statement-tabs">
               <editor-button
-                class="statement-type-button"
+                class="statement-type-button basic-statement-button"
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Basic statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Basic statements
+              </editor-button>
               <editor-button
                 class="statement-type-button"
                 @click="${this.handleRenderDeviceStatements}"
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
-                  : 'border-bottom: 2px solid white'}"
-                >Device statements</editor-button
-              >
+                  : 'border-bottom: 2px solid white'}">
+                Device statements
+              </editor-button>
             </div>
           </div>
           <div class="add-statements-wrapper">
@@ -497,14 +788,28 @@ export class GeBlock extends LitElement {
       </editor-modal>
     `;
   }
-  //#endregion
 
-  //#region Render
   render() {
+
     return html`
       ${this.isExample
         ? html`${this.statementsTemplate()}`
         : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
+      <editor-modal ${ref(this.deviceSelectionModalRef)} .modalTitle="${'Select Device Statement'}">
+        <div class="device-selection-modal-content">
+          ${this.filteredDeviceStatements.map((stmtKey) => {
+            const statement = this.language.statements[stmtKey];
+            return html`
+              <editor-button
+                @click="${() => this.handleDeviceStatementSelected(stmtKey)}"
+                style="color: ${statement.foregroundColor}; background-color: ${statement.backgroundColor};">
+                <editor-icon .icon="${icons[statement.icon]}"></editor-icon>
+                <span>${statement.label}</span>
+              </editor-button>
+            `;
+          })}
+        </div>
+      </editor-modal>
     `;
   }
   //#endregion

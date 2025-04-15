@@ -38,7 +38,7 @@ export class EditorUserVarExprModal extends LitElement {
       </editor-button>
       <editor-expression-modal
         ${ref(this.expressionModalRef)}
-        .expression="${this.program.header.userVariables[this.varKey]}">
+        .expression="${this.program.header.userVariables[this.varKey].value}">
       </editor-expression-modal>
     `;
   }
