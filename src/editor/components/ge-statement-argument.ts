@@ -122,7 +122,7 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleValueChange(e: Event) {
-    const newValue = (e.currentTarget as HTMLSelectElement).value;
+    const oldValue = this.argument.value;
 
     if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
       this.argument.value = Number(newValue);
@@ -130,33 +130,19 @@ export class GeStatementArgument extends LitElement {
       this.argument.value = newValue;
     }
 
-    // Dispatch the standard program updated event
-    const updateEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    if (oldValue !== this.argument.value) {
+      console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
+    }
+
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(updateEvent);
-
-    // Dispatch a device argument value changed event for device statements
-    // Check if this is a device statement by looking at the statement ID
-    if (this.stmtId.includes('.') && (this.argument.type === 'str_opt' || this.argument.type === 'num_opt')) {
-      console.log(`Device argument value changed: ${this.stmtId}, value: ${newValue}`);
-
-      const deviceEvent = new CustomEvent(deviceStatementCustomEvent.ARGUMENT_VALUE_CHANGED, {
-        bubbles: true,
-        composed: true,
-        detail: {
-          stmtId: this.stmtId,
-          argPosition: this.argPosition,
-          value: newValue,
-          uuid: this.parentElement?.parentElement?.getAttribute('uuid') || ''
-        },
-      });
-      this.dispatchEvent(deviceEvent);
-    }
-
-    console.warn(`No device entry found for UUID ${stmtUuid} in initializedProcedures`);
+    this.dispatchEvent(event);
+    
   }
+
+
 
   handleDeselectUserVariable() {
     if (this.program.header.userVariables[this.argument.value as string] !== undefined) {
