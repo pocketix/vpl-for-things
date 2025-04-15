@@ -205,7 +205,7 @@ export class EditorUserProceduresModal extends LitElement {
     }
 
     const deviceList = this.language.deviceList || [];
-    const validUuids = new Set(this.program.header.skeletonize_uuid); 
+    const validUuids = new Set(this.program.header.skeletonize_uuid);
 
     // Recursive function to remove blocks not in skeletonize_uuid while preserving nested blocks
     const filterInvalidBlocks = (block: any[]) => {
@@ -231,7 +231,7 @@ export class EditorUserProceduresModal extends LitElement {
           }
         }
       }
-      return result; 
+      return result;
     };
     const filteredSkeletonize = filterInvalidBlocks(skeletonizeCopy);
 
@@ -242,13 +242,13 @@ export class EditorUserProceduresModal extends LitElement {
         const stmt = block[i];
         if (!stmt.id) {
           console.warn('Block without ID:', stmt, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
-          modifiedBlock.push(stmt); 
+          modifiedBlock.push(stmt);
           continue;
         }
 
-        const idParts = stmt.id.split('.'); 
-        const deviceName = idParts[0]; 
-        const deviceType = this.language.deviceListWithTypes[deviceName]; 
+        const idParts = stmt.id.split('.');
+        const deviceName = idParts[0];
+        const deviceType = this.language.deviceListWithTypes[deviceName];
         let modifiedStmt = { ...stmt };
 
         if (this.language.statements[stmt.id]?.isUserProcedure) {
@@ -289,9 +289,9 @@ export class EditorUserProceduresModal extends LitElement {
               },
             ],
           };
-        } 
+        }
         if (stmt.block && Array.isArray(stmt.block)) {
-          modifiedStmt.block = parseBlock(stmt.block); 
+          modifiedStmt.block = parseBlock(stmt.block);
         }
 
         modifiedBlock.push(modifiedStmt);
@@ -335,7 +335,169 @@ export class EditorUserProceduresModal extends LitElement {
 
     assignNewUuids(parsedSkeletonize);
 
-    this._skeletonizeResult = parsedSkeletonize;
+    // Validate and clean blocks to remove any that would be invalid in the new context
+    const validateAndCleanBlocks = (block: any[]): any[] => {
+      if (!block || !Array.isArray(block)) return [];
+
+      let result: any[] = [];
+
+      for (let i = 0; i < block.length; i++) {
+        const stmt = block[i];
+        let isValid = true;
+
+        // Check if statement ID exists in language statements
+        if (!stmt.id || !this.language.statements[stmt.id]) {
+          console.warn(`Invalid statement ID: ${stmt.id || 'undefined'}`);
+          isValid = false;
+        }
+
+        // Check for user procedure references to avoid circular references
+        if (isValid && this.language.statements[stmt.id]?.isUserProcedure) {
+          // Check if the procedure exists in userProcedures
+          if (!this.program.header.userProcedures[stmt.id]) {
+            console.warn(`Referenced user procedure does not exist: ${stmt.id}`);
+            isValid = false;
+          }
+
+          // Check for circular references (procedure referencing itself)
+          // This is important when creating a new procedure that might reference itself
+          if (this.addProcName && stmt.id === this.addProcName) {
+            console.warn(`Circular reference detected: procedure ${stmt.id} references itself`);
+            isValid = false;
+          }
+        }
+
+        // Check if statement has required arguments
+        if (isValid && this.language.statements[stmt.id].type.includes('with_args')) {
+          const requiredArgs = this.language.statements[stmt.id].arguments?.length || 0;
+          const actualArgs = stmt.arguments?.length || 0;
+
+          if (requiredArgs > 0 && (actualArgs === 0 || actualArgs < requiredArgs)) {
+            console.warn(`Statement ${stmt.id} is missing required arguments. Required: ${requiredArgs}, Actual: ${actualArgs}`);
+            isValid = false;
+          }
+        }
+
+        // For device statements, check if they're valid in this context
+        if (isValid && stmt.id.includes('.')) {
+          const deviceName = stmt.id.split('.')[0];
+          const functionName = stmt.id.split('.')[1];
+
+          // Check if device exists in device list
+          if (!this.language.deviceList.includes(deviceName)) {
+            console.warn(`Device ${deviceName} not found in device list`);
+            isValid = false;
+          }
+
+          // Check if device function exists and has valid arguments
+          if (isValid) {
+            // Find the device in the example devices
+            const device = this.language.devices.find(d => d.deviceType === this.language.deviceListWithTypes[deviceName]);
+
+            if (device) {
+              // Find the function in the device
+              const deviceFunction = device.functions.find(f => f.label === functionName);
+
+              if (!deviceFunction) {
+                console.warn(`Function ${functionName} not found for device ${deviceName}`);
+                isValid = false;
+              } else if (deviceFunction.type.includes('with_args')) {
+                // Check if the statement has the required arguments
+                if (!stmt.arguments || stmt.arguments.length === 0) {
+                  console.warn(`Device function ${stmt.id} is missing required arguments`);
+                  isValid = false;
+                }
+              }
+            } else {
+              console.warn(`Device type not found for ${deviceName}`);
+              isValid = false;
+            }
+          }
+        }
+
+        // Check conditional statements for valid expressions
+        if (isValid && (stmt.id === 'if' || stmt.id === 'elseif')) {
+          // Check if the statement has arguments and the first argument is a boolean expression
+          if (!stmt.arguments || !stmt.arguments[0] ||
+              stmt.arguments[0].type !== 'boolean_expression' ||
+              !Array.isArray(stmt.arguments[0].value) ||
+              stmt.arguments[0].value.length === 0) {
+            console.warn(`Conditional statement ${stmt.id} has invalid or empty expression`);
+            isValid = false;
+          }
+        }
+
+        // Check for variable references and make sure they're valid
+        if (isValid && stmt.arguments) {
+          for (let j = 0; j < stmt.arguments.length; j++) {
+            const arg = stmt.arguments[j];
+            if (arg.type === 'variable' && typeof arg.value === 'string') {
+              const varKey = arg.value;
+              // Check if variable exists in user variables or language variables
+              if (!this.program.header.userVariables[varKey] && !this.language.variables[varKey]) {
+                console.warn(`Statement ${stmt.id} references non-existent variable: ${varKey}`);
+                isValid = false;
+                break;
+              }
+            } else if (arg.type === 'boolean_expression' && Array.isArray(arg.value)) {
+              // Check expressions for variable references
+              const checkExpressionForVariables = (expr: any) => {
+                if (!expr || !expr.value || !Array.isArray(expr.value)) return true;
+
+                for (const opd of expr.value) {
+                  if (opd.type === 'variable' && typeof opd.value === 'string') {
+                    const varKey = opd.value;
+                    if (!this.program.header.userVariables[varKey] && !this.language.variables[varKey]) {
+                      console.warn(`Expression in statement ${stmt.id} references non-existent variable: ${varKey}`);
+                      return false;
+                    }
+                  } else if (opd.type === 'boolean_expression') {
+                    // Recursively check nested expressions
+                    if (!checkExpressionForVariables(opd)) {
+                      return false;
+                    }
+                  }
+                }
+                return true;
+              };
+
+              // Check each expression in the boolean expression
+              for (const expr of arg.value) {
+                if (!checkExpressionForVariables(expr)) {
+                  isValid = false;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (isValid) {
+          // If statement has nested blocks, validate them recursively
+          if (stmt.block && Array.isArray(stmt.block)) {
+            stmt.block = validateAndCleanBlocks(stmt.block);
+          }
+          result.push(stmt);
+        } else {
+          // If invalid but has nested blocks, preserve them
+          if (stmt.block && Array.isArray(stmt.block) && stmt.block.length > 0) {
+            console.log(`Preserving nested blocks from invalid statement: ${stmt.id || 'unknown'}`);
+            const validNestedBlocks = validateAndCleanBlocks(stmt.block);
+            if (validNestedBlocks.length > 0) {
+              console.log(`Adding ${validNestedBlocks.length} preserved nested blocks to parent`);
+              result = result.concat(validNestedBlocks);
+            }
+          }
+        }
+      }
+
+      return result;
+    };
+
+    // Apply validation and cleaning
+    const cleanedSkeletonize = validateAndCleanBlocks(parsedSkeletonize);
+
+    this._skeletonizeResult = cleanedSkeletonize;
 
     this.requestUpdate();
   }
