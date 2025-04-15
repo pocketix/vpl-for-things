@@ -47,21 +47,15 @@ export class EditorUserProcedureModal extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-
-    // Add event listener for modal close event
     this.addEventListener('modal-close', this.handleProcedureModalClose);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-
-    // Remove event listener when component is disconnected
     this.removeEventListener('modal-close', this.handleProcedureModalClose);
   }
 
-  // Handle procedure modal close event
   handleProcedureModalClose = () => {
-    // Dispatch custom event to turn off skeletonize mode
     const event = new CustomEvent(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, {
       bubbles: true,
       composed: true
@@ -70,7 +64,6 @@ export class EditorUserProcedureModal extends LitElement {
   }
 
   handleChangeProcedureBody() {
-    // Wait for next render cycle to ensure modal is ready
     this.updateComplete.then(() => {
       console.log('Opening modal for procedure:', this.stmtKey);
       console.log('Modal reference:', this.userProcedureBodyModalRef.value);

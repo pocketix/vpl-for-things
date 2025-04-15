@@ -197,55 +197,33 @@ export class EditorUserProceduresModal extends LitElement {
   }
 
   formatSkeletonize() {
-    // Copy the contents of program.block from program to a temporary variable
     const skeletonizeCopy = JSON.parse(JSON.stringify(this.program.block));
 
-    // Log the skeletonize content for debugging
-    console.log('Skeletonize Content:', skeletonizeCopy);
-
-    // If skeletonize is empty, log a warning and return
     if (!skeletonizeCopy || skeletonizeCopy.length === 0) {
       console.warn('Skeletonize is empty. Ensure program.block contains data.');
       return;
     }
 
-    const deviceList = this.language.deviceList || []; // Get deviceList from language context
-    const validUuids = new Set(this.program.header.skeletonize_uuid); // Get valid UUIDs
+    const deviceList = this.language.deviceList || [];
+    const validUuids = new Set(this.program.header.skeletonize_uuid); 
 
     // Recursive function to remove blocks not in skeletonize_uuid while preserving nested blocks
     const filterInvalidBlocks = (block: any[]) => {
-      console.log('Skeletonize UUIDs:', Array.from(validUuids)); // Log the skeletonize_uuid array
-
       let result: any[] = [];
-
-      // Process each statement in the block
       for (let i = 0; i < block.length; i++) {
         const stmt = block[i];
-        console.log('Processing block with UUID:', stmt._uuid); // Log the UUID of the current block
-
-        // Check if the UUID is valid and the block is not marked as invalid
         const isValid = validUuids.has(stmt._uuid) && !stmt.isInvalid;
 
         if (isValid) {
-          // If the block is valid, keep it and process its nested blocks
           if (stmt.block && Array.isArray(stmt.block)) {
             stmt.block = filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
           }
           result.push(stmt);
         } else {
-          // If the block is invalid, log the reason
-          if (!validUuids.has(stmt._uuid)) {
-            console.log('Found block with invalid UUID:', stmt._uuid);
-          } else if (stmt.isInvalid) {
-            console.log('Found invalid block with UUID:', stmt._uuid);
-          }
-
-          // If the invalid block has nested blocks, process and keep them
           if (stmt.block && Array.isArray(stmt.block) && stmt.block.length > 0) {
             console.log('Preserving nested blocks from invalid block with UUID:', stmt._uuid);
             const nestedBlocks = filterInvalidBlocks(stmt.block);
 
-            // Add all valid nested blocks to the result
             if (nestedBlocks.length > 0) {
               console.log(`Adding ${nestedBlocks.length} preserved nested blocks to parent`);
               result = result.concat(nestedBlocks);
@@ -253,89 +231,54 @@ export class EditorUserProceduresModal extends LitElement {
           }
         }
       }
-
-      return result; // Return the processed array
+      return result; 
     };
-
-    // Filter the skeletonize copy
     const filteredSkeletonize = filterInvalidBlocks(skeletonizeCopy);
 
-    // Recursive function to parse blocks, replace matching IDs, and print every id and uuid
     const parseBlock = (block: any[]) => {
-      // Create a new array to hold the modified blocks
       const modifiedBlock = [];
 
-      // Process each statement in the block
       for (let i = 0; i < block.length; i++) {
         const stmt = block[i];
-
-        // Skip statements without an ID
         if (!stmt.id) {
           console.warn('Block without ID:', stmt, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
-          modifiedBlock.push(stmt); // Keep the statement as is
+          modifiedBlock.push(stmt); 
           continue;
         }
 
-        // Process the statement ID
-        const idParts = stmt.id.split('.'); // Split the id by '.'
-        const deviceName = idParts[0]; // Extract the first part as the device name
-        const deviceType = this.language.deviceListWithTypes[deviceName]; // Get the device type from the language context
-
-        console.log('Device Type:', deviceType);
-        console.log('Parsed Name:', deviceName);
-        console.log('Parsed ID:', stmt._uuid ? stmt._uuid : 'No UUID');
-
-        // Create a copy of the statement to modify
+        const idParts = stmt.id.split('.'); 
+        const deviceName = idParts[0]; 
+        const deviceType = this.language.deviceListWithTypes[deviceName]; 
         let modifiedStmt = { ...stmt };
 
-        // Check if this is a user procedure
         if (this.language.statements[stmt.id]?.isUserProcedure) {
-          console.log('Found user procedure:', stmt.id, 'UUID:', stmt._uuid);
-
-          // Get the procedure body from userProcedures
           const procedureBody = this.program.header.userProcedures[stmt.id];
 
           if (procedureBody && Array.isArray(procedureBody)) {
-            console.log('Replacing user procedure with its body');
-
-            // Create deep copies of all statements in the procedure body
             const bodyCopy = JSON.parse(JSON.stringify(procedureBody));
-
-            // Assign new UUIDs to all statements in the procedure body before processing
             const assignUuidsRecursively = (block: any[]) => {
               for (let stmt of block) {
                 const oldUuid = stmt._uuid;
                 stmt._uuid = uuidv4();
-                console.log(`Reassigned UUID in UDF body: ${oldUuid} -> ${stmt._uuid} for statement ID: ${stmt.id}`);
-
                 if (stmt.block && Array.isArray(stmt.block)) {
                   assignUuidsRecursively(stmt.block);
                 }
               }
             };
 
-            // Assign new UUIDs to the procedure body
             assignUuidsRecursively(bodyCopy);
-
-            // Process each statement in the procedure body
             const processedBody = parseBlock(bodyCopy);
 
-            // Add all statements from the processed body to our result
             for (const bodyStmt of processedBody) {
-              // Always assign a new UUID to each statement to avoid conflicts
               bodyStmt._uuid = uuidv4();
               modifiedBlock.push(bodyStmt);
             }
 
-            // Skip adding the current statement since we've replaced it with its body
             continue;
           } else {
             console.warn('User procedure body not found or invalid:', stmt.id);
           }
-        }
-        // If the device name is in the deviceList, replace it with a deviceType block
-        else if (deviceList.includes(deviceName)) {
-          console.log('Replacing block with ID:', stmt.id);
+        } else if (deviceList.includes(deviceName)) {
           modifiedStmt = {
             id: 'deviceType',
             _uuid: stmt._uuid, // Preserve the UUID
@@ -346,56 +289,36 @@ export class EditorUserProceduresModal extends LitElement {
               },
             ],
           };
-          console.log(`Created deviceType block with value: ${deviceType}`);
-        } else {
-          console.log('Keeping block with ID:', stmt.id, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
-        }
-
-        // Process nested blocks if they exist
+        } 
         if (stmt.block && Array.isArray(stmt.block)) {
-          modifiedStmt.block = parseBlock(stmt.block); // Recursively parse nested blocks
+          modifiedStmt.block = parseBlock(stmt.block); 
         }
 
-        // Add the modified statement to the result
         modifiedBlock.push(modifiedStmt);
       }
 
       return modifiedBlock;
     };
 
-    // Parse the filtered skeletonize copy
     const parsedSkeletonize = parseBlock(filteredSkeletonize);
 
-    console.log('Parsed skeletonize result:', parsedSkeletonize);
-
-    // Assign new UUIDs to all statements in the skeletonized result
     const assignNewUuids = (block: any[]) => {
       for (let stmt of block) {
-        // Store the old UUID for logging
         const oldUuid = stmt._uuid;
-
-        // Assign a new UUID to each statement
         stmt._uuid = uuidv4();
-
-        console.log(`Reassigned UUID: ${oldUuid} -> ${stmt._uuid} for statement ID: ${stmt.id}`);
-
-        // Process arguments if they exist
         if (stmt.arguments) {
           for (let arg of stmt.arguments) {
             if (arg.type === 'boolean_expression' && Array.isArray(arg.value)) {
-              // Assign UUIDs to expression operands
               arg.value.forEach((expr: any) => {
                 if (expr && typeof expr === 'object') {
                   const oldExprUuid = expr._uuid;
                   expr._uuid = uuidv4();
-                  console.log(`Reassigned expression UUID: ${oldExprUuid} -> ${expr._uuid}`);
 
                   if (expr.value && Array.isArray(expr.value)) {
                     expr.value.forEach((opd: any) => {
                       if (opd && typeof opd === 'object') {
                         const oldOpdUuid = opd._uuid;
                         opd._uuid = uuidv4();
-                        console.log(`Reassigned operand UUID: ${oldOpdUuid} -> ${opd._uuid}`);
                       }
                     });
                   }
@@ -404,19 +327,14 @@ export class EditorUserProceduresModal extends LitElement {
             }
           }
         }
-
-        // Recursively process nested blocks
         if (stmt.block && Array.isArray(stmt.block)) {
           assignNewUuids(stmt.block);
         }
       }
     };
 
-    // Assign new UUIDs to all statements in the skeletonized result
     assignNewUuids(parsedSkeletonize);
 
-    // Store the result in a property that can be used later
-    // We don't assign directly to program.header.skeletonize due to type constraints
     this._skeletonizeResult = parsedSkeletonize;
 
     this.requestUpdate();
@@ -439,7 +357,6 @@ export class EditorUserProceduresModal extends LitElement {
     let newProcId = this.addProcName;
     const procName = this.addProcName;
 
-    // Clear form state first
     this.addProcName = '';
     this.addProcedureModalRef.value.hideModal();
 
@@ -447,7 +364,6 @@ export class EditorUserProceduresModal extends LitElement {
 
     this.requestUpdate();
 
-    // Create the new procedure
     this.language.statements[newProcId] = {
       type: 'unit',
       group: 'misc',
@@ -457,36 +373,23 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    // Create a deep copy of the skeletonize result
     const skeletonizeCopy = JSON.parse(JSON.stringify(this._skeletonizeResult));
-
-    // Log the UDF body before storing it
-    console.log('Creating new UDF with body:', skeletonizeCopy);
-
-    // Store the UDF body in the program header
     this.program.header.userProcedures[newProcId] = skeletonizeCopy;
 
-    // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(event);
 
-    // Wait for next render cycle and then find and open the new procedure modal
     requestAnimationFrame(() => {
       this.updateComplete.then(() => {
         requestAnimationFrame(() => {
-          // Find the newly created procedure's modal
-          console.log('Looking for procedure modal with key:', newProcId);
           const newProcModal = this.shadowRoot.querySelector(`editor-user-procedure-modal[stmtKey="${newProcId}"]`);
-          console.log('Found modal:', newProcModal);
           if (newProcModal) {
-            // Call the handleChangeProcedureBody method to open the editing modal
             (newProcModal as any).handleChangeProcedureBody();
           } else {
             console.error('Could not find procedure modal for:', newProcId);
-            // Try to force a re-render
             this.requestUpdate();
           }
         });
