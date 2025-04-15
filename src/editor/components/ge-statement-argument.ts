@@ -17,7 +17,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
-import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
+import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent,deviceMetadataCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
 import { plusLg, pencilSquare } from '../icons';
 import Types from '@vpl/types.ts';
@@ -131,7 +131,7 @@ export class GeStatementArgument extends LitElement {
       console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
     }
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    const event = new CustomEvent(deviceMetadataCustomEvent.VALUE_CHANGED, {
       bubbles: true,
       composed: true,
     });
@@ -166,7 +166,7 @@ export class GeStatementArgument extends LitElement {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(event);
+    
   }
 
   constructor() {
@@ -181,7 +181,7 @@ export class GeStatementArgument extends LitElement {
 
     // Check if this is a device statement in an initialized procedure
     // and if there's a stored value in the metadata
-    this.checkForDeviceMetadataValue();
+    //this.checkForDeviceMetadataValue();
 
     // Set default value if needed
     if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
@@ -197,55 +197,55 @@ export class GeStatementArgument extends LitElement {
   }
 
   // Check if there's a stored value in the device metadata and use it
-  checkForDeviceMetadataValue() {
-    // Find the parent statement element to get the UUID
-    const parentStatement = this.closest('ge-statement');
-    if (!parentStatement) return;
+  // checkForDeviceMetadataValue() {
+  //   // Find the parent statement element to get the UUID
+  //   const parentStatement = this.closest('ge-statement');
+  //   if (!parentStatement) return;
 
-    // Get the statement UUID from the parent
-    const stmtUuid = parentStatement.getAttribute('uuid');
-    if (!stmtUuid) return;
+  //   // Get the statement UUID from the parent
+  //   const stmtUuid = parentStatement.getAttribute('uuid');
+  //   if (!stmtUuid) return;
 
-    // Find the procedure UUID by looking for the initialized procedure that contains this device
-    for (const metadataEntry of this.program.header.initializedProcedures) {
-      // Find the device metadata entry for this statement
-      const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
-      if (deviceEntry) {
-        // First check if there's a value in the device metadata
-        if (deviceEntry.value) {
-          console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
+  //   // Find the procedure UUID by looking for the initialized procedure that contains this device
+  //   for (const metadataEntry of this.program.header.initializedProcedures) {
+  //     // Find the device metadata entry for this statement
+  //     const deviceEntry = metadataEntry.devices.find(device => device.uuid === stmtUuid);
+  //     if (deviceEntry) {
+  //       // First check if there's a value in the device metadata
+  //       if (deviceEntry.value) {
+  //         console.log(`Found device metadata value for UUID ${stmtUuid}: ${deviceEntry.value}`);
 
-          // Set the argument value based on the type
-          if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
-            this.argument.value = Number(deviceEntry.value);
-          } else {
-            this.argument.value = deviceEntry.value;
-          }
-          return; // Exit after updating
-        }
+  //         // Set the argument value based on the type
+  //         if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
+  //           this.argument.value = Number(deviceEntry.value);
+  //         } else {
+  //           this.argument.value = deviceEntry.value;
+  //         }
+  //         return; // Exit after updating
+  //       }
 
-        // If no value in metadata, check if there's a value in the statement arguments
-        if (deviceEntry.statement &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
+  //       // If no value in metadata, check if there's a value in the statement arguments
+  //       if (deviceEntry.statement &&
+  //           (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+  //           (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition]) {
 
-          const argValue = (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition].value;
-          if (argValue !== null && argValue !== undefined) {
-            console.log(`Found argument value in device statement: ${argValue}`);
+  //         const argValue = (deviceEntry.statement as AbstractStatementWithArgs).arguments[this.argPosition].value;
+  //         if (argValue !== null && argValue !== undefined) {
+  //           console.log(`Found argument value in device statement: ${argValue}`);
 
-            // Set the argument value based on the type
-            this.argument.value = argValue;
+  //           // Set the argument value based on the type
+  //           this.argument.value = argValue;
 
-            // Also update the device metadata value for consistency
-            deviceEntry.value = String(argValue);
-            console.log(`Updated device metadata value to match argument: ${deviceEntry.value}`);
+  //           // Also update the device metadata value for consistency
+  //           deviceEntry.value = String(argValue);
+  //           console.log(`Updated device metadata value to match argument: ${deviceEntry.value}`);
 
-            return; // Exit after updating
-          }
-        }
-      }
-    }
-  }
+  //           return; // Exit after updating
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   updated() {
     if (this.variableKey) {

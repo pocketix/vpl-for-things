@@ -17,6 +17,7 @@ import {
   graphicalEditorCustomEvent,
   procedureEditorCustomEvent,
   statementCustomEvent,
+  deviceMetadataCustomEvent,
 } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
@@ -344,14 +345,10 @@ export class GEStatement extends LitElement {
 
     // Listen for device selection changes
     this.addEventListener('device-selection-changed', (e: CustomEvent) => {
-      // Check if this statement is the device that was changed
       if (this.statement._uuid && this.statement._uuid === e.detail.deviceUuid) {
-        // Update the statement to reflect the device selection
         this.requestUpdate();
       }
 
-      // If this is a user procedure and the procedure UUID matches the one in the event
-      // update the device counts as a device was initialized/changed
       if (this.language?.statements[this.statement.id]?.isUserProcedure &&
           this.statement._uuid === e.detail.procedureUuid) {
         this.updateDeviceCounts();
@@ -359,21 +356,21 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Listen for argument value changes
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
-      // Only process if this is a device statement in an initialized procedure
+    //----------------------------
+    this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
       if (this.statement._uuid && this.editorMode === 'initialize') {
-        // Check if this statement is in an initialized procedure
-        const isInInitializedProcedure = this.program.header.initializedProcedures.some(entry => {
-          return entry.devices.some(device => device.uuid === this.statement._uuid);
-        });
+        console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
+        const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
 
-        if (isInInitializedProcedure) {
+        if (initProcEntry) {
           this.updateDeviceMetadataValue();
         }
       }
+    });
 
-      // Update device counts for user procedures when program is updated
+    // Listen for argument value changes
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
+
       if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
         this.updateDeviceCounts();
       }
@@ -391,31 +388,31 @@ export class GEStatement extends LitElement {
 
   // Update the device metadata value when an argument value changes
   updateDeviceMetadataValue() {
+    
     if (!this.statement._uuid) return;
+    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
+    console.log(`Device entry for UUID ${this.statement._uuid}:`, deviceEntry); 
+    
+    if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+      // Update the value in the device metadata based on the first argument
+      const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+      if (argValue !== undefined && argValue !== null) {
+        deviceEntry.value = String(argValue);
 
-    // Find the procedure UUID by looking for the initialized procedure that contains this device
-    for (const metadataEntry of this.program.header.initializedProcedures) {
-      // Find the device metadata entry for this statement
-      const deviceEntry = metadataEntry.devices.find(device => device.uuid === this.statement._uuid);
-      if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-        // Update the value in the device metadata based on the first argument
-        const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
-        if (argValue !== undefined && argValue !== null) {
-          deviceEntry.value = String(argValue);
-
-          // Also update the argument value in the statement stored in the metadata
-          if (deviceEntry.statement &&
-              (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-              (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-            // Update the argument value in the statement
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
-          }
-
-          console.log(`Updated device metadata value for UUID ${this.statement._uuid} to ${deviceEntry.value}`);
+        // Also update the argument value in the statement stored in the metadata
+        if (deviceEntry.statement &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
+            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
+          // Update the argument value in the statement
+          (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
         }
-        return; // Exit after updating
+
+        console.log(`Updated device metadata value for UUID ${this.statement._uuid} to ${deviceEntry.value}`);
       }
+      return; // Exit after updating
     }
+    
   }
 
   // Count the total number of device-related blocks in a procedure
@@ -858,7 +855,7 @@ export class GEStatement extends LitElement {
           ${this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
             ? html`
               <div class="device-count ${this.areAllDevicesInitialized() ? 'device-count-complete' : 'device-count-incomplete'}"
-                   title="Initialized devices / Total device blocks">
+                  title="Initialized devices / Total device blocks">
                 ${this.initializedDeviceCount}/${this.totalDeviceCount}
               </div>
             `
@@ -927,8 +924,6 @@ export class GEStatement extends LitElement {
         class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
-          // Always dispatch the toggle-statement-selection event
-          // The parent component will decide what to do based on the mode
           if (this.statement.isInvalid) {
             console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
             return;
