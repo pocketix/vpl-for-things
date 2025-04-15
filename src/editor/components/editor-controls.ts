@@ -26,7 +26,7 @@ import {
   textEditorCustomEvent,
 } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
-import { EditorProgramsModal } from './editor-programs-modal';
+// import for EditorProgramsModal removed
 import * as icons from '@/editor/icons';
 import { EditorButton, Language } from '@/index';
 import Types from '@vpl/types.ts';
@@ -366,7 +366,7 @@ export class EditorControls extends LitElement {
   @property() addVariableName: string = '';
   @property() tempNewVariable: UserVariable;
   @property() skeletonizeMode: boolean = false;
-  @property() savedPrograms: { name: string, program: any }[] = [];
+  // savedPrograms property removed
 
   userVariablesModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
@@ -375,7 +375,7 @@ export class EditorControls extends LitElement {
   userProceduresModalRef: Ref<EditorUserProceduresModal> = createRef();
   inputProgramFileRef: Ref<HTMLInputElement> = createRef();
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
-  programsModalRef: Ref<EditorProgramsModal> = createRef();
+  // programsModalRef property removed
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -392,11 +392,7 @@ export class EditorControls extends LitElement {
     this.userVariablesModalRef.value.showModal();
   }
 
-  handleShowProgramsModal() {
-    if (this.programsModalRef.value) {
-      this.programsModalRef.value.showModal();
-    }
-  }
+  // handleShowProgramsModal method removed
 
   handleUserVariableTypeChange(e: Event, varKey: string) {
     this.program.header.userVariables[varKey].type = (e.currentTarget as HTMLInputElement).value as UserVariableType;
@@ -636,25 +632,9 @@ export class EditorControls extends LitElement {
             return;
           }
 
-          let programName = programFileInput.files[0].name.replace('.json', '');
+          this.program.header = importedProgram.header;
+          this.program.block = importedProgram.block;
 
-          // Check for duplicate program names
-          if (this.savedPrograms.some((savedProgram) => savedProgram.name === programName)) {
-            let counter = 1;
-            while (this.savedPrograms.some((savedProgram) => savedProgram.name === `${programName} (${counter})`)) {
-              counter++;
-            }
-            programName = `${programName} (${counter})`;
-          }
-
-          this.savedPrograms.push({ name: programName, program: importedProgram });
-          this.requestUpdate();
-
-          // Load the program into the editor
-          this.program.header = importedProgram.header; // Update header
-          this.program.block = importedProgram.block; // Update block
-
-          // Integrate custom procedures into the language context
           for (let proc of Object.keys(importedProgram.header.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
@@ -694,7 +674,7 @@ export class EditorControls extends LitElement {
         header: {
           userVariables: this.program?.header.userVariables,
           userProcedures: this.program?.header.userProcedures,
-          initializedProcedures: this.program?.header.initializedProcedures || [], // Include initializedProcedures
+          initializedProcedures: this.program?.header.initializedProcedures || [],
         },
         block: this.program?.block,
       };
@@ -706,14 +686,7 @@ export class EditorControls extends LitElement {
     }
   }
 
-  handleLinearizeProgram() {
-    const programExport = this.program?.exportLinearizedProgram();
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
-    const downloadAnchorNode = this.exportProgramLinkRef.value;
-    downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute('download', 'program.linearized.json');
-    downloadAnchorNode.click();
-  }
+  // Removed handleLinearizeProgram method
 
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
@@ -838,73 +811,9 @@ export class EditorControls extends LitElement {
     }
   }
 
-  handleLoadProgram(program: any) {
-    this.program.header = program.header; // Update header
-    this.program.block = program.block; // Update block
+  // handleLoadProgram and handleDeleteLoadedProgram methods removed
 
-    // Integrate custom procedures into the language context
-    for (let proc of Object.keys(program.header.userProcedures)) {
-      this.language.statements[proc] = {
-        type: 'unit',
-        group: 'misc',
-        label: proc,
-        icon: 'lightningChargeFill',
-        foregroundColor: program.header.userProcedures[proc].foregroundColor || '#ffffff',
-        backgroundColor: program.header.userProcedures[proc].backgroundColor || '#d946ef',
-        isUserProcedure: true,
-      };
-    }
-
-    // Dispatch events to update the program and UI
-    const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(programUpdatedEvent);
-
-    const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(textEditorUpdatedEvent);
-
-    alert("Program loaded successfully!");
-  }
-
-  handleDeleteLoadedProgram(programName: string) {
-    if (confirm(`Are you sure you want to delete the program "${programName}"?`)) {
-      this.savedPrograms = this.savedPrograms.filter((program) => program.name !== programName);
-      this.requestUpdate();
-    }
-  }
-
-  programsModalTemplate() {
-    return html`
-      <editor-modal ${ref(this.programsModalRef)} .modalTitle="${'Programs'}">
-        <div class="programs-modal-header">
-          <h2>Programs</h2>
-        </div>
-        <div class="programs-list">
-          ${this.savedPrograms.map(
-            (savedProgram) => html`
-              <div
-                class="program-item"
-                style="cursor: pointer; padding: 0.5rem; border: 1px solid #ccc; margin-bottom: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                <span @click="${() => this.handleLoadProgram(savedProgram.program)}" style="flex-grow: 1;">
-                  ${savedProgram.name}
-                </span>
-                <editor-button
-                  @click="${() => this.handleDeleteLoadedProgram(savedProgram.name)}"
-                  style="color: var(--red-600);">
-                  <editor-icon .icon="${xLg}" .width="${18}" .height="${18}" title="Delete Program"></editor-icon>
-                </editor-button>
-              </div>
-            `
-          )}
-        </div>
-      </editor-modal>
-    `;
-  }
+  // programsModalTemplate method removed
 
   userVariablesModalTemplate() {
     return html`
@@ -1288,19 +1197,13 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export UDFs"></editor-icon>
                 <span>Export UDFs</span>
               </editor-button>
-              <editor-button @click="${this.handleLinearizeProgram}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Linearized"></editor-icon>
-                <span>Export Linearized</span>
-              </editor-button>
+              <!-- Export Linearized button removed -->
             </div>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
 
 
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <editor-button title="Programs" @click="${this.handleShowProgramsModal}" class="control-button">
-                <editor-icon .icon="${icons.folder}" .width="${18}" .height="${18}" title="Programs"></editor-icon>
-                <div>Programs</div>
-              </editor-button>
+              <!-- Programs button removed -->
               <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
                 <div class="variables-icon">𝑥</div>
                 <div>Variables</div>
@@ -1328,7 +1231,7 @@ export class EditorControls extends LitElement {
         </div>
       </div>
       ${this.userVariablesModalTemplate()}
-      ${this.programsModalTemplate()}
+      <!-- Programs modal removed -->
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
   }
