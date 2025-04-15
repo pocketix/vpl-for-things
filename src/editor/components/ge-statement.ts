@@ -311,35 +311,6 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Listen for program updates to update highlighting
-    // this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
-    //   if (this.skeletonizeMode && this.statement._uuid && this.program && e.detail.skeletonizeUpdated) {
-    //     // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
-    //     this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-    //     this.requestUpdate();
-    //   }
-    // });
-
-    // Listen for the new update-highlight-state event
-    // this.addEventListener('update-highlight-state', (_e: CustomEvent) => {
-    //   if (this.skeletonizeMode && this.statement._uuid && this.program) {
-    //     this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-    //     if ((this.statement as CompoundStatement).block && this.isHighlighted) {
-    //       this.requestUpdate();
-    //     }
-    //   }
-    // });
-
-    // Listen for skeletonize mode changes
-    // this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
-    //   if (this.statement._uuid && this.program) {
-    //     // Update highlighting when skeletonize mode changes
-    //     this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-    //     this.requestUpdate();
-    //   }
-    // });
-
-    // Listen for device selection changes
     this.addEventListener('device-selection-changed', (e: CustomEvent) => {
       if (this.statement._uuid && this.statement._uuid === e.detail.deviceUuid) {
         this.requestUpdate();
@@ -364,14 +335,6 @@ export class GEStatement extends LitElement {
       }
     });
 
-    // Listen for argument value changes
-    // this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
-    //   if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
-    //     this.updateDeviceCounts();
-    //   }
-    // });
-
-    // Listen for procedure modal closed event
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
       this.restrainedMode = false;
       this.editorMode = 'edit';
@@ -392,15 +355,13 @@ export class GEStatement extends LitElement {
         if (deviceEntry.statement &&
             (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
             (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-          // Update the argument value in the statement
           (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
         }
       }
-      return; // Exit after updating
+      return; 
     }
   }
 
-  // Count the total number of device-related blocks in a procedure
   countDeviceTypeBlocks(block: any[]): number {
     let count = 0;
 
