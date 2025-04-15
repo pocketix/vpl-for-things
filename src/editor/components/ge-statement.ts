@@ -312,36 +312,32 @@ export class GEStatement extends LitElement {
     });
 
     // Listen for program updates to update highlighting
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
-      if (this.skeletonizeMode && this.statement._uuid && this.program && e.detail.skeletonizeUpdated) {
-        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
-        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-        this.requestUpdate();
-      }
-    });
+    // this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+    //   if (this.skeletonizeMode && this.statement._uuid && this.program && e.detail.skeletonizeUpdated) {
+    //     // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
+    //     this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    //     this.requestUpdate();
+    //   }
+    // });
 
     // Listen for the new update-highlight-state event
-    this.addEventListener('update-highlight-state', (_e: CustomEvent) => {
-      if (this.skeletonizeMode && this.statement._uuid && this.program) {
-        // Update highlighting based on whether this statement's UUID is in the skeletonize_uuid array
-        this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-
-        // If this is a compound statement with nested blocks, we need to update the nested blocks too
-        if ((this.statement as CompoundStatement).block && this.isHighlighted) {
-          // Force a re-render to ensure nested blocks get updated
-          this.requestUpdate();
-        }
-      }
-    });
+    // this.addEventListener('update-highlight-state', (_e: CustomEvent) => {
+    //   if (this.skeletonizeMode && this.statement._uuid && this.program) {
+    //     this.isHighlighted = this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    //     if ((this.statement as CompoundStatement).block && this.isHighlighted) {
+    //       this.requestUpdate();
+    //     }
+    //   }
+    // });
 
     // Listen for skeletonize mode changes
-    this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
-      if (this.statement._uuid && this.program) {
-        // Update highlighting when skeletonize mode changes
-        this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
-        this.requestUpdate();
-      }
-    });
+    // this.addEventListener('skeletonize-mode-changed', (_e: CustomEvent) => {
+    //   if (this.statement._uuid && this.program) {
+    //     // Update highlighting when skeletonize mode changes
+    //     this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
+    //     this.requestUpdate();
+    //   }
+    // });
 
     // Listen for device selection changes
     this.addEventListener('device-selection-changed', (e: CustomEvent) => {
@@ -369,50 +365,39 @@ export class GEStatement extends LitElement {
     });
 
     // Listen for argument value changes
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
-
-      if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
-        this.updateDeviceCounts();
-      }
-    });
+    // this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
+    //   if (this.language?.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
+    //     this.updateDeviceCounts();
+    //   }
+    // });
 
     // Listen for procedure modal closed event
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
-      // Reset restrainedMode and editorMode when the procedure modal is closed
-      // This ensures the burger menu is re-enabled for the procedure block itself
       this.restrainedMode = false;
       this.editorMode = 'edit';
       this.requestUpdate();
     });
   }
 
-  // Update the device metadata value when an argument value changes
   updateDeviceMetadataValue() {
     
     if (!this.statement._uuid) return;
     const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
     const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
-    console.log(`Device entry for UUID ${this.statement._uuid}:`, deviceEntry); 
     
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-      // Update the value in the device metadata based on the first argument
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
         deviceEntry.value = String(argValue);
-
-        // Also update the argument value in the statement stored in the metadata
         if (deviceEntry.statement &&
             (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
             (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
           // Update the argument value in the statement
           (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
         }
-
-        console.log(`Updated device metadata value for UUID ${this.statement._uuid} to ${deviceEntry.value}`);
       }
       return; // Exit after updating
     }
-    
   }
 
   // Count the total number of device-related blocks in a procedure
@@ -423,18 +408,14 @@ export class GEStatement extends LitElement {
       if (!blockToCount || !Array.isArray(blockToCount)) return;
 
       for (const stmt of blockToCount) {
-        // Check if this is a deviceType block or a device from the device list
         if (stmt.id === 'deviceType') {
           count++;
         } else if (stmt.id && this.language?.deviceList) {
-          // Check if the statement ID starts with a device name from the device list
           const deviceName = stmt.id.split('.')[0];
           if (this.language.deviceList.includes(deviceName)) {
             count++;
           }
         }
-
-        // Recursively check nested blocks
         if (stmt.block && Array.isArray(stmt.block)) {
           countDevicesInBlock(stmt.block);
         }
@@ -445,25 +426,17 @@ export class GEStatement extends LitElement {
     return count;
   }
 
-  // Count the number of initialized devices in a procedure
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
-
-    // Find the procedure entry in initializedProcedures
     const procedureEntry = this.program.header.initializedProcedures.find(
       entry => entry.uuid === procedureUuid
     );
-
     if (!procedureEntry) return 0;
-
-    // Count devices that have been initialized (have a deviceId that's not 'deviceType')
     const initializedCount = procedureEntry.devices.filter(device => {
-      // Check if the device has been initialized (not a deviceType)
       if (device.deviceId === 'deviceType') {
         return false;
       }
 
-      // Check if the device ID is in the language statements
       if (this.language.statements[device.deviceId]) {
         return true;
       }
@@ -474,45 +447,30 @@ export class GEStatement extends LitElement {
     return initializedCount;
   }
 
-  // Check if all devices are initialized
   areAllDevicesInitialized(): boolean {
     return this.initializedDeviceCount === this.totalDeviceCount && this.totalDeviceCount > 0;
   }
 
-  // Update device counts when needed
   updateDeviceCounts() {
     if (!this.language?.statements || !this.statement?.id) return;
 
-    // Only process for user procedures that aren't in procedure body view
     if (this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody) {
-      // Get the procedure block
       const procedureBlock = this.program.header.userProcedures[this.statement.id];
       if (procedureBlock) {
-        // Count total device blocks
         this.totalDeviceCount = this.countDeviceTypeBlocks(procedureBlock);
-
-        // Count initialized devices
         this.initializedDeviceCount = this.countInitializedDevices(this.statement._uuid);
-
-        // Log for debugging
-        console.log(`Device count for procedure ${this.statement.id}: ${this.initializedDeviceCount}/${this.totalDeviceCount}`);
       }
     }
   }
 
   updated(changedProperties: Map<string, any>) {
-    // Check if the statement UUID is in the skeletonize_uuid array
     if (this.statement._uuid && this.program) {
-      // Update isHighlighted when skeletonizeMode or statement changes
       if (changedProperties.has('skeletonizeMode') || changedProperties.has('statement')) {
         this.isHighlighted = this.skeletonizeMode && this.program.header.skeletonize_uuid.includes(this.statement._uuid);
       }
     }
 
-    // Update device counts
     this.updateDeviceCounts();
-
-    // If this is a new statement or the statement ID has changed, update device counts
     if (changedProperties.has('statement') || changedProperties.has('statement.id')) {
       this.updateDeviceCounts();
     }
@@ -527,11 +485,8 @@ export class GEStatement extends LitElement {
     );
 
     if (this.statementNestedBlockRef.value) {
-      // Get the background color
       const bgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor;
       const fgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor;
-
-      // Apply transparency only when not in skeletonize mode or not a user procedure
       const isUserProcedure = this.language.statements[this.statement.id]?.isUserProcedure;
       const transparency = (this.skeletonizeMode && isUserProcedure) ? '' : '3a';
 
@@ -592,73 +547,42 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
-    if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
-
-    // Determine if this is an initialization (second use case)
+    if (this.skeletonizeMode) return; 
     const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
-
-    // Set the editor mode based on whether this is an initialization
     this.editorMode = isInitialization ? 'initialize' : 'edit';
-
-    // If this is an initialization, set restrainedMode to true
     if (isInitialization) {
       this.restrainedMode = true;
     }
 
-    console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-
-      //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
       if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
         this.uuidMetadata = this.statement._uuid;
         this.requestUpdate();
       }
-      console.log('------------------> initlizedProcedures:', this.program.header.initializedProcedures);
-      //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
       const initializedProcedures = this.program.header.initializedProcedures;
       const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
-
-      //parse the procedureEntry devices array and print its contents properly
-      console.log('------------------> Procedure Entry:', procedureEntry);
-      if (procedureEntry) {
-        console.log('Procedure Entry Found:', procedureEntry);
-
-
-      }
-
 
       const parseBlock = (block: any[]) => {
         block.forEach((stmt: any, index: number) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            let deviceID: string = 'deviceType'; // Default value
+            let deviceID: string = 'deviceType'; 
             if (deviceEntry) {
-              deviceID = deviceEntry.deviceId || 'deviceType'; // Update the value with the ID (second element of the tuple)
-              //deviceIDName shoult be spliced by . and the first part should be saved
+              deviceID = deviceEntry.deviceId || 'deviceType'; 
               var deviceIDName = deviceID.split('.')[0];
 
-              console.log('------------------> Device Entry:', deviceEntry);
-
-              if (!this.language.deviceList.includes(deviceIDName)) {
-                console.log('------------------> Device ID not found in deviceList');
-                deviceID = 'deviceType'; // Fallback to 'deviceType' if not found
-              }
+            if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
+              
             } else {
-              console.log('------------------> Device Entry not found');
-              deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
+              deviceID = 'deviceType';
             }
-            console.log('Replacing deviceType block with type block');
             if  (deviceEntry.statement.id === 'deviceType'){
               deviceID = 'deviceType';
-              // Preserve the original device type value
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
-              console.log(`Found deviceType block with value: ${deviceTypeValue}`);
-
               block[index] = {
                 ... this.language.statements[deviceID],
                 id: deviceID,
@@ -684,15 +608,14 @@ export class GEStatement extends LitElement {
 
           }
           if (stmt.block && Array.isArray(stmt.block)) {
-            parseBlock(stmt.block); // Recursively parse nested blocks
+            parseBlock(stmt.block); 
           }
         });
       };
 
-      parseBlock(this.procedureBlockCopy); // Update the class property
-      console.log('Modified Procedure Block (deviceType blocks replaced):', this.procedureBlockCopy);
+      parseBlock(this.procedureBlockCopy); 
 
-      this.requestUpdate(); // Ensure the component is re-rendered
+      this.requestUpdate(); 
     }
     this.procModalRef.value.showModal();
   }
@@ -707,34 +630,30 @@ export class GEStatement extends LitElement {
     e.stopPropagation();
   }
 
-  toggleHighlight() {
-    this.isHighlighted = !this.isHighlighted;
+  // toggleHighlight() {
+  //   this.isHighlighted = !this.isHighlighted;
+  //   if (this.skeletonizeMode && this.statement._uuid && this.program) {
+  //     if (this.isHighlighted) {
+  //       if (!this.program.header.skeletonize_uuid.includes(this.statement._uuid)) {
+  //         this.program.header.skeletonize_uuid.push(this.statement._uuid);
+  //       }
+  //     } else {
+  //       this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
+  //         (uuid) => uuid !== this.statement._uuid
+  //       );
+  //     }
 
-    // If in skeletonize mode, update the program's skeletonize_uuid array
-    if (this.skeletonizeMode && this.statement._uuid && this.program) {
-      if (this.isHighlighted) {
-        // Add to skeletonize_uuid if not already there
-        if (!this.program.header.skeletonize_uuid.includes(this.statement._uuid)) {
-          this.program.header.skeletonize_uuid.push(this.statement._uuid);
-        }
-      } else {
-        // Remove from skeletonize_uuid
-        this.program.header.skeletonize_uuid = this.program.header.skeletonize_uuid.filter(
-          (uuid) => uuid !== this.statement._uuid
-        );
-      }
+  //     // Notify other components about the change
+  //     // const event = new CustomEvent('skeletonize-selection-changed', {
+  //     //   bubbles: true,
+  //     //   composed: true,
+  //     //   detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
+  //     // });
+  //     // this.dispatchEvent(event);
+  //   }
 
-      // Notify other components about the change
-      const event = new CustomEvent('skeletonize-selection-changed', {
-        bubbles: true,
-        composed: true,
-        detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
-      });
-      this.dispatchEvent(event);
-    }
-
-    this.requestUpdate();
-  }
+  //   this.requestUpdate();
+  // }
   //#endregion
 
   //#region Templates
@@ -916,8 +835,6 @@ export class GEStatement extends LitElement {
 
   //#region Render
   render() {
-    // We'll use isHighlighted directly for highlighting, which is set by the toggleStatementSelection function
-    // This ensures child blocks are highlighted when a parent is selected
 
     return html`
             <div
@@ -929,7 +846,6 @@ export class GEStatement extends LitElement {
             return;
           }
 
-          // For device statements in initialize mode, or for any statement in skeletonize mode
           const event = new CustomEvent('toggle-statement-selection', {
             bubbles: true,
             composed: true,

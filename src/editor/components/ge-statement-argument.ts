@@ -176,25 +176,20 @@ export class GeStatementArgument extends LitElement {
     });
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  // connectedCallback() {
+  //   super.connectedCallback();
 
-    // Check if this is a device statement in an initialized procedure
-    // and if there's a stored value in the metadata
-    //this.checkForDeviceMetadataValue();
-
-    // Set default value if needed
-    if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
-      this.argument.value = (
-        this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-      ).arguments[this.argPosition].options[0].id;
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-  }
+  //   // if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
+  //   //   this.argument.value = (
+  //   //     this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+  //   //   ).arguments[this.argPosition].options[0].id;
+  //   //   const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+  //   //     bubbles: true,
+  //   //     composed: true,
+  //   //   });
+  //   //   this.dispatchEvent(event);
+  //   // }
+  // }
 
   // Check if there's a stored value in the device metadata and use it
   // checkForDeviceMetadataValue() {
@@ -319,17 +314,12 @@ export class GeStatementArgument extends LitElement {
     `;
   }
 
-  // Handle editing the deviceType value
   handleEditDeviceType() {
-    // Prompt the user for a new device type value
     const currentValue = String(this.argument.value || '');
     const newValue = prompt('Enter device type:', currentValue);
 
-    // If the user provided a value, update it
     if (newValue !== null) {
       this.argument.value = newValue;
-
-      // Dispatch an event to update the program
       const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
         bubbles: true,
         composed: true,
@@ -338,9 +328,7 @@ export class GeStatementArgument extends LitElement {
     }
   }
 
-  // Special template for deviceType blocks
   deviceTypeTemplate(argumentElementId: string) {
-    // Get the background color from the deviceType statement
     const bgColor = this.language.statements['deviceType'].backgroundColor;
 
     return html`
@@ -365,7 +353,6 @@ export class GeStatementArgument extends LitElement {
   render() {
     let argumentElementId = uuidv4();
 
-    // Special case for deviceType blocks
     if (this.stmtId === 'deviceType' && this.argument.type === Types.string) {
       return this.deviceTypeTemplate(argumentElementId);
     }
@@ -446,7 +433,7 @@ export class GeStatementArgument extends LitElement {
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
                 @click="${(e: Event) => {
-                  e.stopPropagation(); // Stop event from bubbling up to parent
+                  e.stopPropagation(); 
                   this.handleValueChange(e);
                 }}">
                 ${(
@@ -489,7 +476,7 @@ export class GeStatementArgument extends LitElement {
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
                 @click="${(e: Event) => {
-                  e.stopPropagation(); // Stop event from bubbling up to parent
+                  e.stopPropagation(); 
                   this.handleValueChange(e);
                 }}">
                 ${(
