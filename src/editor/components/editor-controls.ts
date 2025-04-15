@@ -632,9 +632,10 @@ export class EditorControls extends LitElement {
             return;
           }
 
-          this.program.header = importedProgram.header;
-          this.program.block = importedProgram.block;
+          // Use the Program's loadProgram method to properly load the program with UUIDs
+          this.program.loadProgram(importedProgram);
 
+          // Integrate custom procedures into the language context
           for (let proc of Object.keys(importedProgram.header.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
@@ -690,13 +691,10 @@ export class EditorControls extends LitElement {
 
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
-
     if (!this.skeletonizeMode) {
-      // Clear skeletonize_uuid when exiting skeletonize mode
       this.program.header.skeletonize_uuid = [];
     }
 
-    // Dispatch event to notify about skeletonize mode change
     const modeChangedEvent = new CustomEvent('skeletonize-mode-changed', {
       bubbles: true,
       composed: true,
@@ -704,7 +702,6 @@ export class EditorControls extends LitElement {
     });
     this.dispatchEvent(modeChangedEvent);
 
-    // Dispatch event to update highlighting in all components
     const selectionChangedEvent = new CustomEvent('skeletonize-selection-changed', {
       bubbles: true,
       composed: true,
@@ -712,7 +709,6 @@ export class EditorControls extends LitElement {
     });
     this.dispatchEvent(selectionChangedEvent);
 
-    // Also dispatch a program updated event to ensure all components are in sync
     const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
