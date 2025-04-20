@@ -169,18 +169,11 @@ export type MetadataInit = {
 
 export class Program {
   header: Header;
-  block: Block;
+  body: ProgramStatement[];
 
   constructor() {
-    this.header = {
-      userVariables: {},
-      userProcedures: {},
-      initializedProcedures: [] as MetadataInit[], // Update initializedProcedures to use MetadataInit type
-      skeletonize: [],
-      skeletonize_uuid: [],
-      selected_uuids: [],
-    };
-    this.block = [];
+    this.header = { userVariables: {} };
+    this.body = [];
   }
 
   loadProgramBody(block: Block) {
@@ -363,25 +356,11 @@ export type Header = {
   userVariables: {
     [id: string]: UserVariable;
   };
-  userProcedures: {
-    [id: string]: Block;
-  };
-  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
-  skeletonize: [];
-  skeletonize_uuid: string[];
-  selected_uuids: string[];
 };
 
 export type UserVariable = {
-  type: UserVariableType;
-  value: UserVariableValue;
+  type: VariableTypes;
 };
-
-export type UserVariableValue = string | number | boolean | Expression;
-
-export const userVariableTypes = [Types.string, Types.number, Types.boolean, Types.boolean_expression] as const;
-type UserVariableTypesTuple = typeof userVariableTypes;
-export type UserVariableType = UserVariableTypesTuple[number];
 
 export type ProgramStatement =
   | AbstractStatement
@@ -390,16 +369,20 @@ export type ProgramStatement =
   | CompoundStatementWithArgs;
 
 export type AbstractStatement = {
-  _uuid?: string;
   id: string;
-  isInvalid?: boolean;
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
-  arguments: ProgramStatementArgument[];
+  args: ProgramStatementArgs[];
 };
+
+export type ProgramStatementArgs = {
+  type: ArgumentTypes;
+  value: string | number | boolean;
+};
+
 export type CompoundStatement = AbstractStatement & {
-  block: Block;
+  block: ProgramStatement[];
 };
 
 export type CompoundStatementWithArgs = AbstractStatement & CompoundStatement & AbstractStatementWithArgs;

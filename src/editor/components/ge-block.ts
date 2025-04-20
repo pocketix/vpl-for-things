@@ -2,8 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -338,9 +337,48 @@ export class GeBlock extends LitElement {
     };
 
     this.program.addStatement(this.block, newStatement);
+    const addedStmt = this.block[this.block.length - 1];
+
+    // Check if this is a device statement and initialize its metadata
+    const deviceName = stmtKey.split('.')[0];
+    const isDeviceStatement = stmtKey === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+    // if (isDeviceStatement) {
+    //   // Initialize device metadata for the newly added device statement
+    //   if (!addedStmt.devices) {
+    //     addedStmt.devices = [];
+    //   }
+
+    //   const langStatement = this.language.statements[stmtKey];
+    //   if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+    //     const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+    //     const defaultValues: string[] = [];
+
+    //     // Initialize argument values directly in the statement
+    //     if ((addedStmt as AbstractStatementWithArgs).arguments) {
+    //       argDefs.forEach((argDef, index) => {
+    //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+    //           const defaultValue = argDef.options[0].id;
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         } else {
+    //           const defaultValue = initDefaultArgumentType(argDef.type);
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         }
+    //       });
+    //     }
+
+    //     // Add device metadata entry
+    //     addedStmt.devices.push({
+    //       uuid: addedStmt._uuid,
+    //       deviceId: stmtKey,
+    //       values: defaultValues
+    //     });
+    //   }
+    // }
 
     if (this.language.statements[stmtKey].isUserProcedure) {
-      const addedStmt = this.block[this.block.length - 1];
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
       assignUuidToBlock(userProcedureBlock);
 
@@ -351,13 +389,12 @@ export class GeBlock extends LitElement {
           const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
 
           if (isDeviceStatement) {
-            if (stmt.id === 'deviceType' && (stmt as AbstractStatementWithArgs).arguments?.[0]) {
+            if (stmt.id === 'deviceType' ) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
-                statement: stmt,
-                value: undefined
+                values: [String(arg.value)],
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -365,6 +402,8 @@ export class GeBlock extends LitElement {
                 arguments: []
               };
               const langStatement = this.language.statements[stmt.id];
+              const deviceValues: string[] = [];
+
               if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
                 const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
 
@@ -376,12 +415,15 @@ export class GeBlock extends LitElement {
 
                   if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                     newArg.value = argDef.options[0].id;
+                    deviceValues.push(String(argDef.options[0].id));
                   } else {
                     newArg.value = initDefaultArgumentType(argDef.type);
+                    deviceValues.push(String(newArg.value));
                   }
                   if ((stmt as AbstractStatementWithArgs).arguments &&
                       (stmt as AbstractStatementWithArgs).arguments[index]) {
                     newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                    deviceValues[index] = String(newArg.value);
                   }
                   deviceStatement.arguments.push(newArg);
                 });
@@ -390,8 +432,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
-                statement: deviceStatement,
-                value: undefined
+                values: deviceValues
               });
             }
           }
@@ -402,12 +443,7 @@ export class GeBlock extends LitElement {
       };
       parseBlockForDevices(userProcedureBlock);
 
-      const newEntry: MetadataInit = {
-        uuid: addedStmt._uuid,
-        id: stmtKey,
-        devices: devices,
-      };
-      this.program.header.initializedProcedures.push(newEntry);
+      addedStmt.devices = devices;
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -479,73 +515,6 @@ export class GeBlock extends LitElement {
       return;
     }
     let statementIndex = e.detail.index;
-    const stmtToRemove = this.block[statementIndex];
-
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-    }
-
-    const stmtToRemove = this.block[statementIndex];
-
-    // Check if the statement is a custom user procedure
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
-
-      // Remove entry from initializedProcedures
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-    }
-
-    const stmtToRemove = this.block[statementIndex];
-
-    // Check if the statement is a custom user procedure
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
-
-      // Remove entry from initializedProcedures
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-    }
-
-    const stmtToRemove = this.block[statementIndex];
-
-    // Check if the statement is a custom user procedure
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
-
-      // Remove entry from initializedProcedures
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-    }
-
-    const stmtToRemove = this.block[statementIndex];
-
-    // Check if the statement is a custom user procedure
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      console.log(`Removed User Procedure - ID: ${stmtToRemove.id}, UUID: ${stmtToRemove._uuid}`);
-
-      // Remove entry from initializedProcedures
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-      console.log('Updated initializedProcedures:', this.program.header.initializedProcedures);
-    }
-
-    const stmtToRemove = this.block[statementIndex];
-
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-    }
 
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
@@ -824,40 +793,33 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.tmpUUID
-        );
+        const metadataEntry = this.program.block.find((stmt) => stmt._uuid === this.tmpUUID);
 
         if (metadataEntry) {
           const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
             deviceEntry.deviceId = stmtKey;
+
             const langStatement = this.language.statements[stmtKey];
-
-            deviceEntry.statement = {
-              ...selectedStatement,
-              arguments: []
-            };
-
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+              const defaultValues: string[] = [];
+
               argDefs.forEach(argDef => {
-                const newArg = {
-                  type: argDef.type,
-                  value: null
-                };
+                let defaultValue: string;
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                  newArg.value = argDef.options[0].id;
+                  defaultValue = String(argDef.options[0].id);
                 } else {
-                  newArg.value = initDefaultArgumentType(argDef.type);
+                  defaultValue = String(initDefaultArgumentType(argDef.type));
                 }
-
-                (deviceEntry.statement as AbstractStatementWithArgs).arguments.push(newArg);
+                defaultValues.push(defaultValue);
               });
-            }
 
-            if (deviceEntry.value) {
-              deviceEntry.value = undefined;
+              // Update the values array in the device metadata
+              deviceEntry.values = defaultValues;
+            } else {
+              // If the new device has no arguments, reset the values array to empty
+              deviceEntry.values = [];
             }
           } else {
             console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);

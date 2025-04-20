@@ -331,10 +331,8 @@ export class GEStatement extends LitElement {
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       // Only process if this is a device statement in an initialized procedure
       if (this.statement._uuid && this.editorMode === 'initialize') {
-        // Check if this statement is in an initialized procedure
-        const isInInitializedProcedure = this.program.header.initializedProcedures.some(entry => {
-          return entry.devices.some(device => device.uuid === this.statement._uuid);
-        });
+        console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
+        const initProcEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
 
         if (isInInitializedProcedure) {
           this.updateDeviceMetadataValue();
@@ -354,18 +352,13 @@ export class GEStatement extends LitElement {
   // Update the device metadata value when an argument value changes
   updateDeviceMetadataValue() {
     if (!this.statement._uuid) return;
-    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+    const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
     const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
     
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
-        deviceEntry.value = String(argValue);
-        if (deviceEntry.statement &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-          (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
-        }
+        deviceEntry.values[0] = String(argValue);
       }
       return; 
     }
@@ -403,12 +396,8 @@ export class GEStatement extends LitElement {
   // Count the number of initialized devices in a procedure
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
-
-    // Find the procedure entry in initializedProcedures
-    const procedureEntry = this.program.header.initializedProcedures.find(
-      entry => entry.uuid === procedureUuid
-    );
-
+    const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
+    
     if (!procedureEntry) return 0;
 
     // Count devices that have been initialized (have a deviceId that's not 'deviceType')
@@ -543,12 +532,9 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
-    if (this.skeletonizeMode) return; // Prevent redirection in skeletonize mode
-
-    // Determine if this is an initialization (second use case)
-    const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
-
-    // Set the editor mode based on whether this is an initialization
+    if (this.skeletonizeMode) return; 
+    //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
+    const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
     this.editorMode = isInitialization ? 'initialize' : 'edit';
 
     // If this is an initialization, set restrainedMode to true
@@ -558,33 +544,16 @@ export class GEStatement extends LitElement {
 
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
+
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-
-      // Parse the entire block, including nested ones, and replace all deviceType blocks
-      console.log('------------------> ID:', this.statement._uuid);
-
-      //if this statement has a uuid that is in the initializedProcedures array set it to the uuidMetadata
-      if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
-        this.uuidMetadata = this.statement._uuid;
-        console.log('------------------> UUID Metadata set in ge-statement:', this.uuidMetadata);
-        console.log('------------------> Will pass to ge-block as tmpUUID');
-        this.requestUpdate();
-      }
-      console.log('------------------> initlizedProcedures:', this.program.header.initializedProcedures);
-      //get the entry from initializedProcedures and get the one where its uuid is the same as the one in the statement
-      const initializedProcedures = this.program.header.initializedProcedures;
-      const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
-
-      //parse the procedureEntry devices array and print its contents properly
-      console.log('------------------> Procedure Entry:', procedureEntry);
-      if (procedureEntry) {
-        console.log('Procedure Entry Found:', procedureEntry);
-
-
-      }
-
+      
+      this.uuidMetadata = this.statement._uuid;
+      this.requestUpdate();
+      
+      const procedureEntry = isInitialization;
+      console.log('Procedure Entry:', procedureEntry);
 
       const parseBlock = (block: any[]) => {
         block.forEach((stmt: any, index: number) => {
@@ -610,10 +579,7 @@ export class GEStatement extends LitElement {
               console.log('------------------> Device Entry not found');
               deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
             }
-            console.log('Replacing deviceType block with type block');
-            if  (deviceEntry.statement.id === 'deviceType'){
-              deviceID = 'deviceType';
-              // Preserve the original device type value
+            if  (deviceID === 'deviceType'){
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
               console.log(`Found deviceType block with value: ${deviceTypeValue}`);
 
