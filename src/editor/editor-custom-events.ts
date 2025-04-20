@@ -47,6 +47,8 @@ export const procedureEditorCustomEvent = {
   PROCEDURE_MODAL_CLOSED: 'procedure-modal-closed',
 } as const;
 
-export const deviceStatementCustomEvent = {
-  ARGUMENT_VALUE_CHANGED: 'device-argument-value-changed',
+export const deviceMetadataCustomEvent = {
+  VALUE_CHANGED: 'device-metadata-value-changed',
+  DEVICE_SELECTED: 'device-statement-selected',
+  REOPEN_PROCEDURE_MODAL: 'reopen-procedure-modal',
 } as const;

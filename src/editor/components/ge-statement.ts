@@ -338,6 +338,7 @@ export class GEStatement extends LitElement {
           this.updateDeviceMetadataValue();
         }
       }
+      this.requestUpdate();
     });
 
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
@@ -347,20 +348,30 @@ export class GEStatement extends LitElement {
       this.editorMode = 'edit';
       this.requestUpdate();
     });
+
+    this.addEventListener(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, (e: CustomEvent) => {
+      if (this.language?.statements[this.statement.id]?.isUserProcedure &&
+          this.statement._uuid === e.detail.procedureUuid) {
+        // Close the modal silently
+        if (this.procModalRef.value) {
+          this.procModalRef.value.hideModal();
+        }
+        this.handleShowProcDef();
+      }
+    });
   }
 
-  // Update the device metadata value when an argument value changes
   updateDeviceMetadataValue() {
     if (!this.statement._uuid) return;
     const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
     const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
-    
+
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
         deviceEntry.values[0] = String(argValue);
       }
-      return; 
+      return;
     }
   }
 
@@ -397,7 +408,7 @@ export class GEStatement extends LitElement {
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
     const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
-    
+
     if (!procedureEntry) return 0;
 
     // Count devices that have been initialized (have a deviceId that's not 'deviceType')
@@ -532,7 +543,7 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
-    if (this.skeletonizeMode) return; 
+    if (this.skeletonizeMode) return;
     //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
     const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
     this.editorMode = isInitialization ? 'initialize' : 'edit';
@@ -548,10 +559,10 @@ export class GEStatement extends LitElement {
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-      
+
       this.uuidMetadata = this.statement._uuid;
       this.requestUpdate();
-      
+
       const procedureEntry = isInitialization;
       console.log('Procedure Entry:', procedureEntry);
 
@@ -561,25 +572,18 @@ export class GEStatement extends LitElement {
           if (stmt.id === 'deviceType') {
 
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            let deviceID: string = 'deviceType'; // Default value
+            let deviceID = deviceEntry?.deviceId || 'deviceType';
             if (deviceEntry) {
-              deviceID = deviceEntry.deviceId || 'deviceType'; // Update the value with the ID (second element of the tuple)
-              //deviceIDName shoult be spliced by . and the first part should be saved
+
               var deviceIDName = deviceID.split('.')[0];
 
-              console.log('------------------> Device Entry:', deviceEntry);
-              console.log('------------------> Updated Statement:', deviceID);
-              console.log('------------------> Device ID Name:', deviceIDName);
+              if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType';
 
-              if (!this.language.deviceList.includes(deviceIDName)) {
-                console.log('------------------> Device ID not found in deviceList');
-                deviceID = 'deviceType'; // Fallback to 'deviceType' if not found
-              }
             } else {
               console.log('------------------> Device Entry not found');
               deviceID = 'deviceType'; // Default to 'deviceType' if no entry is found
             }
-            if  (deviceID === 'deviceType'){
+            if (deviceID === 'deviceType') {
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
               console.log(`Found deviceType block with value: ${deviceTypeValue}`);
 
@@ -591,32 +595,65 @@ export class GEStatement extends LitElement {
                   {
                     type: Types.string,
                     value: deviceTypeValue,
-                    isInvalid: false,
                   },
                 ],
                 isInvalid: false,
               };
+
             } else {
+              // Get the language statement definition to determine arguments structure
+              const langStatement = this.language.statements[deviceID];
+              const newArguments = [];
+
+              // If the device has arguments defined in the language
+              if (langStatement && (langStatement as any).arguments) {
+                const argDefs = (langStatement as any).arguments;
+
+                // Create arguments with values from device entry if available
+                argDefs.forEach((argDef: any, argIndex: number) => {
+                  const newArg: any = {
+                    type: argDef.type,
+                    isInvalid: false
+                  };
+
+                  // Set the value from device entry values if available
+                  if (deviceEntry && deviceEntry.values && deviceEntry.values[argIndex] !== undefined) {
+                    if (argDef.type === Types.number || argDef.type === 'num_opt') {
+                      newArg.value = Number(deviceEntry.values[argIndex]);
+                    } else {
+                      newArg.value = deviceEntry.values[argIndex];
+                    }
+                  } else if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    // Default to first option if no value is available
+                    newArg.value = argDef.options[0].id;
+                  } else {
+                    // Use default value for the argument type
+                    newArg.value = initDefaultArgumentType(argDef.type);
+                  }
+
+                  newArguments.push(newArg);
+                });
+              }
+
               block[index] = {
                 ... this.language.statements[deviceID],
                 id: deviceID,
                 _uuid: stmt._uuid,
+                arguments: newArguments,
                 isInvalid: false,
               };
+              console.log('Modified Statement with values:', block[index]);
             }
-
-
           }
           if (stmt.block && Array.isArray(stmt.block)) {
-            parseBlock(stmt.block); // Recursively parse nested blocks
+            parseBlock(stmt.block);
           }
         });
       };
 
-      parseBlock(this.procedureBlockCopy); // Update the class property
-      console.log('Modified Procedure Block (deviceType blocks replaced):', this.procedureBlockCopy);
+      parseBlock(this.procedureBlockCopy);
 
-      this.requestUpdate(); // Ensure the component is re-rendered
+      this.requestUpdate();
     }
     this.procModalRef.value.showModal();
   }
