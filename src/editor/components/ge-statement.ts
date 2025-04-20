@@ -327,7 +327,7 @@ export class GEStatement extends LitElement {
     this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
       if (this.statement._uuid && this.editorMode === 'initialize') {
         console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-        const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+        const initProcEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
 
         if (initProcEntry) {
           this.updateDeviceMetadataValue();
@@ -343,20 +343,14 @@ export class GEStatement extends LitElement {
   }
 
   updateDeviceMetadataValue() {
-    
     if (!this.statement._uuid) return;
-    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+    const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
     const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
     
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
-        deviceEntry.value = String(argValue);
-        if (deviceEntry.statement &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-          (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
-        }
+        deviceEntry.values[0] = String(argValue);
       }
       return; 
     }
@@ -389,9 +383,8 @@ export class GEStatement extends LitElement {
 
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
-    const procedureEntry = this.program.header.initializedProcedures.find(
-      entry => entry.uuid === procedureUuid
-    );
+    const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
+    
     if (!procedureEntry) return 0;
     const initializedCount = procedureEntry.devices.filter(device => {
       if (device.deviceId === 'deviceType') {
@@ -509,22 +502,24 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return; 
-    const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
+    //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
+    const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
     this.editorMode = isInitialization ? 'initialize' : 'edit';
     if (isInitialization) {
       this.restrainedMode = true;
     }
 
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
+
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-      if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
-        this.uuidMetadata = this.statement._uuid;
-        this.requestUpdate();
-      }
-      const initializedProcedures = this.program.header.initializedProcedures;
-      const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
+      
+      this.uuidMetadata = this.statement._uuid;
+      this.requestUpdate();
+      
+      const procedureEntry = isInitialization;
+      console.log('Procedure Entry:', procedureEntry);
 
       const parseBlock = (block: any[]) => {
         block.forEach((stmt: any, index: number) => {
@@ -541,8 +536,7 @@ export class GEStatement extends LitElement {
             } else {
               deviceID = 'deviceType';
             }
-            if  (deviceEntry.statement.id === 'deviceType'){
-              deviceID = 'deviceType';
+            if  (deviceID === 'deviceType'){
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
               block[index] = {
                 ... this.language.statements[deviceID],

@@ -152,14 +152,7 @@ export function assignUuidToBlock(block: Block) {
 export type DeviceMetadata = {
   uuid: string;
   deviceId: string;
-  statement: ProgramStatement; // Store the complete statement with arguments
-  value?: string; // Optional attribute to store the selected value of the device
-};
-
-export type MetadataInit = {
-  uuid: string;
-  id: string;
-  devices: DeviceMetadata[]; // Store complete device statements
+  values: string[];
 };
 export class Program {
   header: Header;
@@ -169,10 +162,9 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
-      initializedProcedures: [], // Update initializedProcedures to use MetadataInit type
       skeletonize: [],
       skeletonize_uuid: [],
-      selected_uuids: [],
+      //selected_uuids: [],
     };
     this.block = [];
   }
@@ -190,11 +182,6 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
-
-    // Handle initializedProcedures if present in the imported program
-    if (programExport.header.initializedProcedures) {
-      this.header.initializedProcedures = programExport.header.initializedProcedures;
-    }
 
     this.block = programExport.block;
   }
@@ -243,7 +230,6 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
-        initializedProcedures: this.header.initializedProcedures || [], // Include initializedProcedures
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -257,16 +243,23 @@ export class Program {
     return programExport;
   }
 
-  // exportLinearizedProgram method has been removed
-
   addStatement(block: Block, statement: stmt) {
     let resultStatement: any = {};
 
     function initArgs() {
       for (let arg of statement.arguments) {
+        let defaultValue: string | number | boolean | Expression[] | Devices[] | null;
+        if (arg.type === 'str_opt' || arg.type === 'num_opt') {
+          // For select options, use the first option as default
+          defaultValue = arg.options && arg.options.length > 0 ? arg.options[0].id : null;
+        } else {
+          // For other types, use the default value based on type
+          defaultValue = initDefaultArgumentType(arg.type);
+        }
+
         resultStatement['arguments'].push({
           type: arg.type,
-          value: initDefaultArgumentType(arg.type)
+          value: defaultValue
         });
       }
     }
@@ -355,10 +348,9 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
-  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
   skeletonize: [];
   skeletonize_uuid: string[];
-  selected_uuids: string[];
+  //selected_uuids: string[];
 };
 
 export type UserVariable = {
@@ -382,6 +374,7 @@ export type AbstractStatement = {
   _uuid?: string;
   id: string;
   isInvalid?: boolean;
+  devices?: DeviceMetadata[];
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
