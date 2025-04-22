@@ -47,6 +47,7 @@ export class VplEditor extends LitElement {
   @property() height?: number;
   @property() isSmallScreen: boolean = document.body.clientWidth < 800;
   @property() viewMode: string = 'split';
+  @property({ attribute: false }) onProgramChange?: (program: Program) => void;
   //#endregion
 
   //#region Refs
@@ -61,16 +62,40 @@ export class VplEditor extends LitElement {
 
   @provide({ context: programContext })
   @property({ attribute: false })
-  program = new Program();
+  program: Program = new Program();
   //#endregion
+
+  /**
+   * Updates the program and dispatches a change event
+   * @param newProgram The new program to set
+   */
+  updateProgram(newProgram: Program) {
+    console
+    this.program = newProgram;
+    this.dispatchEvent(new CustomEvent('change', {
+      detail: newProgram,
+      bubbles: true,
+      composed: true
+    }));
+  }
 
   //#region Lifecycle
   constructor() {
     super();
-    this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+    this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       this.handleTextEditorProgramUpdated();
+      // Notify parent component about program changes
+      if (this.onProgramChange) {
+        this.onProgramChange(this.program);
+      }
+      // Dispatch change event
+      this.dispatchEvent(new CustomEvent('change', {
+        detail: this.program,
+        bubbles: true,
+        composed: true
+      }));
     });
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       this.handleGraphicalEditorProgramUpdated();
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
@@ -100,6 +125,30 @@ export class VplEditor extends LitElement {
       this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
     );
   }
+
+  updated(changedProperties: Map<string, any>) {
+    super.updated(changedProperties);
+
+    // If the program property was changed externally, update the internal state
+    if (changedProperties.has('program') && this.program) {
+      // Analyze the program to ensure it's properly initialized
+      analyzeBlock(this.program.block, this.language.statements, null);
+      for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+        analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+      }
+
+      // Update the text editor if it's initialized
+      if (this.textEditorRef.value) {
+        this.textEditorRef.value.textEditorValue = JSON.stringify(
+          this.program.exportProgramBlock(this.program.block),
+          null,
+          '  '
+        );
+      }
+
+      this.requestUpdate();
+    }
+  }
   //#endregion
 
   //#region Handlers
@@ -109,19 +158,22 @@ export class VplEditor extends LitElement {
 
   handleGraphicalEditorProgramUpdated() {
     // Source for deepQuerySelectorAll function: https://gist.github.com/Haprog/848fc451c25da00b540e6d34c301e96a#file-deepqueryselectorall-js-L7
-    function deepQuerySelectorAll(selector, root) {
+    function deepQuerySelectorAll(selector: string, root: Element | Document | ShadowRoot) {
       root = root || document;
       const results = Array.from(root.querySelectorAll(selector));
-      const pushNestedResults = function (root) {
+      const pushNestedResults = function (root: Element | Document | ShadowRoot) {
         deepQuerySelectorAll(selector, root).forEach((elem) => {
           if (!results.includes(elem)) {
             results.push(elem);
           }
         });
       };
-      if (root.shadowRoot) {
+
+      // Check if root is an Element with shadowRoot
+      if ('shadowRoot' in root && root.shadowRoot) {
         pushNestedResults(root.shadowRoot);
       }
+
       for (const elem of root.querySelectorAll('*')) {
         if (elem.shadowRoot) {
           pushNestedResults(elem.shadowRoot);
@@ -147,6 +199,18 @@ export class VplEditor extends LitElement {
       null,
       '  '
     );
+
+    // Notify parent component about program changes
+    if (this.onProgramChange) {
+      this.onProgramChange(this.program);
+    }
+
+    // Dispatch change event
+    this.dispatchEvent(new CustomEvent('change', {
+      detail: this.program,
+      bubbles: true,
+      composed: true
+    }));
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
