@@ -48,6 +48,15 @@ export class VplEditor extends LitElement {
   @property() isSmallScreen: boolean = document.body.clientWidth < 800;
   @property() viewMode: string = 'split';
   @property({ attribute: false }) onProgramChange?: (program: Program) => void;
+
+  // Allow passing an initial program as a string, object, or Program instance
+  @property({ attribute: false })
+  set initialProgram(value: Program | string | object | null) {
+    if (value) {
+      console.log('Initial program set:', value);
+      this.setVplProgram(value);
+    }
+  }
   //#endregion
 
   //#region Refs
@@ -209,6 +218,17 @@ export class VplEditor extends LitElement {
       configurable: true
     });
 
+    // Expose the initialProgram setter for direct attribute setting
+    Object.defineProperty(host, 'initialProgram', {
+      set: (value: any) => {
+        if (value) {
+          console.log('initialProgram set from outside:', value);
+          this.initialProgram = value;
+        }
+      },
+      configurable: true
+    });
+
     (this.shadowRoot.host as HTMLElement).setAttribute(
       'style',
       this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
@@ -358,5 +378,6 @@ declare global {
   interface HTMLElement {
     updateProgram?: (newProgram: any) => void;
     setProgram?: (newProgram: any) => void;
+    initialProgram?: any;
   }
 }
