@@ -1,8 +1,8 @@
-import { LitElement, html, css, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, html, css } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { Program, analyzeBlock } from '@/vpl/program';
-import { consume, provide } from '@lit/context';
+import { consume } from '@lit/context';
 import { textEditorCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
@@ -57,26 +57,70 @@ export class TextEditor extends LitElement {
   //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
-    this.textEditorValue = JSON.stringify(this.program.exportProgramBlock(this.program.block), null, ' ');
+    if (this.program && this.program.block) {
+      this.textEditorValue = JSON.stringify(this.program.exportProgramBlock(this.program.block), null, '  ');
+    }
   }
 
-  firstUpdated() {}
+  updated(changedProperties: Map<string, any>) {
+    super.updated(changedProperties);
+
+    // If the textEditorValue property was changed externally, update the program
+    if (changedProperties.has('textEditorValue') && !this.textEditorValueIsInvalid) {
+      try {
+        console.log('Text editor value changed externally, updating program');
+        // Only update the program if the value is valid JSON and different from current program
+        const newValue = JSON.parse(this.textEditorValue);
+        const currentValue = this.program.exportProgramBlock(this.program.block);
+
+        // Check if the new value is different from the current program
+        if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+          this.program.loadProgramBody(newValue);
+          analyzeBlock(this.program.block, this.language.statements, null);
+          console.log('Program updated from text editor value change');
+        }
+      } catch (error) {
+        console.error('Error updating program from text editor value:', error);
+        this.textEditorValueIsInvalid = true;
+      }
+    }
+  }
   //#endregion
 
   handleTextEditorValueChange(e: Event) {
     this.textEditorValueIsInvalid = false;
-    this.textEditorValue = (e.currentTarget as HTMLTextAreaElement).value;
+    const newValue = (e.currentTarget as HTMLTextAreaElement).value;
 
-    try {
-      this.program.loadProgramBody(JSON.parse(this.textEditorValue));
-      analyzeBlock(this.program.block, this.language.statements, null);
-    } catch (error) {
-      this.textEditorValueIsInvalid = true;
+    // Only update if the value has actually changed
+    if (newValue !== this.textEditorValue) {
+      this.textEditorValue = newValue;
+
+      try {
+        // Parse the new value and check if it's different from the current program
+        const parsedValue = JSON.parse(this.textEditorValue);
+        const currentValue = this.program.exportProgramBlock(this.program.block);
+
+        // Only update the program if the content has actually changed
+        if (JSON.stringify(parsedValue) !== JSON.stringify(currentValue)) {
+          console.log('Text editor value changed by user, updating program');
+          this.program.loadProgramBody(parsedValue);
+          analyzeBlock(this.program.block, this.language.statements, null);
+
+          // Dispatch the update event
+          const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+            detail: { source: 'user-input' }
+          });
+          this.dispatchEvent(event);
+        }
+      } catch (error) {
+        console.error('Error parsing text editor value:', error);
+        this.textEditorValueIsInvalid = true;
+      }
+
+      this.requestUpdate();
     }
-
-    const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, { bubbles: true, composed: true });
-    this.dispatchEvent(event);
-    this.requestUpdate();
   }
 
   //#region Render

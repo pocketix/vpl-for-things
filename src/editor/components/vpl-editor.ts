@@ -185,24 +185,35 @@ export class VplEditor extends LitElement {
     }));
 
     // Dispatch PROGRAM_UPDATED events for compatibility with existing code
+    // but mark them as coming from programmatic updates, not user input
     this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      detail: { programBodyUpdated: true },
+      detail: { programBodyUpdated: true, source: 'programmatic' },
       bubbles: true,
       composed: true
     }));
 
-    // Also dispatch the text editor program updated event for full compatibility
-    this.dispatchEvent(new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
-      detail: { programBodyUpdated: true },
-      bubbles: true,
-      composed: true
-    }));
+    // We don't need to dispatch text editor events here as they can cause loops
+    // The text editor will be updated directly in the final sync step below
 
     console.log('Program update complete');
 
     // Force one final update after a delay to ensure everything is in sync
+    // but avoid potential infinite loops by not triggering additional events
     setTimeout(() => {
-      this.handleGraphicalEditorProgramUpdated();
+      // Update the text editor directly without triggering events
+      if (this.textEditorRef.value && this.program && this.program.block) {
+        try {
+          const programJson = JSON.stringify(
+            this.program.exportProgramBlock(this.program.block),
+            null,
+            '  '
+          );
+          this.textEditorRef.value.textEditorValue = programJson;
+          console.log('Final text editor sync complete');
+        } catch (error) {
+          console.error('Error in final text editor sync:', error);
+        }
+      }
     }, 200);
   }
 
@@ -215,18 +226,38 @@ export class VplEditor extends LitElement {
   //#region Lifecycle
   constructor() {
     super();
-    this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
-      this.handleTextEditorProgramUpdated();
+    this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      console.log('Text editor program updated event received', e.detail);
+
+      // Only process the event if it came from user input
+      if (e.detail && e.detail.source === 'user-input') {
+        this.handleTextEditorProgramUpdated();
+
+        // Notify parent component about program changes
+        if (this.onProgramChange) {
+          this.onProgramChange(this.program);
+        }
+        // Dispatch change event is handled in handleTextEditorProgramUpdated()
+      } else {
+        console.log('Ignoring non-user text editor update event to prevent loops');
+      }
+    });
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      console.log('Graphical editor program updated event received', e.detail);
+
+      // Skip programmatic updates to prevent loops
+      if (e.detail && e.detail.source === 'programmatic') {
+        console.log('Ignoring programmatic graphical editor update to prevent loops');
+        return;
+      }
+
+      // First update the text editor with the graphical editor changes
       this.handleGraphicalEditorProgramUpdated();
+
       // Notify parent component about program changes
       if (this.onProgramChange) {
         this.onProgramChange(this.program);
       }
-      // Dispatch change event is handled in handleTextEditorProgramUpdated()
-    });
-    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
-      this.handleTextEditorProgramUpdated();
-      this.handleGraphicalEditorProgramUpdated();
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
       this.handleChangeEditorView(e.detail.newView);
@@ -313,7 +344,22 @@ export class VplEditor extends LitElement {
 
           // Force a complete refresh of all components
           setTimeout(() => {
-            // Dispatch events to ensure the graphical editor updates
+            // First update the text editor directly without triggering events
+            if (this.textEditorRef.value && this.program && this.program.block) {
+              try {
+                const programJson = JSON.stringify(
+                  this.program.exportProgramBlock(this.program.block),
+                  null,
+                  '  '
+                );
+                this.textEditorRef.value.textEditorValue = programJson;
+                console.log('Text editor updated directly from program property change');
+              } catch (error) {
+                console.error('Error updating text editor directly:', error);
+              }
+            }
+
+            // Then dispatch events to ensure the graphical editor updates
             this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
               detail: { programBodyUpdated: true },
               bubbles: true,
@@ -447,13 +493,19 @@ export class VplEditor extends LitElement {
     if (this.textEditorRef.value) {
       try {
         console.log('Updating text editor from graphical editor changes');
-        const programJson = JSON.stringify(
-          this.program.exportProgramBlock(this.program.block),
-          null,
-          '  '
-        );
-        this.textEditorRef.value.textEditorValue = programJson;
-        console.log('Text editor updated with program:', programJson);
+        // Make sure we're getting the full program data, not just an empty array
+        if (this.program && this.program.block && this.program.block.length > 0) {
+          const programJson = JSON.stringify(
+            this.program.exportProgramBlock(this.program.block),
+            null,
+            '  '
+          );
+          console.log('Program data to update text editor:', programJson);
+          this.textEditorRef.value.textEditorValue = programJson;
+          console.log('Text editor updated with program:', programJson);
+        } else {
+          console.warn('Program block is empty or invalid, not updating text editor');
+        }
       } catch (error) {
         console.error('Error updating text editor from graphical editor:', error);
       }
