@@ -67,13 +67,84 @@ export class VplEditor extends LitElement {
 
   /**
    * Updates the program and dispatches a change event
-   * @param newProgram The new program to set
+   * @param newProgram The new program to set (Program object or JSON string/object)
    */
-  updateProgram(newProgram: Program) {
-    console
-    this.program = newProgram;
+  updateProgram(newProgram: Program | string | object) {
+    console.log('Updating program in VPL editor');
+
+    let programToUse: Program;
+
+    // Handle different input types
+    if (newProgram instanceof Program) {
+      // If it's already a Program instance, use it directly
+      programToUse = newProgram as Program;
+    } else if (typeof newProgram === 'string') {
+      // If it's a string, try to parse it as JSON
+      try {
+        const parsedData = JSON.parse(newProgram);
+        programToUse = new Program();
+        programToUse.loadProgram(parsedData);
+      } catch (error) {
+        console.error('Failed to parse program string as JSON:', error);
+        return; // Exit early if parsing fails
+      }
+    } else if (typeof newProgram === 'object' && newProgram !== null) {
+      // If it's an object (but not a Program), treat it as program data
+      try {
+        programToUse = new Program();
+        programToUse.loadProgram(newProgram);
+      } catch (error) {
+        console.error('Failed to load program from object:', error);
+        return; // Exit early if loading fails
+      }
+    } else {
+      // Invalid input type
+      console.error('Invalid program type. Expected Program instance, JSON string, or object.');
+      return; // Exit early
+    }
+
+    // Update the internal program property
+    this.program = programToUse;
+
+    // Analyze the program to ensure it's properly initialized
+    analyzeBlock(this.program.block, this.language.statements, null);
+    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+    }
+
+    // Update the text editor if it's initialized
+    if (this.textEditorRef.value) {
+      this.textEditorRef.value.textEditorValue = JSON.stringify(
+        this.program.exportProgramBlock(this.program.block),
+        null,
+        '  '
+      );
+    }
+
+    // Update the graphical editor if it's initialized
+    if (this.graphicalEditorRef.value) {
+      this.graphicalEditorRef.value.requestUpdate();
+    }
+
+    // Request an update to refresh the UI
+    this.requestUpdate();
+
+    // Dispatch a change event to notify listeners
     this.dispatchEvent(new CustomEvent('change', {
-      detail: newProgram,
+      detail: programToUse,
+      bubbles: true,
+      composed: true
+    }));
+
+    // Dispatch PROGRAM_UPDATED events for compatibility with existing code
+    this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      detail: { programBodyUpdated: true },
+      bubbles: true,
+      composed: true
+    }));
+
+    // Also dispatch the text editor program updated event for full compatibility
+    this.dispatchEvent(new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true
     }));
@@ -88,12 +159,7 @@ export class VplEditor extends LitElement {
       if (this.onProgramChange) {
         this.onProgramChange(this.program);
       }
-      // Dispatch change event
-      this.dispatchEvent(new CustomEvent('change', {
-        detail: this.program,
-        bubbles: true,
-        composed: true
-      }));
+      // Dispatch change event is handled in handleTextEditorProgramUpdated()
     });
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       this.handleGraphicalEditorProgramUpdated();
@@ -154,6 +220,11 @@ export class VplEditor extends LitElement {
   //#region Handlers
   handleTextEditorProgramUpdated() {
     this.graphicalEditorRef.value.requestUpdate();
+    this.dispatchEvent(new CustomEvent('change', {
+      detail: this.program,
+      bubbles: true,
+      composed: true
+    }));
   }
 
   handleGraphicalEditorProgramUpdated() {
