@@ -150,6 +150,12 @@ export class VplEditor extends LitElement {
     }));
   }
 
+  /**
+   * Expose updateProgram method to be accessible from outside the shadow DOM
+   * This allows direct method calls on the element reference
+   */
+  static get formAssociated() { return true; }
+
   //#region Lifecycle
   constructor() {
     super();
@@ -185,6 +191,22 @@ export class VplEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
+    // Expose the updateProgram method on the element itself for external access
+    // This makes it accessible from outside the shadow DOM
+    const host = this.shadowRoot.host as any;
+    host.updateProgram = this.updateProgram.bind(this);
+
+    // Also expose a direct setter for the program property that will call updateProgram
+    // This provides a more React-friendly way to update the program
+    Object.defineProperty(host, 'setProgram', {
+      value: (newProgram: any) => {
+        console.log('setProgram called with:', newProgram);
+        this.updateProgram(newProgram);
+      },
+      writable: false,
+      configurable: true
+    });
 
     (this.shadowRoot.host as HTMLElement).setAttribute(
       'style',
@@ -329,5 +351,11 @@ export class VplEditor extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     'vpl-editor': VplEditor;
+  }
+
+  // Extend HTMLElement interface to include our custom methods
+  interface HTMLElement {
+    updateProgram?: (newProgram: any) => void;
+    setProgram?: (newProgram: any) => void;
   }
 }
