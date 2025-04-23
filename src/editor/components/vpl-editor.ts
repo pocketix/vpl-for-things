@@ -69,7 +69,8 @@ export class VplEditor extends LitElement {
    * Updates the program and dispatches a change event
    * @param newProgram The new program to set (Program object or JSON string/object)
    */
-  updateProgram(newProgram: Program | string | object) {
+  // Use a different method name to avoid conflict with LitElement properties
+  setVplProgram(newProgram: Program | string | object) {
     console.log('Updating program in VPL editor');
 
     let programToUse: Program;
@@ -192,17 +193,17 @@ export class VplEditor extends LitElement {
   connectedCallback() {
     super.connectedCallback();
 
-    // Expose the updateProgram method on the element itself for external access
+    // Expose the program update method on the element itself for external access
     // This makes it accessible from outside the shadow DOM
     const host = this.shadowRoot.host as any;
-    host.updateProgram = this.updateProgram.bind(this);
+    host.updateProgram = this.setVplProgram.bind(this);
 
-    // Also expose a direct setter for the program property that will call updateProgram
+    // Also expose a direct setter for the program property that will call setVplProgram
     // This provides a more React-friendly way to update the program
     Object.defineProperty(host, 'setProgram', {
       value: (newProgram: any) => {
         console.log('setProgram called with:', newProgram);
-        this.updateProgram(newProgram);
+        this.setVplProgram(newProgram);
       },
       writable: false,
       configurable: true
