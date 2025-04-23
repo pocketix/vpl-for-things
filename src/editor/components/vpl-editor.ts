@@ -217,6 +217,7 @@ export class VplEditor extends LitElement {
     super();
     this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
       this.handleTextEditorProgramUpdated();
+      this.handleGraphicalEditorProgramUpdated();
       // Notify parent component about program changes
       if (this.onProgramChange) {
         this.onProgramChange(this.program);
@@ -224,6 +225,7 @@ export class VplEditor extends LitElement {
       // Dispatch change event is handled in handleTextEditorProgramUpdated()
     });
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (_e: CustomEvent) => {
+      this.handleTextEditorProgramUpdated();
       this.handleGraphicalEditorProgramUpdated();
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
