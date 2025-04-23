@@ -155,6 +155,7 @@ export class VplEditor extends LitElement {
 
     // Also dispatch the text editor program updated event for full compatibility
     this.dispatchEvent(new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+      detail: { programBodyUpdated: true },
       bubbles: true,
       composed: true
     }));
