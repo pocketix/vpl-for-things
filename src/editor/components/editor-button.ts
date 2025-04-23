@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, PropertyDeclarations } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
 
@@ -9,6 +9,14 @@ export class EditorButton extends LitElement {
     globalStyles,
     css`
       :host {
+        display: block;
+      }
+
+      :host > button:first-of-type {
+        font-size: 1rem;
+        gap: 0.25rem;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         cursor: pointer;
@@ -23,21 +31,21 @@ export class EditorButton extends LitElement {
         color: black;
       }
 
-      :host(:hover) {
+      :host > button:first-of-type:hover {
         background-color: var(--gray-50);
         border-color: var(--gray-400);
         transition-duration: 0.1s;
       }
 
-      :host(:focus) {
+      :host > button:first-of-type:focus {
         background-color: var(--gray-100);
       }
 
-      :host(:active) {
+      :host > button:first-of-type:active {
         border-color: var(--blue-500);
       }
 
-      :host([disabled]) {
+      :host > button:first-of-type[disabled] {
         pointer-events: none;
         opacity: 50%;
       }
@@ -47,11 +55,14 @@ export class EditorButton extends LitElement {
 
   //#region Props
   @property() value: any;
+  @property() btnStyle: string|null = null;
+  @property({type: Boolean}) disabled: boolean = false;
+  @property({type: Boolean}) autofocus: boolean = false;
   //#endregion
 
   //#region Render
   render() {
-    return html`<slot></slot>`;
+    return html`<button ?disabled=${this.disabled} ?autofocus=${this.autofocus} part="btn" class="btn" style="${this.btnStyle}"> <slot></slot> </button>`;
   }
   //#endregion
 }

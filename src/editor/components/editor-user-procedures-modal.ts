@@ -6,17 +6,14 @@ import { EditorModal } from './editor-modal';
 import { plusLg } from '../icons';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { analyzeBlock, Icon, Language, Program } from '@/index';
-import Types from '@vpl/types.ts';
+import { Icon, Language, Program } from '@/index';
 import * as icons from '@/editor/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { graphicalEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
-  // Property to store the skeletonize result
-  _skeletonizeResult: any[] = [];
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -51,8 +48,7 @@ export class EditorUserProceduresModal extends LitElement {
         align-items: center;
       }
 
-      .procedure-icon-button {
-        display: flex;
+      .procedure-icon-button::part(btn) {
         justify-content: center;
         width: 43px;
         height: 39px;
@@ -96,20 +92,19 @@ export class EditorUserProceduresModal extends LitElement {
 
       .action-button {
         width: 100%;
-        justify-content: center;
-        gap: 0.25rem;
       }
 
-      .confirm-button {
+      .action-button::part(btn) {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .confirm-button::part(btn) {
         color: var(--green-600);
       }
 
-      .cancel-button {
+      .cancel-button::part(btn) {
         color: var(--red-600);
-      }
-
-      .procedure-button {
-        gap: 0.25rem;
       }
 
       .name-is-missing::placeholder {
@@ -133,7 +128,7 @@ export class EditorUserProceduresModal extends LitElement {
         gap: 0.25rem;
       }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: languageContext })
   @property()
@@ -196,153 +191,6 @@ export class EditorUserProceduresModal extends LitElement {
     this.selectedFgColor = (e.currentTarget as HTMLInputElement).value;
   }
 
-  formatSkeletonize() {
-    const skeletonizeCopy = JSON.parse(JSON.stringify(this.program.block));
-
-    if (!skeletonizeCopy || skeletonizeCopy.length === 0) {
-      console.warn('Skeletonize is empty. Ensure program.block contains data.');
-      return;
-    }
-
-    const deviceList = this.language.deviceList || [];
-    const validUuids = new Set(this.program.header.skeletonize_uuid); 
-
-    // Recursive function to remove blocks not in skeletonize_uuid while preserving nested blocks
-    const filterInvalidBlocks = (block: any[]) => {
-      let result: any[] = [];
-      for (let i = 0; i < block.length; i++) {
-        const stmt = block[i];
-        const isValid = validUuids.has(stmt._uuid) && !stmt.isInvalid;
-
-        if (isValid) {
-          if (stmt.block && Array.isArray(stmt.block)) {
-            stmt.block = filterInvalidBlocks(stmt.block); // Recursively filter nested blocks
-          }
-          result.push(stmt);
-        } else {
-          if (stmt.block && Array.isArray(stmt.block) && stmt.block.length > 0) {
-            console.log('Preserving nested blocks from invalid block with UUID:', stmt._uuid);
-            const nestedBlocks = filterInvalidBlocks(stmt.block);
-
-            if (nestedBlocks.length > 0) {
-              console.log(`Adding ${nestedBlocks.length} preserved nested blocks to parent`);
-              result = result.concat(nestedBlocks);
-            }
-          }
-        }
-      }
-      return result; 
-    };
-    
-    const filteredSkeletonize1 = filterInvalidBlocks(skeletonizeCopy);
-    analyzeBlock(filteredSkeletonize1, this.language.statements, null);
-    const filteredSkeletonize = filterInvalidBlocks(filteredSkeletonize1);
-
-    const parseBlock = (block: any[]) => {
-      const modifiedBlock = [];
-
-      for (let i = 0; i < block.length; i++) {
-        const stmt = block[i];
-        if (!stmt.id) {
-          console.warn('Block without ID:', stmt, 'UUID:', stmt._uuid ? stmt._uuid : 'No UUID');
-          modifiedBlock.push(stmt); 
-          continue;
-        }
-
-        const idParts = stmt.id.split('.'); 
-        const deviceName = idParts[0]; 
-        const deviceType = this.language.deviceListWithTypes[deviceName]; 
-        let modifiedStmt = { ...stmt };
-
-        if (this.language.statements[stmt.id]?.isUserProcedure) {
-          const procedureBody = this.program.header.userProcedures[stmt.id];
-
-          if (procedureBody && Array.isArray(procedureBody)) {
-            const bodyCopy = JSON.parse(JSON.stringify(procedureBody));
-            const assignUuidsRecursively = (block: any[]) => {
-              for (let stmt of block) {
-                const oldUuid = stmt._uuid;
-                stmt._uuid = uuidv4();
-                if (stmt.block && Array.isArray(stmt.block)) {
-                  assignUuidsRecursively(stmt.block);
-                }
-              }
-            };
-
-            assignUuidsRecursively(bodyCopy);
-            const processedBody = parseBlock(bodyCopy);
-
-            for (const bodyStmt of processedBody) {
-              bodyStmt._uuid = uuidv4();
-              modifiedBlock.push(bodyStmt);
-            }
-
-            continue;
-          } else {
-            console.warn('User procedure body not found or invalid:', stmt.id);
-          }
-        } else if (deviceList.includes(deviceName)) {
-          modifiedStmt = {
-            id: 'deviceType',
-            _uuid: stmt._uuid, // Preserve the UUID
-            arguments: [
-              {
-                type: Types.string,
-                value: deviceType,
-              },
-            ],
-          };
-        } 
-        if (stmt.block && Array.isArray(stmt.block)) {
-          modifiedStmt.block = parseBlock(stmt.block); 
-        }
-
-        modifiedBlock.push(modifiedStmt);
-      }
-
-      return modifiedBlock;
-    };
-
-    const parsedSkeletonize = parseBlock(filteredSkeletonize);
-
-    const assignNewUuids = (block: any[]) => {
-      for (let stmt of block) {
-        const oldUuid = stmt._uuid;
-        stmt._uuid = uuidv4();
-        if (stmt.arguments) {
-          for (let arg of stmt.arguments) {
-            if (arg.type === 'boolean_expression' && Array.isArray(arg.value)) {
-              arg.value.forEach((expr: any) => {
-                if (expr && typeof expr === 'object') {
-                  const oldExprUuid = expr._uuid;
-                  expr._uuid = uuidv4();
-
-                  if (expr.value && Array.isArray(expr.value)) {
-                    expr.value.forEach((opd: any) => {
-                      if (opd && typeof opd === 'object') {
-                        const oldOpdUuid = opd._uuid;
-                        opd._uuid = uuidv4();
-                      }
-                    });
-                  }
-                }
-              });
-            }
-          }
-        }
-        if (stmt.block && Array.isArray(stmt.block)) {
-          assignNewUuids(stmt.block);
-        }
-      }
-    };
-
-    assignNewUuids(parsedSkeletonize);
-
-    this._skeletonizeResult = parsedSkeletonize;
-
-    this.requestUpdate();
-  }
-
   handleAddNewProc() {
     if (this.addProcName === '') {
       this.addProcNameIsMissing = true;
@@ -358,46 +206,26 @@ export class EditorUserProceduresModal extends LitElement {
     }
 
     let newProcId = this.addProcName;
-    const procName = this.addProcName;
-
-    this.addProcName = '';
-    this.addProcedureModalRef.value.hideModal();
-
-    this.formatSkeletonize();
-
-    this.requestUpdate();
 
     this.language.statements[newProcId] = {
       type: 'unit',
       group: 'misc',
-      label: procName,
+      label: this.addProcName,
       icon: this.selectedProcIconKey,
       foregroundColor: this.selectedFgColor,
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    const skeletonizeCopy = JSON.parse(JSON.stringify(this._skeletonizeResult));
-    this.program.header.userProcedures[newProcId] = skeletonizeCopy;
+    this.program.header.userProcedures[newProcId] = [];
+
+    this.addProcName = '';
+    this.addProcedureModalRef.value.hideModal();
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(event);
-
-    requestAnimationFrame(() => {
-      this.updateComplete.then(() => {
-        requestAnimationFrame(() => {
-          const newProcModal = this.shadowRoot.querySelector(`editor-user-procedure-modal[stmtKey="${newProcId}"]`);
-          if (newProcModal) {
-            (newProcModal as any).handleChangeProcedureBody();
-          } else {
-            console.error('Could not find procedure modal for:', newProcId);
-            this.requestUpdate();
-          }
-        });
-      });
-    });
   }
 
   handleAddProcNameChange(e: Event) {
@@ -412,6 +240,7 @@ export class EditorUserProceduresModal extends LitElement {
         <div class="procedure-modal-wrapper">
           <div class="procedure-search-wrapper">
             <input
+              autofocus
               type="text"
               placeholder="Search"
               id="variable-search-field"
@@ -440,7 +269,7 @@ export class EditorUserProceduresModal extends LitElement {
                     ${ref(this.iconListModalRef)}
                     .displayType="${'dialog'}"
                     .titleIsVisible="${false}"
-                    .closeButtonIsVisible="${false}">
+                    ?hideCloseButton="${true}">
                     <div class="icon-list-wrapper">
                       ${Object.keys(icons).map(
                         (iconKey) =>
@@ -457,6 +286,7 @@ export class EditorUserProceduresModal extends LitElement {
                     </div>
                   </editor-modal>
                   <input
+                    autofocus
                     type="text"
                     placeholder="${this.addProcNameIsMissing ? 'Name is required' : 'Name'}"
                     .value="${this.addProcName}"
@@ -485,13 +315,13 @@ export class EditorUserProceduresModal extends LitElement {
                 <div class="action-buttons-wrapper">
                   <editor-button class="action-button confirm-button" @click="${this.handleAddNewProc}">
                     <editor-icon .icon="${icons['checkLg']}"></editor-icon>
-                    <span>Create</span>
+                    Create
                   </editor-button>
                   <editor-button
                     class="action-button cancel-button"
                     @click="${() => this.addProcedureModalRef.value.hideModal()}">
                     <editor-icon .icon="${icons['xLg']}"></editor-icon>
-                    <span>Cancel</span>
+                    Cancel
                   </editor-button>
                 </div>
               </div>
@@ -500,7 +330,7 @@ export class EditorUserProceduresModal extends LitElement {
           <div class="user-procedures-list-wrapper">
             ${this.filteredUserProcedureKeys.length > 0
               ? html`${this.filteredUserProcedureKeys.map(
-                  (stmtKey) => html`<editor-user-procedure-modal stmtKey="${stmtKey}" .stmtKey="${stmtKey}"></editor-user-procedure-modal>`
+                  (stmtKey) => html`<editor-user-procedure-modal .stmtKey="${stmtKey}"></editor-user-procedure-modal>`
                 )}`
               : html` <div class="no-procedures">Click on "+ Add" to add new procedure</div> `}
           </div>
@@ -509,4 +339,3 @@ export class EditorUserProceduresModal extends LitElement {
     `;
   }
 }
-

@@ -1,8 +1,15 @@
 {
-  "name": "@podvojsky/vpl-for-things",
+  "name": "@pocketix/vpl-for-things",
   "type": "module",
-  "version": "1.0.5",
-  "author": "Lukáš Podvojský",
+  "version": "1.0.6",
+  "contributors": [
+    {
+      "name": "Lukáš Podvojský"
+    },
+    {
+      "name": "Petr John"
+    }
+  ],
   "license": "MIT",
   "private": false,
   "files": [
@@ -12,20 +19,30 @@
   "module": "./dist/lit-project.js",
   "exports": {
     ".": {
-      "import": "./dist/vpl-for-things.js",
-      "require": "./dist/vpl-for-things.umd.cjs"
-    }
+      "import": {
+        "default": "./dist/vpl-for-things.js",
+        "types": "./dist/index.d.ts"
+      },
+      "require": {
+        "default": "./dist/vpl-for-things.umd.cjs",
+        "types": "./dist/index.d.ts"
+      }
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:watch": "tsc && vite build --watch",
     "preview": "vite preview",
-    "release": "standard-version && git push --follow-tags && npm publish"
+    "release": "standard-version && git push --follow-tags && npm publish",
+    "prepare": "npm run build"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "repository": "https://github.com/podvojsky/vpl-for-things",
+  "repository": "https://github.com/pocketix/vpl-for-things",
   "dependencies": {
     "@lit/context": "^1.1.0",
     "lit": "^3.1.2",
@@ -34,8 +51,12 @@
   "devDependencies": {
     "@types/node": "^20.11.19",
     "standard-version": "^9.5.0",
+    "ts-lit-plugin": "^2.0.2",
     "typescript": "^5.2.2",
     "vite": "^5.1.0",
     "vite-plugin-dts": "^3.7.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.36.0"
   }
 }

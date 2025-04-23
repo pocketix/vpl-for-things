@@ -22,22 +22,19 @@ import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userV
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
-  statementCustomEvent,
   textEditorCustomEvent,
 } from '../editor-custom-events';
 import { EditorUserProceduresModal } from './editor-user-procedures-modal';
-// import for EditorProgramsModal removed
 import * as icons from '@/editor/icons';
-import { EditorButton, Language } from '@/index';
+import { Language } from '@/index';
 import Types from '@vpl/types.ts';
-import { GeBlock } from './ge-block';
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
 
 @customElement('editor-controls')
 export class EditorControls extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -70,8 +67,7 @@ export class EditorControls extends LitElement {
       .controls-group-user {
         display: flex;
         gap: 0.25rem;
-        align-items: center;
-        flex-wrap: nowrap;
+        width: 100%;
       }
 
       .controls-group-user editor-button {
@@ -99,15 +95,8 @@ export class EditorControls extends LitElement {
         padding-left: 3px;
       }
 
-      .add-variable-button {
-        display: flex;
-        gap: 0.25rem;
-        white-space: nowrap;
-      }
 
       .edit-variable-button {
-        display: flex;
-        gap: 0.25rem;
         white-space: nowrap;
       }
 
@@ -166,9 +155,10 @@ export class EditorControls extends LitElement {
       }
 
       .add-variable-modal-save-button {
-        display: flex;
-        gap: 0.25rem;
         width: 100%;
+      }
+
+      .add-variable-modal-save-button::part(btn) {
         justify-content: center;
       }
 
@@ -176,9 +166,6 @@ export class EditorControls extends LitElement {
         display: flex;
         justify-content: space-between;
         gap: 0.5rem;
-      }
-
-      #add-variable-type-select {
       }
 
       .variable-types-legend {
@@ -209,9 +196,6 @@ export class EditorControls extends LitElement {
         font-family: var(--main-font);
       }
 
-      .user-variables-modal::part(dialog) {
-      }
-
       .no-variables-phrase {
         display: flex;
         flex-direction: column;
@@ -221,8 +205,7 @@ export class EditorControls extends LitElement {
         color: var(--gray-500);
       }
 
-      .control-button {
-        gap: 0.25rem;
+      .control-button::part(btn) {
         font-weight: 400;
       }
 
@@ -256,91 +239,8 @@ export class EditorControls extends LitElement {
           padding-bottom: 0;
         }
       }
-
-      .skeletonize-description {
-        width: 100%;
-        padding: 0.75rem;
-        background-color: var(--blue-50);
-        border-radius: 0.375rem;
-        border: 1px solid var(--blue-200);
-        color: var(--blue-900);
-      }
-
-      .skeletonize-title {
-        font-weight: 600;
-        font-size: 0.875rem;
-        margin-bottom: 0.25rem;
-        color: var(--blue-700);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .skeletonize-text {
-        font-size: 0.875rem;
-        line-height: 1.25rem;
-      }
-
-      .control-button.active {
-        border-color: var(--blue-500);
-      }
-
-      .create-procedure {
-        order: -1;
-      }
-
-      .editor-controls-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .skeletonize-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 1rem;
-        width: 100%;
-        margin-bottom: 0.5rem;
-      }
-
-      .skeletonize-description {
-        flex: 1;
-        padding: 1rem;
-        background-color: var(--blue-50);
-        border-radius: 0.5rem;
-        border: 1px solid var(--blue-200);
-        color: var(--blue-900);
-      }
-
-      .skeletonize-title {
-        font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        color: var(--blue-700);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .skeletonize-text {
-        font-size: 0.875rem;
-        line-height: 1.5;
-      }
-
-      .create-procedure {
-        white-space: nowrap;
-        height: fit-content;
-        flex-shrink: 0;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s ease;
-      }
-
-      .create-procedure:hover {
-        background-color: var(--blue-600) !important;
-        transform: translateY(-1px);
-      }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: programContext })
   @property()
@@ -354,7 +254,7 @@ export class EditorControls extends LitElement {
   @property() variablesTableMode: VariableTableMode = 'display';
   @property() selectedAddVariableType: UserVariableType = Types.string;
   @property() selectedAddVariableInitialValueBool: any = true;
-  @property() selectedAddVariableInitialValueBoolExpr: any = initDefaultArgumentType(Types.boolean_expression);
+  @property() selectedAddVariableInitialValueBoolExpr: any = {value: initDefaultArgumentType(Types.boolean_expression), type: Types.boolean_expression};
   @property() selectedAddVariableInitialValueStr: any = '';
   @property() selectedAddVariableInitialValueNum: any = '0';
   @property() selectedAddVariableInitialValueNumExpr: any = [];
@@ -365,8 +265,6 @@ export class EditorControls extends LitElement {
 
   @property() addVariableName: string = '';
   @property() tempNewVariable: UserVariable;
-  @property() skeletonizeMode: boolean = false;
-  // savedPrograms property removed
 
   userVariablesModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
@@ -375,7 +273,6 @@ export class EditorControls extends LitElement {
   userProceduresModalRef: Ref<EditorUserProceduresModal> = createRef();
   inputProgramFileRef: Ref<HTMLInputElement> = createRef();
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
-  // programsModalRef property removed
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -391,8 +288,6 @@ export class EditorControls extends LitElement {
   handleShowUserVariablesModal() {
     this.userVariablesModalRef.value.showModal();
   }
-
-  // handleShowProgramsModal method removed
 
   handleUserVariableTypeChange(e: Event, varKey: string) {
     this.program.header.userVariables[varKey].type = (e.currentTarget as HTMLInputElement).value as UserVariableType;
@@ -555,8 +450,8 @@ export class EditorControls extends LitElement {
           this.selectedAddVariableInitialValueBool = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case Types.boolean_expression:
-          this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
-          this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
+          this.program.header.userVariables[this.addVariableName] = this.selectedAddVariableInitialValueBoolExpr;
+          this.selectedAddVariableInitialValueBoolExpr = {value: initDefaultArgumentType(this.selectedAddVariableType), type: Types.boolean_expression};
           break;
         case Types.number:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNum;
@@ -619,191 +514,48 @@ export class EditorControls extends LitElement {
   }
 
   handleImportProgram() {
-    const programFileInput = this.inputProgramFileRef.value;
-    if (programFileInput.files[0]) {
-      if (programFileInput.files[0].type === 'application/json') {
+    if (this.inputProgramFileRef.value.files[0]) {
+      if (this.inputProgramFileRef.value.files[0].type === 'application/json') {
         let fr = new FileReader();
         fr.onload = (e) => {
-          const importedProgram = JSON.parse(e.target.result as string);
+          this.program.loadProgram(JSON.parse(e.target.result as string));
 
-          if (!importedProgram.header || !importedProgram.block) {
-            alert("The imported file does not contain a valid program structure.");
-            return;
-          }
-          this.program.loadProgram(importedProgram);
-
-          for (let proc of Object.keys(importedProgram.header.userProcedures)) {
+          for (let proc of Object.keys(this.program.header.userProcedures)) {
             this.language.statements[proc] = {
               type: 'unit',
               group: 'misc',
               label: proc,
               icon: 'lightningChargeFill',
-              foregroundColor: importedProgram.header.userProcedures[proc].foregroundColor || '#ffffff',
-              backgroundColor: importedProgram.header.userProcedures[proc].backgroundColor || '#d946ef',
+              foregroundColor: '#ffffff',
+              backgroundColor: '#d946ef',
               isUserProcedure: true,
             };
           }
 
-          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          const event = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
           });
-          this.dispatchEvent(programUpdatedEvent);
-
-          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+          this.dispatchEvent(event);
+          const event2 = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
             bubbles: true,
             composed: true,
           });
-          this.dispatchEvent(textEditorUpdatedEvent);
-
-          alert("Program imported successfully!");
+          this.dispatchEvent(event2);
         };
-        fr.readAsText(programFileInput.files[0]);
+        fr.readAsText(this.inputProgramFileRef.value.files[0]);
       }
     }
   }
 
   handleExportProgram() {
-    const fileName = prompt("Enter the name for the exported program:", "program");
-    if (fileName) {
-      const programExport = {
-        header: {
-          userVariables: this.program?.header.userVariables,
-          userProcedures: this.program?.header.userProcedures,
-          initializedProcedures: this.program?.header.initializedProcedures || [],
-        },
-        block: this.program?.block,
-      };
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
-      const downloadAnchorNode = this.exportProgramLinkRef.value;
-      downloadAnchorNode.setAttribute('href', dataStr);
-      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
-      downloadAnchorNode.click();
-    }
+    let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
+      JSON.stringify(this.program.exportProgram(), null, '  ')
+    )}`;
+    this.exportProgramLinkRef.value.setAttribute('href', programStrData);
+    this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
+    this.exportProgramLinkRef.value.click();
   }
-
-
-  handleSkeletonize() {
-    this.skeletonizeMode = !this.skeletonizeMode;
-    if (!this.skeletonizeMode) {
-      this.program.header.skeletonize_uuid = [];
-    }
-
-    const modeChangedEvent = new CustomEvent('skeletonize-mode-changed', {
-      bubbles: true,
-      composed: true,
-      detail: { active: this.skeletonizeMode }
-    });
-    this.dispatchEvent(modeChangedEvent);
-
-    const selectionChangedEvent = new CustomEvent('skeletonize-selection-changed', {
-      bubbles: true,
-      composed: true,
-      detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
-    });
-    this.dispatchEvent(selectionChangedEvent);
-
-    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-      detail: { skeletonizeModeChanged: true }
-    });
-    this.dispatchEvent(programEvent);
-  }
-
-  handleAddToSelectedUUIDs(uuid: string) {
-    if (!this.program.header.selected_uuids.includes(uuid)) {
-      this.program.header.selected_uuids.push(uuid);
-    }
-  }
-
-  handleRemoveFromSelectedUUIDs(uuid: string) {
-    this.program.header.selected_uuids = this.program.header.selected_uuids.filter((id) => id !== uuid);
-  }
-
-  handleImportHeader() {
-    const headerFileInput = this.shadowRoot.getElementById('header-file-input') as HTMLInputElement;
-    if (headerFileInput.files[0]) {
-      if (headerFileInput.files[0].type === 'application/json') {
-        let fr = new FileReader();
-        fr.onload = (e) => {
-          const importedData = JSON.parse(e.target.result as string);
-
-          // Check if the imported file contains userProcedures
-          if (!importedData.userProcedures) {
-            alert("The imported file does not contain valid user procedures.");
-            return;
-          }
-
-          // Check for duplicate procedure names
-          for (let procName of Object.keys(importedData.userProcedures)) {
-            if (this.program.header.userProcedures[procName]) {
-              alert(`Duplicate procedure name found: ${procName}`);
-              return;
-            }
-          }
-
-          // Merge userProcedures
-          this.program.header.userProcedures = {
-            ...this.program.header.userProcedures,
-            ...importedData.userProcedures,
-          };
-
-          // Integrate custom procedures into the language context
-          for (let proc of Object.keys(importedData.userProcedures)) {
-            this.language.statements[proc] = {
-              type: 'unit',
-              group: 'misc',
-              label: proc,
-              icon: 'lightningChargeFill',
-              foregroundColor: importedData.userProcedures[proc].foregroundColor || '#ffffff',
-              backgroundColor: importedData.userProcedures[proc].backgroundColor || '#d946ef',
-              isUserProcedure: true,
-            };
-          }
-
-          // Dispatch events to update the program and UI
-          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-            bubbles: true,
-            composed: true,
-          });
-          this.dispatchEvent(programUpdatedEvent);
-
-          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
-            bubbles: true,
-            composed: true,
-          });
-          this.dispatchEvent(textEditorUpdatedEvent);
-        };
-        fr.readAsText(headerFileInput.files[0]);
-      }
-    }
-  }
-
-  handleExportHeader() {
-    const fileName = prompt("Enter the name for the exported UDFs:", "udfs");
-    if (fileName) {
-      const udfExport = {
-        userProcedures: Object.keys(this.program?.header.userProcedures || {}).reduce((acc, proc) => {
-          acc[proc] = {
-            ...this.program.header.userProcedures[proc],
-            foregroundColor: this.language.statements[proc].foregroundColor,
-            backgroundColor: this.language.statements[proc].backgroundColor,
-          };
-          return acc;
-        }, {}),
-      };
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(udfExport, null, 2));
-      const downloadAnchorNode = this.exportProgramLinkRef.value;
-      downloadAnchorNode.setAttribute('href', dataStr);
-      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
-      downloadAnchorNode.click();
-    }
-  }
-
- 
-
-  
 
   userVariablesModalTemplate() {
     return html`
@@ -812,13 +564,14 @@ export class EditorControls extends LitElement {
           <div class="user-variables-header">
             <div class="user-variables-header-search">
               <input
+                autofocus
                 type="text"
                 placeholder="Search"
                 id="variable-search-field"
                 .value="${this.variableSearchInput}"
                 @input="${this.handleVariablesSearch}" />
               <div class="variables-buttons-wrapper">
-                <editor-button class="edit-variable-button" @click="${this.handleVariablesTableChangeMode}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleVariablesTableChangeMode}">
                   ${this.variablesTableMode === 'display'
                     ? html`
                         <editor-icon .icon="${pencilSquare}"></editor-icon>
@@ -829,7 +582,7 @@ export class EditorControls extends LitElement {
                         <div>Save</div>
                       `}
                 </editor-button>
-                <editor-button class="add-variable-button" @click="${this.handleShowAddVariableModal}">
+                <editor-button btnStyle="white-space: nowrap;" @click="${this.handleShowAddVariableModal}">
                   <editor-icon .icon="${plusLg}"></editor-icon>
                   <div>New</div>
                 </editor-button>
@@ -838,6 +591,7 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-item">
                       <label for="add-variable-type-select">Type</label>
                       <select
+                        autofocus
                         name=""
                         id="add-variable-type-select"
                         .value="${this.selectedAddVariableType}"
@@ -884,15 +638,15 @@ export class EditorControls extends LitElement {
                     <div class="add-variable-modal-save">
                       <editor-button
                         class="add-variable-modal-save-button"
-                        style="color: var(--green-600);"
+                        btnStyle="color: var(--green-600);"
                         @click="${this.handleAddNewVariable}">
-                        <editor-icon .icon="${checkLg}"></editor-icon>
-                        <div>Add</div>
+                          <editor-icon .icon="${checkLg}"></editor-icon>
+                          <div>Add</div>
                       </editor-button>
                       <editor-button
                         @click="${this.handleCloseAddVariableModal}"
                         class="add-variable-modal-save-button"
-                        style="color: var(--red-600);">
+                        btnStyle="color: var(--red-600);">
                         <editor-icon .icon="${xLg}"></editor-icon>
                         <div>Cancel</div>
                       </editor-button>
@@ -927,7 +681,7 @@ export class EditorControls extends LitElement {
         return html`
           <editor-button
             @click="${this.handleShowAddVariableExpressionModal}"
-            style="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
+            btnStyle="${this.addVariableInitialValueIsMissing ? 'border: 1px solid var(--red-600);' : ''}">
             <div style="display: flex; gap: 4px; align-items: center;">
               <editor-icon .icon="${icons.threeDots}"></editor-icon>
               Expression
@@ -981,7 +735,7 @@ export class EditorControls extends LitElement {
               ${ref(this.variableTypesLegendModalRef)}
               .displayType="${'dialog'}"
               .titleIsVisible="${false}"
-              .closeButtonIsVisible="${false}">
+              ?hideCloseButton="${true}">
               <div class="variable-types-legend">
                 ${userVariableTypes.map((varType: UserVariableType) => {
                   return html`
@@ -1007,7 +761,7 @@ export class EditorControls extends LitElement {
         ${repeat(
           this.filteredVariables,
           (key) => key,
-          (key, i) => {
+          (key) => {
             return html`
               <tr>
                 <td>
@@ -1034,7 +788,7 @@ export class EditorControls extends LitElement {
                         name=""
                         id=""
                         .value="${key}"
-                        @change="${(e) => this.handleModifyVariableName(e, key)}" />`}
+                        @change="${(e: Event) => this.handleModifyVariableName(e, key)}" />`}
                 </td>
                 <td>
                   ${this.variablesTableMode === 'display'
@@ -1081,13 +835,16 @@ export class EditorControls extends LitElement {
   }
 
   userVaribleModifyInitialValueTemplate(varKey: string) {
+    console.assert(typeof this.program.header.userVariables[varKey].value === "string", "user variable value is of type string");
+    const value = this.program.header.userVariables[varKey].value as string; // TODO(filip): rework types
+
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`
           <select
             class="mono-font"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}">
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}">
             <option value="true">True</option>
             <option value="false">False</option>
           </select>
@@ -1102,8 +859,8 @@ export class EditorControls extends LitElement {
             id=""
             inputmode="decimal"
             placeholder="123"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
       case Types.string:
         return html`
@@ -1112,118 +869,55 @@ export class EditorControls extends LitElement {
             name=""
             id=""
             placeholder="abc"
-            .value="${this.program.header.userVariables[varKey].value}"
-            @change="${(e) => this.handleModifyVariableInitialValue(e, varKey)}" />
+            .value="${value}"
+            @change="${(e: Event) => this.handleModifyVariableInitialValue(e, varKey)}" />
         `;
     }
   }
 
   render() {
     return html`
-      <div class="editor-controls-wrapper">
-        ${this.skeletonizeMode ? html`
-          <div class="skeletonize-header">
-            <div class="skeletonize-description">
-              <div class="skeletonize-title">
-                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
-                <span>Create a New Procedure</span>
-              </div>
-              <div class="skeletonize-text">
-                1. Click on blocks in your program to select them
-                2. Selected blocks will be included in your new procedure
-                3. Click "Create Procedure" when you're ready
-              </div>
-            </div>
-            <editor-button
-              @click="${() => {
-                const proceduresModal = this.userProceduresModalRef.value;
-                proceduresModal.showModal();
-                // Wait for modal to be fully shown before calling handleShowAddProcedureModal
-                requestAnimationFrame(() => {
-                  proceduresModal.handleShowAddProcedureModal();
-                });
-              }}"
-              class="control-button create-procedure"
-              style="background-color: var(--blue-500); color: white; font-weight: 500;">
-              <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
-              <span>Create Procedure</span>
+      <div class="controls">
+        <div class="controls-group-export">
+          <label for="program-file-input">
+            <input
+              ${ref(this.inputProgramFileRef)}
+              type="file"
+              name="program-file-input"
+              id="program-file-input"
+              style="display: none;"
+              accept="application/json"
+              @input="${this.handleImportProgram}" />
+            <editor-button @click="${this.handleImportProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+              </editor-icon>
+              <span>Import Program</span>
             </editor-button>
-          </div>
-        ` : nothing}
-        <div class="controls">
-          <div class="controls-group-export">
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <input
-                ${ref(this.inputProgramFileRef)}
-                type="file"
-                name="program-file-input"
-                id="program-file-input"
-                style="display: none;"
-                accept="application/json"
-                @input="${this.handleImportProgram}" />
-              <editor-button @click="${() => this.inputProgramFileRef.value.click()}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
-                </editor-icon>
-                <span>Import Program</span>
-              </editor-button>
-              <input
-                type="file"
-                name="header-file-input"
-                id="header-file-input"
-                style="display: none;"
-                accept="application/json"
-                @input="${this.handleImportHeader}" />
-              <editor-button @click="${() => this.shadowRoot.getElementById('header-file-input').click()}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import UDFs"></editor-icon>
-                <span>Import UDFs</span>
-              </editor-button>
-            </div>
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <editor-button @click="${this.handleExportProgram}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
-                <span>Export Program</span>
-              </editor-button>
-              <editor-button @click="${this.handleExportHeader}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export UDFs"></editor-icon>
-                <span>Export UDFs</span>
-              </editor-button>
-              <!-- Export Linearized button removed -->
-            </div>
-            <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
-
-
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <!-- Programs button removed -->
-              <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
-                <div class="variables-icon">𝑥</div>
-                <div>Variables</div>
-              </editor-button>
-              <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
-                <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
-                <span>Procedures</span>
-              </editor-button>
-            </div>
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <editor-button
-                @click="${this.handleSkeletonize}"
-                class="control-button ${this.skeletonizeMode ? 'active' : ''}"
-                style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
-                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
-                <span>Skeletonize</span>
-              </editor-button>
-              <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
-                <option value="split">Split View</option>
-                <option value="ge">Graphical View</option>
-                <option value="te">Text View</option>
-              </select>
-            </div>
-          </div>
+          </label>
+          <editor-button @click="${this.handleExportProgram}" class="control-button">
+            <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+            <span>Export Program</span>
+          </editor-button>
+          <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
+        </div>
+        <div class="controls-group-user">
+          <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
+            <div class="variables-icon">𝑥</div>
+            <div>Variables</div>
+          </editor-button>
+          <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
+            <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+            <span>Procedures</span>
+          </editor-button>
         </div>
       </div>
+      <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
+        <option value="split">Split View</option>
+        <option value="ge">Graphical View</option>
+        <option value="te">Text View</option>
+      </select>
       ${this.userVariablesModalTemplate()}
-      <!-- Programs modal removed -->
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
   }
-
 }

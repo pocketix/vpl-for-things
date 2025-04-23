@@ -46,21 +46,14 @@ export class GraphicalEditor extends LitElement {
   @consume({ context: programContext })
   @property()
   program?: Program;
-
-  @property({ type: Boolean }) skeletonizeMode: boolean = false;
-  @property({ type: Boolean }) restrainedMode: boolean = false;
   //#endregion
 
   //#region Render
   render() {
     return html`
-      <ge-block
-        .block="${this.program.block}"
-        .skeletonizeMode="${this.skeletonizeMode}"
-        .restrainedMode="${this.restrainedMode}"> <!-- Pass restrainedMode -->
-      </ge-block>
-      ${!this.skeletonizeMode && this.program.block.length < 1
-        ? html` <div class="help-message">Click on "+" button to add new statement</div> `
+      <ge-block .block="${this.program.block}"></ge-block>
+      ${this.program.block.length < 1
+        ? html` <div class="help-message">Click the "+" button to add a new statement</div> `
         : nothing}
     `;
   }

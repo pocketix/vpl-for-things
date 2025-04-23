@@ -9,7 +9,6 @@ import {
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
   parseExpressionToString,
-  AbstractStatementWithArgs,
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -17,10 +16,11 @@ import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { languageContext, programContext } from '../context/editor-context';
 import { globalStyles } from '../global-styles';
-import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent,deviceMetadataCustomEvent } from '../editor-custom-events';
+import { editorVariablesModalCustomEvent, graphicalEditorCustomEvent } from '../editor-custom-events';
 import { v4 as uuidv4 } from 'uuid';
-import { plusLg, pencilSquare } from '../icons';
+import { pencilSquare, plusLg, threeDots } from '../icons';
 import Types from '@vpl/types.ts';
+import { classMap } from 'lit/directives/class-map.js';
 
 @customElement('ge-statement-argument')
 export class GeStatementArgument extends LitElement {
@@ -35,9 +35,12 @@ export class GeStatementArgument extends LitElement {
       }
 
       .expr-arg {
-        white-space: nowrap;
         min-width: 0;
         width: 100%;
+      }
+
+      .expr-arg::part(btn) {
+        white-space: nowrap;
         font-family: var(--mono-font);
       }
 
@@ -119,31 +122,17 @@ export class GeStatementArgument extends LitElement {
   }
 
   handleValueChange(e: Event) {
-    const oldValue = this.argument.value;
-
     if (this.argument.type === Types.number || this.argument.type === 'num_opt') {
       this.argument.value = Number((e.currentTarget as HTMLSelectElement).value);
     } else {
       this.argument.value = (e.currentTarget as HTMLSelectElement).value;
     }
-
-    if (oldValue !== this.argument.value) {
-      console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
-    }
-
-    const event = new CustomEvent(deviceMetadataCustomEvent.VALUE_CHANGED, {
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(event);
-    const eventT = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(eventT);
   }
-
-
 
   handleDeselectUserVariable() {
     if (this.program.header.userVariables[this.argument.value as string] !== undefined) {
@@ -170,7 +159,7 @@ export class GeStatementArgument extends LitElement {
       bubbles: true,
       composed: true,
     });
-    
+    this.dispatchEvent(event);
   }
 
   constructor() {
@@ -180,6 +169,19 @@ export class GeStatementArgument extends LitElement {
     });
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    if ((this.argument.type === 'num_opt' || this.argument.type === 'str_opt') && this.argument.value === null) {
+      this.argument.value = (
+        this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+      ).arguments[this.argPosition].options[0].id;
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+    }
+  }
 
   updated() {
     if (this.variableKey) {
@@ -207,7 +209,7 @@ export class GeStatementArgument extends LitElement {
   }
 
   useVariableTemplate() {
-    let permittedVarType: string | ArgumentType;
+    let permittedVarType;
     if (this.argument.type === Types.variable && this.argument.value !== null) {
       if (this.program.header.userVariables[this.argument.value as string] === undefined) {
         permittedVarType = (
@@ -227,9 +229,7 @@ export class GeStatementArgument extends LitElement {
     return html`
       <div class="${this.argument.type === Types.variable && this.argument.value ? 'argument-var-wrapper' : ''}">
         <editor-button
-          class="${this.argument.type === Types.variable && this.argument.value ? 'expr-arg' : ''} ${this.isExample
-            ? 'disabled'
-            : ''}"
+          class="${classMap({'expr-arg': this.argument.type === Types.variable && !!this.argument.value, 'disabled': this.isExample})}"
           style="height: 100%;"
           @click="${this.handleShowSelectArgumentVariableModal}">
           ${this.argument.type === Types.variable && this.argument.value
@@ -253,48 +253,8 @@ export class GeStatementArgument extends LitElement {
     `;
   }
 
-  handleEditDeviceType() {
-    const currentValue = String(this.argument.value || '');
-    const newValue = prompt('Enter device type:', currentValue);
-
-    if (newValue !== null) {
-      this.argument.value = newValue;
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-  }
-
-  deviceTypeTemplate(argumentElementId: string) {
-    const bgColor = this.language.statements['deviceType'].backgroundColor;
-
-    return html`
-      <div class="argument-wrapper">
-        ${this.argumentLabelTemplate(argumentElementId)}
-        <div class="argument-var-wrapper">
-          <div
-            style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-            <span>${this.argument.value}</span>
-            <span
-              @click="${this.handleEditDeviceType}"
-              style="cursor: pointer; display: inline-flex; align-items: center;"
-              title="Edit device type">
-              <editor-icon .icon="${pencilSquare}" .width="${14}" .height="${14}"></editor-icon>
-            </span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     let argumentElementId = uuidv4();
-
-    if (this.stmtId === 'deviceType' && this.argument.type === Types.string) {
-      return this.deviceTypeTemplate(argumentElementId);
-    }
 
     switch (this.argument.type as ArgumentType | 'device') {
       case Types.boolean:
@@ -303,10 +263,10 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
-                @click="${(e: Event) => e.stopPropagation()}"
                 class="expr-arg">
                 <option value="true">True</option>
                 <option value="false">False</option>
@@ -351,13 +311,13 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                autofocus
                 ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 type="number"
                 placeholder="123"
                 .value="${this.argument.value}"
-                @input="${this.handleValueChange}"
-                @click="${(e: Event) => e.stopPropagation()}" />
+                @input="${this.handleValueChange}" />
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
@@ -368,13 +328,11 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
-                @click="${(e: Event) => {
-                  e.stopPropagation(); 
-                  this.handleValueChange(e);
-                }}">
+                @click="${this.handleValueChange}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs
@@ -392,13 +350,13 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <input
+                autofocus
                 ?disabled="${this.isExample}"
                 id="${argumentElementId}"
                 placeholder="abc"
                 type="text"
                 .value="${this.argument.value}"
-                @input="${this.handleValueChange}"
-                @click="${(e: Event) => e.stopPropagation()}" />
+                @input="${this.handleValueChange}" />
               ${this.stmtId !== 'setvar' ? this.useVariableTemplate() : nothing}
             </div>
           </div>
@@ -409,15 +367,13 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate(argumentElementId)}
             <div class="argument-var-wrapper">
               <select
+                autofocus
                 ?disabled="${this.isExample}"
                 style="width: 100%;"
                 id="${argumentElementId}"
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
-                @click="${(e: Event) => {
-                  e.stopPropagation(); 
-                  this.handleValueChange(e);
-                }}">
+                @click="${this.handleValueChange}">
                 ${(
                   this.language.statements[this.stmtId] as
                     | UnitLanguageStatementWithArgs

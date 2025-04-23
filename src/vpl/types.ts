@@ -4,7 +4,6 @@ export enum Types {
   string = "string",
   boolean_expression = "boolean_expression",
   variable = "variable",
-  multi_device = "multi_device",
   unknown = "unknown"
 }
 

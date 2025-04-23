@@ -678,16 +678,3 @@ export const power = html`
     <path d="M3 8.812a5 5 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 11 3.616l-.501.865A5 5 0 1 1 3 8.812" />
   </svg>
 `;
-
-
-export const folder = html`
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    fill="currentColor"
-    class="bi bi-folder"
-    viewBox="0 0 16 16">
-    <path d="M9.828 3H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9.828a1 1 0 0 1-.707-.293L7.707 2.293A1 1 0 0 0 7 2H2z" />
-  </svg>
-`;

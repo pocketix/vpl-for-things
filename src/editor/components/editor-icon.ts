@@ -4,6 +4,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { globalStyles } from '../global-styles';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
+import { TemplateResultType } from 'lit/directive-helpers.js';
 
 @customElement('editor-icon')
 export class EditorIcon extends LitElement {
@@ -16,7 +17,7 @@ export class EditorIcon extends LitElement {
     `,
   ];
 
-  @property() icon: TemplateResult;
+  @property({type: Object}) icon: TemplateResult<1>;
   @property() color?: string;
   @property() width?: number;
   @property() height?: number;
@@ -33,12 +34,15 @@ export class EditorIcon extends LitElement {
 
   updated() {
     const svg = this.shadowRoot.querySelector('svg');
+    if (!svg) {
+      return;
+    }
     svg.style.fill = this.color ? this.color : 'currentColor';
     svg.style.width = this.width ? `${this.width}px` : svg.style.width;
     svg.style.height = this.height ? `${this.height}px` : svg.style.height;
   }
 
   render() {
-    return html` ${this.icon} `;
+    return this.icon;
   }
 }
