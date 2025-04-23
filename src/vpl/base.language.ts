@@ -637,4 +637,19 @@ export const baseLanguageStatements: Statements = {
       brief: 'Using this statement, you can set values to your variables.',
     },
   },
+
+  deviceType: {
+    type: 'unit_with_args',
+    group: 'iot',
+    label: 'Device Type',
+    icon: 'bracesAsterisk',
+    foregroundColor: '#000000',
+    backgroundColor: '#d977f6',
+    arguments: [
+      { type: Types.string, label: 'Type' },
+    ],
+    description: {
+      brief: 'Represents a device type that can be initialized with a specific device',
+    },
+  },
 };

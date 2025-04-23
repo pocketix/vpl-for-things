@@ -6,11 +6,15 @@ export class Language {
   variables: Variables;
   statements: Statements;
   deviceList: string[];
+  deviceListWithTypes: { [deviceName: string]: string }; // Added deviceTypes property
+  uniqueDeviceTypes: string[]; // Add a new property for unique device types
 
   constructor(devices?: Device[]) {
     this.variables = {};
     this.statements = baseLanguageStatements;
     this.deviceList = [];
+    this.deviceListWithTypes = {}; // Initialize deviceTypes
+    this.uniqueDeviceTypes = []; // Initialize uniqueDeviceTypes
 
     if (devices) {
       for (let device of devices) {
@@ -28,11 +32,22 @@ export class Language {
           };
         }
 
+        // Store device type in deviceTypes
+        this.deviceListWithTypes[device.deviceName] = device.deviceType;
+
+        // Add device type to uniqueDeviceTypes if not already present
+        if (!this.uniqueDeviceTypes.includes(device.deviceType)) {
+          this.uniqueDeviceTypes.push(device.deviceType);
+        }
+
         // Do not include devices with no functions
         if (device.functions.length > 0) {
           this.deviceList.push(device.deviceName);
         }
       }
+      console.log('Device List:', this.deviceList); // Log the device list
+      console.log('Device deviceListWithTypes:', this.deviceListWithTypes); // Log the device types
+      console.log('Unique Device Types:', this.uniqueDeviceTypes); // Log the unique device types
     }
   }
 }
@@ -110,6 +125,7 @@ export type ArgumentType =
   | Types.number
   | Types.boolean
   | Types.boolean_expression
+  | Types.multi_device
   | 'str_opt'
   | 'num_opt'
   | Types.variable
@@ -124,10 +140,12 @@ export type ArgumentOptions = {
 
 export type Device = {
   deviceName: string;
+  deviceType: string;
   attributes: string[];
   functions: (UnitLanguageStatement | UnitLanguageStatementWithArgs)[];
 };
 
 export type DeviceStatement = (UnitLanguageStatement | UnitLanguageStatementWithArgs) & {
   deviceName: string;
+  deviceType: string;
 };
