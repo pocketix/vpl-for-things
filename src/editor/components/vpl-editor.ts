@@ -83,17 +83,21 @@ export class VplEditor extends LitElement {
     console.log('Updating program in VPL editor');
 
     let programToUse: Program;
+    let programData: any = null;
 
     // Handle different input types
     if (newProgram instanceof Program) {
       // If it's already a Program instance, use it directly
       programToUse = newProgram as Program;
+      programData = programToUse.exportProgram();
+      console.log('Program instance provided:', programData);
     } else if (typeof newProgram === 'string') {
       // If it's a string, try to parse it as JSON
       try {
-        const parsedData = JSON.parse(newProgram);
+        programData = JSON.parse(newProgram);
         programToUse = new Program();
-        programToUse.loadProgram(parsedData);
+        programToUse.loadProgram(programData);
+        console.log('String program parsed:', programData);
       } catch (error) {
         console.error('Failed to parse program string as JSON:', error);
         return; // Exit early if parsing fails
@@ -101,8 +105,11 @@ export class VplEditor extends LitElement {
     } else if (typeof newProgram === 'object' && newProgram !== null) {
       // If it's an object (but not a Program), treat it as program data
       try {
+        programData = newProgram;
         programToUse = new Program();
-        programToUse.loadProgram(newProgram);
+        programToUse.loadProgram(programData);
+        console.log('Object program loaded:', programData);
+        console.log('program to use:', programToUse);
       } catch (error) {
         console.error('Failed to load program from object:', error);
         return; // Exit early if loading fails
@@ -115,25 +122,56 @@ export class VplEditor extends LitElement {
 
     // Update the internal program property
     this.program = programToUse;
+    console.log('Program set:', this.program);
 
     // Analyze the program to ensure it's properly initialized
-    analyzeBlock(this.program.block, this.language.statements, null);
-    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
-      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+    try {
+      console.log('Analyzing program blocks');
+      analyzeBlock(this.program.block, this.language.statements, null);
+      for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+        analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+      }
+    } catch (error) {
+      console.error('Error analyzing program blocks:', error);
     }
 
-    // Update the text editor if it's initialized
-    if (this.textEditorRef.value) {
-      this.textEditorRef.value.textEditorValue = JSON.stringify(
-        this.program.exportProgramBlock(this.program.block),
-        null,
-        '  '
-      );
+    // First, update the text editor
+    try {
+      if (this.textEditorRef.value) {
+        console.log('Updating text editor');
+        const programJson = JSON.stringify(
+          this.program.exportProgramBlock(this.program.block),
+          null,
+          '  '
+        );
+        this.textEditorRef.value.textEditorValue = programJson;
+        console.log('Text editor updated with:', programJson);
+      } else {
+        console.log('Text editor not initialized yet');
+      }
+    } catch (error) {
+      console.error('Error updating text editor:', error);
     }
 
-    // Update the graphical editor if it's initialized
-    if (this.graphicalEditorRef.value) {
-      this.graphicalEditorRef.value.requestUpdate();
+    // Then update the graphical editor
+    try {
+      if (this.graphicalEditorRef.value) {
+        console.log('Updating graphical editor');
+
+        // First, request an update on the graphical editor
+        this.graphicalEditorRef.value.requestUpdate();
+
+        // Then dispatch events to ensure the graphical editor updates
+        this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          detail: { programBodyUpdated: true },
+          bubbles: true,
+          composed: true
+        }));
+      } else {
+        console.log('Graphical editor not initialized yet');
+      }
+    } catch (error) {
+      console.error('Error updating graphical editor:', error);
     }
 
     // Request an update to refresh the UI
@@ -141,7 +179,7 @@ export class VplEditor extends LitElement {
 
     // Dispatch a change event to notify listeners
     this.dispatchEvent(new CustomEvent('change', {
-      detail: programToUse,
+      detail: this.program,
       bubbles: true,
       composed: true
     }));
@@ -159,6 +197,13 @@ export class VplEditor extends LitElement {
       bubbles: true,
       composed: true
     }));
+
+    console.log('Program update complete');
+
+    // Force one final update after a delay to ensure everything is in sync
+    setTimeout(() => {
+      this.handleGraphicalEditorProgramUpdated();
+    }, 200);
   }
 
   /**
@@ -241,29 +286,112 @@ export class VplEditor extends LitElement {
 
     // If the program property was changed externally, update the internal state
     if (changedProperties.has('program') && this.program) {
-      // Analyze the program to ensure it's properly initialized
-      analyzeBlock(this.program.block, this.language.statements, null);
-      for (let userProcId of Object.keys(this.program.header.userProcedures)) {
-        analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
-      }
+      console.log('Program property changed externally, syncing editors');
 
-      // Update the text editor if it's initialized
-      if (this.textEditorRef.value) {
-        this.textEditorRef.value.textEditorValue = JSON.stringify(
-          this.program.exportProgramBlock(this.program.block),
-          null,
-          '  '
-        );
-      }
+      try {
+        // Analyze the program to ensure it's properly initialized
+        analyzeBlock(this.program.block, this.language.statements, null);
+        for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+          analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+        }
 
-      this.requestUpdate();
+        // Update the text editor if it's initialized
+        if (this.textEditorRef.value) {
+          console.log('Updating text editor from program property change');
+          this.textEditorRef.value.textEditorValue = JSON.stringify(
+            this.program.exportProgramBlock(this.program.block),
+            null,
+            '  '
+          );
+        }
+
+        // Update the graphical editor if it's initialized
+        if (this.graphicalEditorRef.value) {
+          console.log('Updating graphical editor from program property change');
+
+          // Force a complete refresh of all components
+          setTimeout(() => {
+            // Dispatch events to ensure the graphical editor updates
+            this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+              detail: { programBodyUpdated: true },
+              bubbles: true,
+              composed: true
+            }));
+
+            // Force a thorough update after a delay
+            setTimeout(() => {
+              this.handleGraphicalEditorProgramUpdated();
+            }, 100);
+          }, 0);
+        }
+
+        this.requestUpdate();
+      } catch (error) {
+        console.error('Error updating editors after program property change:', error);
+      }
     }
   }
   //#endregion
 
   //#region Handlers
   handleTextEditorProgramUpdated() {
-    this.graphicalEditorRef.value.requestUpdate();
+    console.log('Text editor program updated, syncing with graphical editor');
+
+    // First, make sure the program is properly analyzed
+    analyzeBlock(this.program.block, this.language.statements, null);
+    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+    }
+
+    // Then update the graphical editor
+    if (this.graphicalEditorRef.value) {
+      this.graphicalEditorRef.value.requestUpdate();
+
+      // Force a thorough update of all components in the graphical editor
+      setTimeout(() => {
+        try {
+          // Update all components in the shadow DOM
+          const deepQuerySelectorAll = (selector: string, root: Element | Document | ShadowRoot) => {
+            root = root || document;
+            const results = Array.from(root.querySelectorAll(selector));
+            const pushNestedResults = (root: Element | Document | ShadowRoot) => {
+              deepQuerySelectorAll(selector, root).forEach((elem) => {
+                if (!results.includes(elem)) {
+                  results.push(elem);
+                }
+              });
+            };
+
+            if ('shadowRoot' in root && root.shadowRoot) {
+              pushNestedResults(root.shadowRoot);
+            }
+
+            for (const elem of root.querySelectorAll('*')) {
+              if (elem.shadowRoot) {
+                pushNestedResults(elem.shadowRoot);
+              }
+            }
+            return results;
+          };
+
+          // Update all components in the shadow DOM
+          deepQuerySelectorAll(
+            'editor-button, editor-controls, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal, editor-expression-operand-list',
+            this.shadowRoot
+          ).forEach((elem: any) => {
+            if (elem.requestUpdate) {
+              elem.requestUpdate();
+            }
+          });
+
+          console.log('Graphical editor updated from text editor changes');
+        } catch (error) {
+          console.error('Error updating graphical editor from text editor:', error);
+        }
+      }, 50);
+    }
+
+    // Dispatch change event
     this.dispatchEvent(new CustomEvent('change', {
       detail: this.program,
       bubbles: true,
@@ -272,6 +400,14 @@ export class VplEditor extends LitElement {
   }
 
   handleGraphicalEditorProgramUpdated() {
+    console.log('Graphical editor program updated, syncing with text editor');
+
+    // First, make sure the program is properly analyzed
+    analyzeBlock(this.program.block, this.language.statements, null);
+    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
+      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
+    }
+
     // Source for deepQuerySelectorAll function: https://gist.github.com/Haprog/848fc451c25da00b540e6d34c301e96a#file-deepqueryselectorall-js-L7
     function deepQuerySelectorAll(selector: string, root: Element | Document | ShadowRoot) {
       root = root || document;
@@ -297,11 +433,7 @@ export class VplEditor extends LitElement {
       return results;
     }
 
-    analyzeBlock(this.program.block, this.language.statements, null);
-    for (let userProcId of Object.keys(this.program.header.userProcedures)) {
-      analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
-    }
-
+    // Update all components in the shadow DOM
     deepQuerySelectorAll(
       'editor-button, editor-controls, editor-icon, editor-modal, ge-block, graphical-editor, text-editor, vpl-editor, editor-expression-modal, ge-statement-argument, editor-expression, editor-variables-modal, editor-expression-operand, editor-user-procedures-modal, editor-user-procedure-modal, editor-user-var-expr-modal, editor-expression-operand-list',
       this.shadowRoot
@@ -309,11 +441,21 @@ export class VplEditor extends LitElement {
       elem.requestUpdate();
     });
 
-    this.textEditorRef.value.textEditorValue = JSON.stringify(
-      this.program.exportProgramBlock(this.program.block),
-      null,
-      '  '
-    );
+    // Update the text editor with the current program
+    if (this.textEditorRef.value) {
+      try {
+        console.log('Updating text editor from graphical editor changes');
+        const programJson = JSON.stringify(
+          this.program.exportProgramBlock(this.program.block),
+          null,
+          '  '
+        );
+        this.textEditorRef.value.textEditorValue = programJson;
+        console.log('Text editor updated with program:', programJson);
+      } catch (error) {
+        console.error('Error updating text editor from graphical editor:', error);
+      }
+    }
 
     // Notify parent component about program changes
     if (this.onProgramChange) {
@@ -326,6 +468,9 @@ export class VplEditor extends LitElement {
       bubbles: true,
       composed: true
     }));
+
+    // Request an update to refresh the UI
+    this.requestUpdate();
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {
