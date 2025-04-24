@@ -8,7 +8,7 @@ import {
   ProgramStatementArgument,
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
-  parseExpressionToString,
+  parseExpressionToString, BoolOperator, isExpressionOperator
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -255,8 +255,13 @@ export class GeStatementArgument extends LitElement {
 
   render() {
     let argumentElementId = uuidv4();
+    let argumentType = this.argument.type;
 
-    switch (this.argument.type as ArgumentType | 'device') {
+    if (isExpressionOperator(this.argument.type)) {
+      argumentType = Types.boolean_expression;
+    }
+
+    switch (argumentType as ArgumentType | 'device' | BoolOperator) {
       case Types.boolean:
         return html`
           <div class="argument-wrapper">
