@@ -13,7 +13,7 @@ import { graphicalEditorCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -48,8 +48,7 @@ export class EditorUserProceduresModal extends LitElement {
         align-items: center;
       }
 
-      .procedure-icon-button {
-        display: flex;
+      .procedure-icon-button::part(btn) {
         justify-content: center;
         width: 43px;
         height: 39px;
@@ -93,20 +92,19 @@ export class EditorUserProceduresModal extends LitElement {
 
       .action-button {
         width: 100%;
-        justify-content: center;
-        gap: 0.25rem;
       }
 
-      .confirm-button {
+      .action-button::part(btn) {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .confirm-button::part(btn) {
         color: var(--green-600);
       }
 
-      .cancel-button {
+      .cancel-button::part(btn) {
         color: var(--red-600);
-      }
-
-      .procedure-button {
-        gap: 0.25rem;
       }
 
       .name-is-missing::placeholder {
@@ -130,7 +128,7 @@ export class EditorUserProceduresModal extends LitElement {
         gap: 0.25rem;
       }
     `,
-  ];
+  ];//}}}
 
   @consume({ context: languageContext })
   @property()
@@ -242,6 +240,7 @@ export class EditorUserProceduresModal extends LitElement {
         <div class="procedure-modal-wrapper">
           <div class="procedure-search-wrapper">
             <input
+              autofocus
               type="text"
               placeholder="Search"
               id="variable-search-field"
@@ -270,7 +269,7 @@ export class EditorUserProceduresModal extends LitElement {
                     ${ref(this.iconListModalRef)}
                     .displayType="${'dialog'}"
                     .titleIsVisible="${false}"
-                    .closeButtonIsVisible="${false}">
+                    ?hideCloseButton="${true}">
                     <div class="icon-list-wrapper">
                       ${Object.keys(icons).map(
                         (iconKey) =>
@@ -287,6 +286,7 @@ export class EditorUserProceduresModal extends LitElement {
                     </div>
                   </editor-modal>
                   <input
+                    autofocus
                     type="text"
                     placeholder="${this.addProcNameIsMissing ? 'Name is required' : 'Name'}"
                     .value="${this.addProcName}"

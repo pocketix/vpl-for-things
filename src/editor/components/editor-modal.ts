@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { modalCustomEvent } from '@/editor/editor-custom-events';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
@@ -10,7 +10,7 @@ type DisplayType = 'modal' | 'dialog';
 @customElement('editor-modal')
 export class EditorModal extends LitElement {
   //#region CSS
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -35,13 +35,16 @@ export class EditorModal extends LitElement {
 
       .close-btn {
         margin-left: auto;
+      }
+
+      .close-btn::part(btn) {
         background-color: rgba(255, 255, 255, 0.8);
         border: none;
         box-shadow: none;
         padding: 0.25rem;
       }
 
-      .close-btn:hover {
+      .close-btn::part(btn):hover {
         background-color: var(--gray-100);
       }
 
@@ -89,16 +92,16 @@ export class EditorModal extends LitElement {
         }
       }
     `,
-  ];
+  ];//}}}
   //#endregion CSS
 
   //#region Props
   @property() modalTitle: string = 'Default title';
-  @property() modalIcon?: string;
+  @property({type: Object}) modalIcon?: TemplateResult<1>;
   @property() displayType: DisplayType = 'modal';
   @property() isVisible: boolean = false;
   @property() titleIsVisible: boolean = true;
-  @property() closeButtonIsVisible: boolean = true;
+  @property({type: Boolean}) hideCloseButton: boolean = false;
   @property() backgroundColor: string;
   @property() foregroundColor: string;
   @property() isFullWidth?: boolean = false;
@@ -203,7 +206,7 @@ export class EditorModal extends LitElement {
                   </div>
                 `
               : nothing}
-            ${this.closeButtonIsVisible
+            ${!this.hideCloseButton
               ? html`
                   <editor-button @click="${this.hideModal}" type="reset" class="close-btn">
                     <editor-icon .icon="${xLg}" .width="${18}" .height="${18}"></editor-icon>

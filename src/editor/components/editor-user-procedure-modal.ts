@@ -17,10 +17,6 @@ export class EditorUserProcedureModal extends LitElement {
         display: block;
       }
 
-      .procedure-button {
-        gap: 0.25rem;
-      }
-
       .procedure-body-modal::part(dialog-title) {
         margin-left: 34px;
       }
@@ -69,9 +65,8 @@ export class EditorUserProcedureModal extends LitElement {
   render() {
     return html`
       <editor-button
-        class="procedure-button"
         @click="${() => this.handleChangeProcedureBody()}"
-        style="${`color: ${this.language.statements[this.stmtKey].foregroundColor}; background-color: ${
+        btnStyle="${`color: ${this.language.statements[this.stmtKey].foregroundColor}; background-color: ${
           this.language.statements[this.stmtKey].backgroundColor
         }`}">
         <editor-icon .icon="${icons[this.language.statements[this.stmtKey].icon]}"></editor-icon>

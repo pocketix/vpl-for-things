@@ -138,7 +138,7 @@ export class EditorExpression extends LitElement {
         gap: 4px;
       }
 
-      .opr-list-item {
+      .opr-list-item::part(btn) {
         justify-content: center;
         font-family: var(--mono-font);
       }
@@ -263,8 +263,8 @@ export class EditorExpression extends LitElement {
     return html`${operatorList.map(
       (opr) =>
         html`
-          <editor-button @click="${() => this.handleChangeOpr(opr)}" class="opr-list-item"
-            >${convertOprToDisplayOpr(opr)}
+          <editor-button @click="${() => this.handleChangeOpr(opr)}" class="opr-list-item">
+            ${convertOprToDisplayOpr(opr)}
           </editor-button>
         `
     )}`;
@@ -317,7 +317,7 @@ export class EditorExpression extends LitElement {
                 id="opr-type-select"
                 .value="${this.selectedOprType}"
                 @change="${this.handleSelectOprType}">
-                <option value=${Types.boolean}>Logical</option>
+                <option value="boolean">Logical</option>
                 <option value="compare">Compare</option>
                 <option value="numeric">Numeric</option>
               </select>
