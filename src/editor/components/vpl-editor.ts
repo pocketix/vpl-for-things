@@ -51,9 +51,16 @@ export class VplEditor extends LitElement {
 
   // Allow passing an initial program as a string, object, or Program instance
   @property({ attribute: false })
+  private _initialProgram: Program | string | object | null = null;
+
+  get initialProgram(): Program | string | object | null {
+    return this._initialProgram;
+  }
+
   set initialProgram(value: Program | string | object | null) {
     if (value) {
       console.log('Initial program set:', value);
+      this._initialProgram = value;
       this.setVplProgram(value);
     }
   }
@@ -74,14 +81,8 @@ export class VplEditor extends LitElement {
   program: Program = new Program();
   //#endregion
 
-  /**
-   * Updates the program and dispatches a change event
-   * @param newProgram The new program to set (Program object or JSON string/object)
-   */
-  // Use a different method name to avoid conflict with LitElement properties
   setVplProgram(newProgram: Program | string | object) {
     console.log('Updating program in VPL editor');
-
     let programToUse: Program;
     let programData: any = null;
 
@@ -134,7 +135,7 @@ export class VplEditor extends LitElement {
     } catch (error) {
       console.error('Error analyzing program blocks:', error);
     }
-  
+
 
     // Request an update to refresh the UI
     this.requestUpdate();
@@ -157,7 +158,7 @@ export class VplEditor extends LitElement {
 
     console.log('Program update complete');
 
-  
+
   }
 
   /**
@@ -240,12 +241,17 @@ export class VplEditor extends LitElement {
       configurable: true
     });
 
-    // Expose the initialProgram setter for direct attribute setting
+    // Expose the initialProgram getter/setter for direct attribute setting
     Object.defineProperty(host, 'initialProgram', {
+      get: () => {
+        return this._initialProgram;
+      },
       set: (value: any) => {
         if (value) {
           console.log('initialProgram set from outside:', value);
-          this.initialProgram = value;
+          // Avoid circular reference by calling setVplProgram directly
+          this._initialProgram = value;
+          this.setVplProgram(value);
         }
       },
       configurable: true
