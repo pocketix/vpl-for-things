@@ -670,7 +670,6 @@ export class EditorControls extends LitElement {
         header: {
           userVariables: this.program?.header.userVariables,
           userProcedures: this.program?.header.userProcedures,
-          initializedProcedures: this.program?.header.initializedProcedures || [],
         },
         block: this.program?.block,
       };
@@ -711,15 +710,7 @@ export class EditorControls extends LitElement {
     this.dispatchEvent(programEvent);
   }
 
-  handleAddToSelectedUUIDs(uuid: string) {
-    if (!this.program.header.selected_uuids.includes(uuid)) {
-      this.program.header.selected_uuids.push(uuid);
-    }
-  }
 
-  handleRemoveFromSelectedUUIDs(uuid: string) {
-    this.program.header.selected_uuids = this.program.header.selected_uuids.filter((id) => id !== uuid);
-  }
 
   handleImportHeader() {
     const headerFileInput = this.shadowRoot.getElementById('header-file-input') as HTMLInputElement;
@@ -801,9 +792,9 @@ export class EditorControls extends LitElement {
     }
   }
 
- 
 
-  
+
+
 
   userVariablesModalTemplate() {
     return html`
