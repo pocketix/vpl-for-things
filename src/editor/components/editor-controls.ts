@@ -549,13 +549,108 @@ export class EditorControls extends LitElement {
   }
 
   handleExportProgram() {
-    let programStrData = `data:text/json;charset=utf-8, ${encodeURIComponent(
-      JSON.stringify(this.program.exportProgram(), null, '  ')
-    )}`;
-    this.exportProgramLinkRef.value.setAttribute('href', programStrData);
-    this.exportProgramLinkRef.value.setAttribute('download', 'program.json');
-    this.exportProgramLinkRef.value.click();
+    const fileName = prompt("Enter the name for the exported program:", "program");
+    if (fileName) {
+      const programExport = {
+        header: {
+          userVariables: this.program?.header.userVariables,
+          userProcedures: this.program?.header.userProcedures,
+        },
+        block: this.program?.block,
+      };
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(programExport, null, 2));
+      const downloadAnchorNode = this.exportProgramLinkRef.value;
+      downloadAnchorNode.setAttribute('href', dataStr);
+      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
+      downloadAnchorNode.click();
+    }
   }
+
+
+
+  handleImportHeader() {
+    const headerFileInput = this.shadowRoot.getElementById('header-file-input') as HTMLInputElement;
+    if (headerFileInput.files[0]) {
+      if (headerFileInput.files[0].type === 'application/json') {
+        let fr = new FileReader();
+        fr.onload = (e) => {
+          const importedData = JSON.parse(e.target.result as string);
+
+          // Check if the imported file contains userProcedures
+          if (!importedData.userProcedures) {
+            alert("The imported file does not contain valid user procedures.");
+            return;
+          }
+
+          // Check for duplicate procedure names
+          for (let procName of Object.keys(importedData.userProcedures)) {
+            if (this.program.header.userProcedures[procName]) {
+              alert(`Duplicate procedure name found: ${procName}`);
+              return;
+            }
+          }
+
+          // Merge userProcedures
+          this.program.header.userProcedures = {
+            ...this.program.header.userProcedures,
+            ...importedData.userProcedures,
+          };
+
+          // Integrate custom procedures into the language context
+          for (let proc of Object.keys(importedData.userProcedures)) {
+            this.language.statements[proc] = {
+              type: 'unit',
+              group: 'misc',
+              label: proc,
+              icon: 'lightningChargeFill',
+              foregroundColor: importedData.userProcedures[proc].foregroundColor || '#ffffff',
+              backgroundColor: importedData.userProcedures[proc].backgroundColor || '#d946ef',
+              isUserProcedure: true,
+            };
+          }
+
+          // Dispatch events to update the program and UI
+          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(programUpdatedEvent);
+
+          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(textEditorUpdatedEvent);
+        };
+        fr.readAsText(headerFileInput.files[0]);
+      }
+    }
+  }
+
+  handleExportHeader() {
+    const fileName = prompt("Enter the name for the exported UDFs:", "udfs");
+    if (fileName) {
+      const udfExport = {
+        userProcedures: Object.keys(this.program?.header.userProcedures || {}).reduce((acc, proc) => {
+          acc[proc] = {
+            ...this.program.header.userProcedures[proc],
+            foregroundColor: this.language.statements[proc].foregroundColor,
+            backgroundColor: this.language.statements[proc].backgroundColor,
+          };
+          return acc;
+        }, {}),
+      };
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(udfExport, null, 2));
+      const downloadAnchorNode = this.exportProgramLinkRef.value;
+      downloadAnchorNode.setAttribute('href', dataStr);
+      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
+      downloadAnchorNode.click();
+    }
+  }
+
+
+
+
 
   userVariablesModalTemplate() {
     return html`
