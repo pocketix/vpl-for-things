@@ -134,45 +134,7 @@ export class VplEditor extends LitElement {
     } catch (error) {
       console.error('Error analyzing program blocks:', error);
     }
-
-    // First, update the text editor
-    try {
-      if (this.textEditorRef.value) {
-        console.log('Updating text editor');
-        const programJson = JSON.stringify(
-          this.program.exportProgramBlock(this.program.block),
-          null,
-          '  '
-        );
-        this.textEditorRef.value.textEditorValue = programJson;
-        console.log('Text editor updated with:', programJson);
-      } else {
-        console.log('Text editor not initialized yet');
-      }
-    } catch (error) {
-      console.error('Error updating text editor:', error);
-    }
-
-    // Then update the graphical editor
-    try {
-      if (this.graphicalEditorRef.value) {
-        console.log('Updating graphical editor');
-
-        // First, request an update on the graphical editor
-        this.graphicalEditorRef.value.requestUpdate();
-
-        // Then dispatch events to ensure the graphical editor updates
-        this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-          detail: { programBodyUpdated: true },
-          bubbles: true,
-          composed: true
-        }));
-      } else {
-        console.log('Graphical editor not initialized yet');
-      }
-    } catch (error) {
-      console.error('Error updating graphical editor:', error);
-    }
+  
 
     // Request an update to refresh the UI
     this.requestUpdate();
@@ -184,10 +146,8 @@ export class VplEditor extends LitElement {
       composed: true
     }));
 
-    // Dispatch PROGRAM_UPDATED events for compatibility with existing code
-    // but mark them as coming from programmatic updates, not user input
     this.dispatchEvent(new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      detail: { programBodyUpdated: true, source: 'programmatic' },
+      detail: { programBodyUpdated: true},
       bubbles: true,
       composed: true
     }));
@@ -197,24 +157,7 @@ export class VplEditor extends LitElement {
 
     console.log('Program update complete');
 
-    // Force one final update after a delay to ensure everything is in sync
-    // but avoid potential infinite loops by not triggering additional events
-    setTimeout(() => {
-      // Update the text editor directly without triggering events
-      if (this.textEditorRef.value && this.program && this.program.block) {
-        try {
-          const programJson = JSON.stringify(
-            this.program.exportProgramBlock(this.program.block),
-            null,
-            '  '
-          );
-          this.textEditorRef.value.textEditorValue = programJson;
-          console.log('Final text editor sync complete');
-        } catch (error) {
-          console.error('Error in final text editor sync:', error);
-        }
-      }
-    }, 200);
+  
   }
 
   /**
