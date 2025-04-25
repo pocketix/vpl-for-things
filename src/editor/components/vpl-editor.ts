@@ -55,11 +55,11 @@ export class VplEditor extends LitElement {
   private _initialProgram: any = null;
 
   @property({ attribute: false })
-  set initialProgram(value: Program | string | object | null) {
+  set initialProgram(value: any) {
     if (value) {
       console.log('Initial program set:', value);
       this._initialProgram = value;
-      this.setVplProgram(value);
+      this.updateProgram(value);
     }
   }
 
@@ -92,7 +92,7 @@ export class VplEditor extends LitElement {
   // Helper methods for dispatching events
   private dispatchGraphicalEditorProgramUpdatedEvent(): void {
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      detail: { programBodyUpdated: true, source: 'programmatic' },
+      detail: { programBodyUpdated: true },
       bubbles: true,
       composed: true
     });
@@ -114,60 +114,60 @@ export class VplEditor extends LitElement {
   setVplProgram(newProgram: Program | string | object): void {
     console.log('Updating program in VPL editor');
 
-    let programToUse: Program;
-    let programData: any = null;
+    let importedProgram: any = null;
 
     // Handle different input types
     if (newProgram instanceof Program) {
       // If it's already a Program instance, use it directly
-      programToUse = newProgram as Program;
-      programData = programToUse.exportProgram();
-      console.log('Program instance provided:', programData);
+      importedProgram = newProgram.exportProgram();
+      console.log('Program instance provided:', importedProgram);
     } else if (typeof newProgram === 'string') {
       // If it's a string, try to parse it as JSON
       try {
-        programData = JSON.parse(newProgram);
-        programToUse = new Program();
-        programToUse.loadProgram(programData);
-        console.log('String program parsed:', programData);
+        importedProgram = JSON.parse(newProgram);
+        console.log('String program parsed:', importedProgram);
       } catch (error) {
         console.error('Failed to parse program string as JSON:', error);
         return; // Exit early if parsing fails
       }
     } else if (typeof newProgram === 'object' && newProgram !== null) {
       // If it's an object (but not a Program), treat it as program data
-      try {
-        programData = newProgram;
-        programToUse = new Program();
-        programToUse.loadProgram(programData);
-        console.log('Object program loaded:', programData);
-      } catch (error) {
-        console.error('Failed to load program from object:', error);
-        return; // Exit early if loading fails
-      }
+      importedProgram = newProgram;
+      console.log('Object program provided:', importedProgram);
     } else {
       // Invalid input type
       console.error('Invalid program type. Expected Program instance, JSON string, or object.');
       return; // Exit early
     }
 
-    // Update the internal program property
-    this.program = programToUse;
-    console.log('Program set:', this.program);
+    // Validate the program structure
+    if (!importedProgram.header || !importedProgram.block) {
+      console.error("The program does not contain a valid structure (missing header or block).");
+      return;
+    }
 
-    // Analyze the program to ensure it's properly initialized
-    try {
-      console.log('Analyzing program blocks');
-      analyzeBlock(this.program.block, this.language.statements, null);
-      for (let userProcId of Object.keys(this.program.header.userProcedures)) {
-        analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
-      }
-    } catch (error) {
-      console.error('Error analyzing program blocks:', error);
+    // Use the same logic as the import program button
+    this.program.loadProgram(importedProgram);
+
+    // Register user procedures in the language context
+    for (let proc of Object.keys(importedProgram.header.userProcedures || {})) {
+      this.language.statements[proc] = {
+        type: 'unit',
+        group: 'misc',
+        label: proc,
+        icon: 'lightningChargeFill',
+        foregroundColor: importedProgram.header.userProcedures[proc].foregroundColor || '#ffffff',
+        backgroundColor: importedProgram.header.userProcedures[proc].backgroundColor || '#d946ef',
+        isUserProcedure: true,
+      };
     }
 
     // Request an update to refresh the UI
     this.requestUpdate();
+
+    // Dispatch events to update child components
+    this.dispatchGraphicalEditorProgramUpdatedEvent();
+    this.dispatchTextEditorProgramUpdatedEvent();
 
     // Dispatch a change event to notify listeners
     this.dispatchEvent(new CustomEvent('change', {
@@ -175,10 +175,6 @@ export class VplEditor extends LitElement {
       bubbles: true,
       composed: true
     }));
-
-    // Dispatch events to update child components
-    this.dispatchGraphicalEditorProgramUpdatedEvent();
-    this.dispatchTextEditorProgramUpdatedEvent();
 
     console.log('Program update complete');
   }
@@ -217,30 +213,11 @@ export class VplEditor extends LitElement {
     // Expose the program update method on the element itself for external access
     // This makes it accessible from outside the shadow DOM
     const host = this.shadowRoot.host as any;
+
+    // This is the method that external code will call: typedEditor.updateProgram(currentProgramData)
     host.updateProgram = this.setVplProgram.bind(this);
 
-    // Also expose a direct setter for the program property that will call setVplProgram
-    // This provides a more React-friendly way to update the program
-    Object.defineProperty(host, 'setProgram', {
-      value: (newProgram: any) => {
-        console.log('setProgram called with:', newProgram);
-        this.setVplProgram(newProgram);
-      },
-      writable: false,
-      configurable: true
-    });
-
-    // Expose the initialProgram setter for direct attribute setting
-    Object.defineProperty(host, 'initialProgram', {
-      set: (value: any) => {
-        if (value) {
-          console.log('initialProgram set from outside:', value);
-          this.initialProgram = value;
-        }
-      },
-      configurable: true
-    });
-
+    // Set the style based on width and height properties
     (this.shadowRoot.host as HTMLElement).setAttribute(
       'style',
       this.width && this.height ? `width: ${this.width}px; height: ${this.height}px;` : ''
@@ -265,24 +242,8 @@ export class VplEditor extends LitElement {
         for (let userProcId of Object.keys(this.program.header.userProcedures)) {
           analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
         }
-
-        // Update the text editor if it's initialized
-        if (this.textEditorRef.value) {
-          console.log('Updating text editor from program property change');
-          this.textEditorRef.value.textEditorValue = JSON.stringify(
-            this.program.exportProgramBlock(this.program.block),
-            null,
-            '  '
-          );
-        }
-
-        // Update the graphical editor if it's initialized
-        if (this.graphicalEditorRef.value) {
-          console.log('Updating graphical editor from program property change');
-          this.graphicalEditorRef.value.requestUpdate();
-        }
       } catch (error) {
-        console.error('Error updating editors after program property change:', error);
+        console.error('Error analyzing editors after program property change:', error);
       }
     }
   }
