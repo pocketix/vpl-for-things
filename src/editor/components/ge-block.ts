@@ -225,8 +225,7 @@ export class GeBlock extends LitElement {
   @property() parentProcedureUuid: string; // Add property to store the UUID
   @property() clickedBlockDeviceInit: string='';
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
-
-  @property() currentDeviceBlock: ProgramStatement; // Store the current device block being edited
+  @property({ type: Boolean }) isUserProcedureEditing: boolean = false; // Flag to indicate if we're editing a user procedure
   //#endregion
 
   //#region Refs
@@ -259,8 +258,17 @@ export class GeBlock extends LitElement {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
-      const isBasic = !(this.language.statements[stmt.key] as DeviceStatement).deviceName; // NOTE: need to change this if we want to filter through all available blocks (basic+device)
-      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure) || this.renderBasicStatements !== isBasic) {
+      // Filter out internal statements and user procedures when in procedure body
+      if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
+        return false;
+      }
+
+      // Special handling for deviceType - only show it in user procedure editing when in Riot statements tab
+      if (stmt.key === 'deviceType') {
+        // Only show deviceType in user procedure editing when in Riot statements tab
+        if (this.isProcBody && !this.renderBasicStatements) {
+          return true;
+        }
         return false;
       }
 
@@ -377,6 +385,46 @@ export class GeBlock extends LitElement {
     //     });
     //   }
     // }
+    const addedStmt = this.block[this.block.length - 1];
+
+    // Check if this is a device statement and initialize its metadata
+    const deviceName = stmtKey.split('.')[0];
+    const isDeviceStatement = stmtKey === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+    // if (isDeviceStatement) {
+    //   // Initialize device metadata for the newly added device statement
+    //   if (!addedStmt.devices) {
+    //     addedStmt.devices = [];
+    //   }
+
+    //   const langStatement = this.language.statements[stmtKey];
+    //   if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+    //     const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+    //     const defaultValues: string[] = [];
+
+    //     // Initialize argument values directly in the statement
+    //     if ((addedStmt as AbstractStatementWithArgs).arguments) {
+    //       argDefs.forEach((argDef, index) => {
+    //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+    //           const defaultValue = argDef.options[0].id;
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         } else {
+    //           const defaultValue = initDefaultArgumentType(argDef.type);
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         }
+    //       });
+    //     }
+
+    //     // Add device metadata entry
+    //     addedStmt.devices.push({
+    //       uuid: addedStmt._uuid,
+    //       deviceId: stmtKey,
+    //       values: defaultValues
+    //     });
+    //   }
+    // }
 
     if (this.language.statements[stmtKey].isUserProcedure) {
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
@@ -390,10 +438,12 @@ export class GeBlock extends LitElement {
 
           if (isDeviceStatement) {
             if (stmt.id === 'deviceType' ) {
+            if (stmt.id === 'deviceType' ) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
+                values: [String(arg.value)],
                 values: [String(arg.value)],
               });
             } else if (this.language.deviceList.includes(deviceName)) {
@@ -402,6 +452,8 @@ export class GeBlock extends LitElement {
                 arguments: []
               };
               const langStatement = this.language.statements[stmt.id];
+              const deviceValues: string[] = [];
+
               const deviceValues: string[] = [];
 
               if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
@@ -416,13 +468,16 @@ export class GeBlock extends LitElement {
                   if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                     newArg.value = argDef.options[0].id;
                     deviceValues.push(String(argDef.options[0].id));
+                    deviceValues.push(String(argDef.options[0].id));
                   } else {
                     newArg.value = initDefaultArgumentType(argDef.type);
+                    deviceValues.push(String(newArg.value));
                     deviceValues.push(String(newArg.value));
                   }
                   if ((stmt as AbstractStatementWithArgs).arguments &&
                       (stmt as AbstractStatementWithArgs).arguments[index]) {
                     newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                    deviceValues[index] = String(newArg.value);
                     deviceValues[index] = String(newArg.value);
                   }
                   deviceStatement.arguments.push(newArg);
@@ -432,6 +487,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
+                values: deviceValues
                 values: deviceValues
               });
             }
@@ -443,6 +499,7 @@ export class GeBlock extends LitElement {
       };
       parseBlockForDevices(userProcedureBlock);
 
+      addedStmt.devices = devices;
       addedStmt.devices = devices;
     }
 
@@ -794,24 +851,39 @@ export class GeBlock extends LitElement {
         this.dispatchEvent(deviceSelectionEvent);
 
         const metadataEntry = this.program.block.find((stmt) => stmt._uuid === this.tmpUUID);
+        const metadataEntry = this.program.block.find((stmt) => stmt._uuid === this.tmpUUID);
 
         if (metadataEntry) {
           const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
             deviceEntry.deviceId = stmtKey;
 
+
             const langStatement = this.language.statements[stmtKey];
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
               const defaultValues: string[] = [];
 
+              const defaultValues: string[] = [];
+
               argDefs.forEach(argDef => {
+                let defaultValue: string;
                 let defaultValue: string;
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                   defaultValue = String(argDef.options[0].id);
+                  defaultValue = String(argDef.options[0].id);
                 } else {
                   defaultValue = String(initDefaultArgumentType(argDef.type));
+                  defaultValue = String(initDefaultArgumentType(argDef.type));
                 }
+                defaultValues.push(defaultValue);
+              });
+
+              // Update the values array in the device metadata
+              deviceEntry.values = defaultValues;
+            } else {
+              // If the new device has no arguments, reset the values array to empty
+              deviceEntry.values = [];
                 defaultValues.push(defaultValue);
               });
 
@@ -829,6 +901,7 @@ export class GeBlock extends LitElement {
         }
 
 
+
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,
           composed: true,
@@ -839,6 +912,16 @@ export class GeBlock extends LitElement {
         console.warn(`Clicked block not found in the block array.`);
       }
     }
+
+    // Dispatch custom event to reopen the user procedure initialization modal
+    const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        procedureUuid: this.tmpUUID
+      }
+    });
+    this.dispatchEvent(reopenModalEvent);
 
     // Dispatch custom event to reopen the user procedure initialization modal
     const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
@@ -992,6 +1075,18 @@ export class GeBlock extends LitElement {
   }
 
   deviceStatementsTemplate() {
+    // If we're editing a user procedure, show only deviceType block
+    if (this.isProcBody) {
+      return html`
+        <div class="add-statement-options">
+          <div class="device-section-header">Available in User Procedures</div>
+          <div class="device-section-divider"></div>
+          ${this.addStatementOptionTemplate('deviceType')}
+        </div>
+      `;
+    }
+
+    // Regular device statements view for non-user procedure editing
     return html`
       ${this.devicesTemplate()}
       <div class="add-statement-options">
@@ -1068,22 +1163,7 @@ export class GeBlock extends LitElement {
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
-              </editor-button>
-                  : 'border-bottom: 2px solid white'}">
-                Device statements
+                Riot statements
               </editor-button>
             </div>
           </div>
