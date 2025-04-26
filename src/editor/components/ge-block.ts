@@ -239,7 +239,13 @@ export class GeBlock extends LitElement {
     procedureOnlyStatements: ['deviceType'],
 
     // Statements that are available in user procedures
-    availableInUserProcedures: ['deviceType', 'setvar', 'alert']
+    availableInUserProcedures: ['deviceType', 'setvar', 'alert'],
+
+    // Basic statement blocks (control flow, etc.)
+    basicBlocks: ['if', 'elseif', 'else', 'switch', 'case', 'repeat', 'while'],
+
+    // User procedures (will be dynamically populated)
+    userProcedures: []
   };
   //#endregion
 
@@ -278,6 +284,16 @@ export class GeBlock extends LitElement {
         return false;
       }
 
+      // Handle procedure-only statements (like deviceType)
+      if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmt.key)) {
+        // Only show these statements in user procedures and in the Riot statements tab
+        return this.isProcBody && !this.renderBasicStatements;
+      }
+
+      // Handle statements that should only appear in Riot statements tab
+      if (GeBlock.statementCategories.riotOnly.includes(stmt.key)) {
+        // Only show these statements in the Riot statements tab (not in Basic statements)
+        return !this.renderBasicStatements;
       // Handle procedure-only statements (like deviceType)
       if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmt.key)) {
         // Only show these statements in user procedures and in the Riot statements tab
@@ -337,12 +353,35 @@ export class GeBlock extends LitElement {
     this.addEventListener(statementCustomEvent.MOVE_DOWN, (e: CustomEvent) => {
       this.handleMoveStatementDown(e);
     });
+
+    // Listen for program updates to refresh user procedures list
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, () => {
+      this.updateUserProceduresList();
+    });
   }
 
   connectedCallback() {
     super.connectedCallback();
     if (this.language.deviceList) {
       this.selectedDevice = this.language.deviceList[0];
+    }
+
+    // Populate user procedures list
+    this.updateUserProceduresList();
+  }
+
+  // Update the list of user procedures in the statementCategories
+  updateUserProceduresList() {
+    if (!this.language?.statements) return;
+
+    // Clear the existing list
+    GeBlock.statementCategories.userProcedures = [];
+
+    // Find all user procedures in the language statements
+    for (const stmtKey in this.language.statements) {
+      if (this.language.statements[stmtKey].isUserProcedure) {
+        GeBlock.statementCategories.userProcedures.push(stmtKey);
+      }
     }
   }
   //#endregion
@@ -365,6 +404,8 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
     const addedStmt = this.block[this.block.length - 1];
 
+    // Note: We used to check if this is a device statement here
+    // This is now handled through the statementCategories configuration
     // Note: We used to check if this is a device statement here
     // This is now handled through the statementCategories configuration
 
@@ -730,7 +771,9 @@ export class GeBlock extends LitElement {
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
       // Filter out non-device groups and statements that should be excluded
+      // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
         && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
     });
 
@@ -773,7 +816,9 @@ export class GeBlock extends LitElement {
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
       // Filter out non-device groups and statements that should be excluded
+      // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
         && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
     });
 
@@ -955,6 +1000,11 @@ export class GeBlock extends LitElement {
 
       this.requestUpdate();
     }
+
+    // Update user procedures list when program or language changes
+    if (changedProperties.has('program') || changedProperties.has('language')) {
+      this.updateUserProceduresList();
+    }
   }
   //#endregion
 
@@ -1039,25 +1089,11 @@ export class GeBlock extends LitElement {
     `;
   }
 
+  // This method is no longer used directly - kept for backward compatibility
   addStatementOptionsTemplate() {
     return html`
       <div class="add-statement-options">
-        ${Object.keys(this.filteredAddStatementOptions).length > 0
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
-              // Skip statements that should only appear in Riot statements tab
-              if (GeBlock.statementCategories.riotOnly.includes(stmtKey)) {
-                return nothing;
-              }
-
-              // Skip statements that should only appear in user procedures
-              if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmtKey)) {
-                return nothing;
-              }
-              if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
-                return this.addStatementOptionTemplate(stmtKey, idx);
-              }
-            })
-          : html`<div class="no-available-statements">No available statements</div>`}
+        <div class="no-available-statements">Please use the categorized statement templates</div>
       </div>
     `;
   }
@@ -1087,10 +1123,38 @@ export class GeBlock extends LitElement {
     // If we're editing a user procedure, only show Riot statements
     if (this.isProcBody) {
       return riotStatementsTemplate;
+    // Create the Riot statements section based on context
+    const riotStatementsTemplate = html`
+      <div class="add-statement-options">
+        <div class="device-section-header">Riot Statements</div>
+        <div class="device-section-divider"></div>
+
+        <!-- Always show the regular Riot statements -->
+        ${GeBlock.statementCategories.riotOnly.map(stmtKey =>
+          this.addStatementOptionTemplate(stmtKey)
+        )}
+
+        <!-- Only show procedure-only statements when in a procedure body -->
+        ${this.isProcBody ?
+          GeBlock.statementCategories.procedureOnlyStatements.map(stmtKey =>
+            this.addStatementOptionTemplate(stmtKey)
+          )
+          : nothing
+        }
+      </div>
+    `;
+
+    // If we're editing a user procedure, only show Riot statements
+    if (this.isProcBody) {
+      return riotStatementsTemplate;
     }
 
     // For regular editing, show both Riot statements and device statements
+    // For regular editing, show both Riot statements and device statements
     return html`
+      ${riotStatementsTemplate}
+      <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
+      <div class="device-section-divider"></div>
       ${riotStatementsTemplate}
       <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
       <div class="device-section-divider"></div>
@@ -1108,7 +1172,38 @@ export class GeBlock extends LitElement {
   }
 
   basicStatementsTemplate() {
-    return html`${this.addStatementOptionsVisible ? this.addStatementOptionsTemplate() : nothing}`;
+    // Make sure user procedures list is up to date
+    this.updateUserProceduresList();
+
+    return html`
+      ${this.addStatementOptionsVisible ? html`
+        <!-- Basic Blocks Section -->
+        <div class="add-statement-options">
+          <div class="device-section-header">Basic Blocks</div>
+          <div class="device-section-divider"></div>
+          ${GeBlock.statementCategories.basicBlocks.map(stmtKey => {
+            if (this.language.statements[stmtKey]) {
+              return this.addStatementOptionTemplate(stmtKey);
+            }
+            return nothing;
+          })}
+        </div>
+
+        <!-- User Procedures Section - only show if not in a procedure body -->
+        ${!this.isProcBody && GeBlock.statementCategories.userProcedures.length > 0 ? html`
+          <div class="add-statement-options" style="margin-top: 1rem;">
+            <div class="device-section-header">Procedures</div>
+            <div class="device-section-divider"></div>
+            ${GeBlock.statementCategories.userProcedures.map(stmtKey => {
+              if (this.language.statements[stmtKey]) {
+                return this.addStatementOptionTemplate(stmtKey);
+              }
+              return nothing;
+            })}
+          </div>
+        ` : nothing}
+      ` : nothing}
+    `;
   }
 
   devicesTemplate() {
