@@ -712,85 +712,7 @@ export class EditorControls extends LitElement {
 
 
 
-  handleImportHeader() {
-    const headerFileInput = this.shadowRoot.getElementById('header-file-input') as HTMLInputElement;
-    if (headerFileInput.files[0]) {
-      if (headerFileInput.files[0].type === 'application/json') {
-        let fr = new FileReader();
-        fr.onload = (e) => {
-          const importedData = JSON.parse(e.target.result as string);
 
-          // Check if the imported file contains userProcedures
-          if (!importedData.userProcedures) {
-            alert("The imported file does not contain valid user procedures.");
-            return;
-          }
-
-          // Check for duplicate procedure names
-          for (let procName of Object.keys(importedData.userProcedures)) {
-            if (this.program.header.userProcedures[procName]) {
-              alert(`Duplicate procedure name found: ${procName}`);
-              return;
-            }
-          }
-
-          // Merge userProcedures
-          this.program.header.userProcedures = {
-            ...this.program.header.userProcedures,
-            ...importedData.userProcedures,
-          };
-
-          // Integrate custom procedures into the language context
-          for (let proc of Object.keys(importedData.userProcedures)) {
-            this.language.statements[proc] = {
-              type: 'unit',
-              group: 'misc',
-              label: proc,
-              icon: 'lightningChargeFill',
-              foregroundColor: importedData.userProcedures[proc].foregroundColor || '#ffffff',
-              backgroundColor: importedData.userProcedures[proc].backgroundColor || '#d946ef',
-              isUserProcedure: true,
-            };
-          }
-
-          // Dispatch events to update the program and UI
-          const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-            bubbles: true,
-            composed: true,
-          });
-          this.dispatchEvent(programUpdatedEvent);
-
-          const textEditorUpdatedEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
-            bubbles: true,
-            composed: true,
-          });
-          this.dispatchEvent(textEditorUpdatedEvent);
-        };
-        fr.readAsText(headerFileInput.files[0]);
-      }
-    }
-  }
-
-  handleExportHeader() {
-    const fileName = prompt("Enter the name for the exported UDFs:", "udfs");
-    if (fileName) {
-      const udfExport = {
-        userProcedures: Object.keys(this.program?.header.userProcedures || {}).reduce((acc, proc) => {
-          acc[proc] = {
-            ...this.program.header.userProcedures[proc],
-            foregroundColor: this.language.statements[proc].foregroundColor,
-            backgroundColor: this.language.statements[proc].backgroundColor,
-          };
-          return acc;
-        }, {}),
-      };
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(udfExport, null, 2));
-      const downloadAnchorNode = this.exportProgramLinkRef.value;
-      downloadAnchorNode.setAttribute('href', dataStr);
-      downloadAnchorNode.setAttribute('download', `${fileName}.json`);
-      downloadAnchorNode.click();
-    }
-  }
 
 
 
@@ -1157,26 +1079,9 @@ export class EditorControls extends LitElement {
                 </editor-icon>
                 <span>Import Program</span>
               </editor-button>
-              <input
-                type="file"
-                name="header-file-input"
-                id="header-file-input"
-                style="display: none;"
-                accept="application/json"
-                @input="${this.handleImportHeader}" />
-              <editor-button @click="${() => this.shadowRoot.getElementById('header-file-input').click()}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import UDFs"></editor-icon>
-                <span>Import UDFs</span>
-              </editor-button>
-            </div>
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
               <editor-button @click="${this.handleExportProgram}" class="control-button">
                 <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
                 <span>Export Program</span>
-              </editor-button>
-              <editor-button @click="${this.handleExportHeader}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export UDFs"></editor-icon>
-                <span>Export UDFs</span>
               </editor-button>
               <!-- Export Linearized button removed -->
             </div>
@@ -1195,6 +1100,11 @@ export class EditorControls extends LitElement {
               </editor-button>
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
+              <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
+                <option value="split">Split View</option>
+                <option value="ge">Graphical View</option>
+                <option value="te">Text View</option>
+              </select>
               <editor-button
                 @click="${this.handleSkeletonize}"
                 class="control-button ${this.skeletonizeMode ? 'active' : ''}"
@@ -1202,11 +1112,6 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
                 <span>Skeletonize</span>
               </editor-button>
-              <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
-                <option value="split">Split View</option>
-                <option value="ge">Graphical View</option>
-                <option value="te">Text View</option>
-              </select>
             </div>
           </div>
         </div>
