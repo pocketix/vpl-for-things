@@ -23,7 +23,7 @@ You can try the editor demo [here](https://www.stud.fit.vutbr.cz/~xpodvo00/BP/).
 You can use NPM package for integration into your own web project:
 
 ```sh
-npm install @podvojsky/vpl-for-things
+npm install @pocketix/vpl-for-things
 ```
 
 Include the library from `node_modules` folder into your page:
@@ -33,8 +33,8 @@ Include the library from `node_modules` folder into your page:
 <html lang="en">
   <head>
     ...
-    <script type="module" src="./node_modules/@podvojsky/vpl-for-things/dist/vpl-for-things.js"></script>
-    <link rel="stylesheet" href="./node_modules/@podvojsky/vpl-for-things/dist/style.css" />
+    <script type="module" src="./node_modules/@pocketix/vpl-for-things/dist/vpl-for-things.js"></script>
+    <link rel="stylesheet" href="./node_modules/@pocketix/vpl-for-things/dist/style.css" />
   </head>
 </html>
 

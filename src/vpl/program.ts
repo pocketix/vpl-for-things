@@ -373,7 +373,7 @@ type NumericOperatorsTuple = typeof numericOperators;
 export type NumericOperator = NumericOperatorsTuple[number];
 
 export const isExpressionOperator = (operator: string) => {
-  return operator in compareOperators || operator in boolOperators || operator in numericOperators;
+  return compareOperators.includes(operator as CompareOperator) || boolOperators.includes(operator as BoolOperator) || numericOperators.includes(operator as NumericOperator);
 }
 
 export const isExpressionArray = (argument: ProgramStatementArgument) => Array.isArray(argument.value);
