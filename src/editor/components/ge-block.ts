@@ -217,6 +217,21 @@ export class GeBlock extends LitElement {
   @property() clickedBlockDeviceInit: string='';
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   @property({ type: Boolean }) isUserProcedureEditing: boolean = false; // Flag to indicate if we're editing a user procedure
+
+  // Configuration for statement categories
+  static statementCategories = {
+    // Statements that appear only in the Riot statements tab
+    riotOnly: ['setvar', 'alert'],
+
+    // Statements that should be excluded from device selection
+    excludeFromDeviceSelection: ['deviceType'],
+
+    // Statements that are available ONLY in user procedures (not in main body)
+    procedureOnlyStatements: ['deviceType'],
+
+    // Statements that are available in user procedures
+    availableInUserProcedures: ['deviceType', 'setvar', 'alert']
+  };
   //#endregion
 
   //#region Refs
@@ -253,13 +268,16 @@ export class GeBlock extends LitElement {
         return false;
       }
 
-      // Special handling for deviceType - only show it in user procedure editing when in Riot statements tab
-      if (stmt.key === 'deviceType') {
-        // Only show deviceType in user procedure editing when in Riot statements tab
-        if (this.isProcBody && !this.renderBasicStatements) {
-          return true;
-        }
-        return false;
+      // Handle procedure-only statements (like deviceType)
+      if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmt.key)) {
+        // Only show these statements in user procedures and in the Riot statements tab
+        return this.isProcBody && !this.renderBasicStatements;
+      }
+
+      // Handle statements that should only appear in Riot statements tab
+      if (GeBlock.statementCategories.riotOnly.includes(stmt.key)) {
+        // Only show these statements in the Riot statements tab (not in Basic statements)
+        return !this.renderBasicStatements;
       }
 
       if (this.parentStmt) {
@@ -332,9 +350,8 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
     const addedStmt = this.block[this.block.length - 1];
 
-    // Check if this is a device statement and initialize its metadata
-    const deviceName = stmtKey.split('.')[0];
-    const isDeviceStatement = stmtKey === 'deviceType' || this.language.deviceList.includes(deviceName);
+    // Note: We used to check if this is a device statement here
+    // This is now handled through the statementCategories configuration
 
     // if (isDeviceStatement) {
     //   // Initialize device metadata for the newly added device statement
@@ -653,8 +670,9 @@ export class GeBlock extends LitElement {
     // Get all device statements
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
+      // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
-        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+        && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
     });
 
     // Find the device type of the clicked block if it's a deviceType statement
@@ -695,8 +713,9 @@ export class GeBlock extends LitElement {
     // Filter all device statements based on search input
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
+      // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
-        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+        && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
     });
 
     // Filter based on search term
@@ -890,6 +909,15 @@ export class GeBlock extends LitElement {
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length > 0
           ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
+              // Skip statements that should only appear in Riot statements tab
+              if (GeBlock.statementCategories.riotOnly.includes(stmtKey)) {
+                return nothing;
+              }
+
+              // Skip statements that should only appear in user procedures
+              if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmtKey)) {
+                return nothing;
+              }
               if (!(this.language.statements[stmtKey] as DeviceStatement).deviceName) {
                 return this.addStatementOptionTemplate(stmtKey);
               }
@@ -900,19 +928,37 @@ export class GeBlock extends LitElement {
   }
 
   deviceStatementsTemplate() {
-    // If we're editing a user procedure, show only deviceType block
+    // Create the Riot statements section based on context
+    const riotStatementsTemplate = html`
+      <div class="add-statement-options">
+        <div class="device-section-header">Riot Statements</div>
+        <div class="device-section-divider"></div>
+
+        <!-- Always show the regular Riot statements -->
+        ${GeBlock.statementCategories.riotOnly.map(stmtKey =>
+          this.addStatementOptionTemplate(stmtKey)
+        )}
+
+        <!-- Only show procedure-only statements when in a procedure body -->
+        ${this.isProcBody ?
+          GeBlock.statementCategories.procedureOnlyStatements.map(stmtKey =>
+            this.addStatementOptionTemplate(stmtKey)
+          )
+          : nothing
+        }
+      </div>
+    `;
+
+    // If we're editing a user procedure, only show Riot statements
     if (this.isProcBody) {
-      return html`
-        <div class="add-statement-options">
-          <div class="device-section-header">Available in User Procedures</div>
-          <div class="device-section-divider"></div>
-          ${this.addStatementOptionTemplate('deviceType')}
-        </div>
-      `;
+      return riotStatementsTemplate;
     }
 
-    // Regular device statements view for non-user procedure editing
+    // For regular editing, show both Riot statements and device statements
     return html`
+      ${riotStatementsTemplate}
+      <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
+      <div class="device-section-divider"></div>
       ${this.devicesTemplate()}
       <div class="add-statement-options">
         ${Object.keys(this.filteredAddStatementOptions).length > 0
