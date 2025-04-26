@@ -23,7 +23,7 @@ import Types from '@vpl/types.ts';
 
 @customElement('editor-expression')
 export class EditorExpression extends LitElement {
-  static styles = [
+  static styles = [//{{{
     globalStyles,
     css`
       :host {
@@ -149,7 +149,7 @@ export class EditorExpression extends LitElement {
         gap: 8px;
       }
     `,
-  ];
+  ];//}}}
 
   @property() expression: Expression;
   @property() nestedExprListIsVisible: boolean = true;
@@ -273,7 +273,7 @@ export class EditorExpression extends LitElement {
   render() {
     return html`
       <div ${ref(this.exprWrapperRef)} class="expr-wrapper">
-        ${this.expression.type
+        ${this.expression.type && this.expression.type !== "boolean_expression"
           ? html`
               <div
                 @click="${this.handleOprButtonClicked}"
@@ -337,7 +337,7 @@ export class EditorExpression extends LitElement {
             .exprIsSelected="${this.highlightedExpr &&
             this.exprWrapperRef.value &&
             this.highlightedExpr === this.exprWrapperRef.value}"
-            class="expr-opd-list ${this.expression.type ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
+            class="expr-opd-list ${this.expression.type && this.expression.type !== 'boolean_expression' ? 'indented' : ''} ${!this.nestedExprListIsVisible &&
             this.nestedLevel > 0
               ? 'hidden'
               : 'block'} ${this.nestedLevel > 0 ? 'bottom-line' : ''}"

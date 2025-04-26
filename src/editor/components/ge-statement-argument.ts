@@ -286,7 +286,7 @@ export class GeStatementArgument extends LitElement {
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
               <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
-                ${(this.argument as Expression).value.length === 0
+                ${(Array.isArray(this.argument.value) && this.argument.value.length === 0)
                   ? html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                         <editor-icon .icon="${plusLg}"></editor-icon>

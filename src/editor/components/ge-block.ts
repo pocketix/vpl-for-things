@@ -222,8 +222,7 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, {
       type: this.language.statements[stmtKey].type,
       key: stmtKey,
-      arguments: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
-        .arguments,
+      arguments: (this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs).arguments,
     });
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {

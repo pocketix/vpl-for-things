@@ -9,7 +9,8 @@ export function parseOperandToString(operand: ExpressionOperand, negated: boolea
 }
 
 export function parseExpressionToString(expression: Expression) {
-  let operandsStrings: string[] = expression.value.map((operand) => {
+  const exp = Array.isArray(expression.value) ? expression.value : [expression.value];
+  let operandsStrings: string[] = exp.map((operand) => {
     if (Array.isArray((operand as Expression).value)) {
       return parseExpressionToString(operand as Expression);
     } else {
@@ -35,7 +36,8 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
     case '!':
       return 'NOT';
     case Types.boolean_expression:
-      return "Expression";
+      // return "Expression";
+      return null;
     default:
       return opr;
   }
@@ -147,16 +149,25 @@ export function assignUuidToBlock(block: Block) {
   }
 }
 
+type ProgramExport = {
+  header: Header;
+  block: Block;
+}
+
 export class Program {
   header: Header;
   block: Block;
 
-  constructor() {
+  constructor(program: ProgramExport|null = null) {
     this.header = {
       userVariables: {},
       userProcedures: {},
     };
     this.block = [];
+
+    if (program !== null) {
+      this.loadProgram(program);
+    }
   }
 
   loadProgramBody(block: Block) {
@@ -164,7 +175,7 @@ export class Program {
     this.block = block;
   }
 
-  loadProgram(programExport: any) {
+  loadProgram(programExport: ProgramExport) {
     for (let proc of Object.keys(programExport.header.userProcedures)) {
       assignUuidToBlock(programExport.header.userProcedures[proc]);
     }
@@ -181,7 +192,7 @@ export class Program {
     function removeUuidFromExprOperands(expr: Expression) {
       delete expr._uuid;
 
-      if (!expr.value) {
+      if (!expr.value || !Array.isArray(expr.value)) {
         return;
       }
 
@@ -328,10 +339,12 @@ export type ProgramStatementArgument = {
 };
 
 export type Expression = {
-  value: ExpressionOperands;
+  value: Expression[] | Literal;
   type?: ExpressionOperator;
   _uuid?: string;
 };
+
+export type Literal = string | number | boolean;
 
 export type ExpressionOperands = (ExpressionOperand | Expression)[];
 
