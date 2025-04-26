@@ -297,15 +297,16 @@ export class EditorControls extends LitElement {
 
       .skeletonize-header {
         display: flex;
+        flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
-        width: 100%;
-        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+        margin-left: 0.5rem;
+        max-width: 300px;
       }
 
       .skeletonize-description {
-        flex: 1;
-        padding: 1rem;
+        width: 100%;
+        padding: 0.75rem;
         background-color: var(--blue-50);
         border-radius: 0.5rem;
         border: 1px solid var(--blue-200);
@@ -314,8 +315,8 @@ export class EditorControls extends LitElement {
 
       .skeletonize-title {
         font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
         color: var(--blue-700);
         display: flex;
         align-items: center;
@@ -323,21 +324,42 @@ export class EditorControls extends LitElement {
       }
 
       .skeletonize-text {
-        font-size: 0.875rem;
-        line-height: 1.5;
+        font-size: 0.75rem;
+        line-height: 1.3;
+      }
+
+      .skeletonize-text div {
+        margin-bottom: 0.25rem;
+      }
+
+      .skeletonize-text div:last-child {
+        margin-bottom: 0;
       }
 
       .create-procedure {
         white-space: nowrap;
-        height: fit-content;
-        flex-shrink: 0;
-        padding: 0.75rem 1rem;
+        width: 100%;
+        padding: 0.5rem;
         transition: all 0.2s ease;
+        margin-top: 0.25rem;
       }
 
       .create-procedure:hover {
         background-color: var(--blue-600) !important;
         transform: translateY(-1px);
+      }
+
+      @media (max-width: 900px) {
+        .controls {
+          flex-direction: column !important;
+        }
+
+        .skeletonize-header {
+          width: 100%;
+          max-width: none;
+          margin-left: 0;
+          margin-top: 0.5rem;
+        }
       }
     `,
   ];
@@ -1034,37 +1056,8 @@ export class EditorControls extends LitElement {
   render() {
     return html`
       <div class="editor-controls-wrapper">
-        ${this.skeletonizeMode ? html`
-          <div class="skeletonize-header">
-            <div class="skeletonize-description">
-              <div class="skeletonize-title">
-                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
-                <span>Create a New Procedure</span>
-              </div>
-              <div class="skeletonize-text">
-                1. Click on blocks in your program to select them
-                2. Selected blocks will be included in your new procedure
-                3. Click "Create Procedure" when you're ready
-              </div>
-            </div>
-            <editor-button
-              @click="${() => {
-                const proceduresModal = this.userProceduresModalRef.value;
-                proceduresModal.showModal();
-                // Wait for modal to be fully shown before calling handleShowAddProcedureModal
-                requestAnimationFrame(() => {
-                  proceduresModal.handleShowAddProcedureModal();
-                });
-              }}"
-              class="control-button create-procedure"
-              style="background-color: var(--blue-500); color: white; font-weight: 500;">
-              <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
-              <span>Create Procedure</span>
-            </editor-button>
-          </div>
-        ` : nothing}
-        <div class="controls">
-          <div class="controls-group-export">
+        <div class="controls" style="display: flex; flex-direction: row; align-items: flex-start; gap: 1rem;">
+          <div class="controls-group-export" style="flex: 1; min-width: 0;">
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
               <input
                 ${ref(this.inputProgramFileRef)}
@@ -1114,6 +1107,37 @@ export class EditorControls extends LitElement {
               </editor-button>
             </div>
           </div>
+          ${this.skeletonizeMode ? html`
+            <div class="skeletonize-header" style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1;">
+              <div class="skeletonize-description">
+                <div class="skeletonize-title">
+                  <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
+                  <span>Create a New Procedure</span>
+                </div>
+                <div class="skeletonize-text">
+                  <div>1. Click on blocks in your program to select them</div>
+                  <div>2. Selected blocks will be included in your new procedure</div>
+                  <div>3. Click "Create Procedure" when you're ready</div>
+                </div>
+              </div>
+              <div style="width: 100%;">
+                <editor-button
+                @click="${() => {
+                  const proceduresModal = this.userProceduresModalRef.value;
+                  proceduresModal.showModal();
+                  // Wait for modal to be fully shown before calling handleShowAddProcedureModal
+                  requestAnimationFrame(() => {
+                    proceduresModal.handleShowAddProcedureModal();
+                  });
+                }}"
+                class="control-button create-procedure"
+                style="background-color: var(--blue-500); color: white; font-weight: 500;">
+                <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
+                <span>Create Procedure</span>
+              </editor-button>
+              </div>
+            </div>
+          ` : nothing}
         </div>
       </div>
       ${this.userVariablesModalTemplate()}
