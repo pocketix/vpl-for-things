@@ -216,6 +216,7 @@ export class GeBlock extends LitElement {
   @property() parentProcedureUuid: string; // Add property to store the UUID
   @property() clickedBlockDeviceInit: string='';
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
+  @property({ type: Boolean }) isUserProcedureEditing: boolean = false; // Flag to indicate if we're editing a user procedure
   //#endregion
 
   //#region Refs
@@ -247,10 +248,17 @@ export class GeBlock extends LitElement {
       statementKeysAndLabels.push({ key: stmtKey, label: this.language.statements[stmtKey].label });
     }
     statementKeysAndLabels = statementKeysAndLabels.filter((stmt) => {
+      // Filter out internal statements and user procedures when in procedure body
       if (stmt.key.startsWith('_') || (this.isProcBody && this.language.statements[stmt.key].isUserProcedure)) {
         return false;
       }
-      if(stmt.key === 'deviceType'){
+
+      // Special handling for deviceType - only show it in user procedure editing when in Riot statements tab
+      if (stmt.key === 'deviceType') {
+        // Only show deviceType in user procedure editing when in Riot statements tab
+        if (this.isProcBody && !this.renderBasicStatements) {
+          return true;
+        }
         return false;
       }
 
@@ -892,6 +900,18 @@ export class GeBlock extends LitElement {
   }
 
   deviceStatementsTemplate() {
+    // If we're editing a user procedure, show only deviceType block
+    if (this.isProcBody) {
+      return html`
+        <div class="add-statement-options">
+          <div class="device-section-header">Available in User Procedures</div>
+          <div class="device-section-divider"></div>
+          ${this.addStatementOptionTemplate('deviceType')}
+        </div>
+      `;
+    }
+
+    // Regular device statements view for non-user procedure editing
     return html`
       ${this.devicesTemplate()}
       <div class="add-statement-options">
@@ -951,7 +971,7 @@ export class GeBlock extends LitElement {
                 style="${!this.renderBasicStatements
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
-                Device statements
+                Riot statements
               </editor-button>
             </div>
           </div>
