@@ -948,31 +948,67 @@ export class GeBlock extends LitElement {
   }
 
   deviceStatementsTemplate() {
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the Riot statements
+    const filteredRiotStatements = GeBlock.statementCategories.riotOnly.filter(filterStatement);
+
+    // Filter the procedure-only statements
+    const filteredProcedureOnlyStatements = this.isProcBody ?
+      GeBlock.statementCategories.procedureOnlyStatements.filter(filterStatement) : [];
+
+    // Check if we have any Riot statements to show
+    const hasRiotStatements = filteredRiotStatements.length > 0 || filteredProcedureOnlyStatements.length > 0;
+
     // Create the Riot statements section based on context
     const riotStatementsTemplate = html`
-      <div class="add-statement-options">
-        <div class="device-section-header">Riot Statements</div>
-        <div class="device-section-divider"></div>
+      ${hasRiotStatements ? html`
+        <div class="add-statement-options">
+          <div class="device-section-header">Riot Statements</div>
+          <div class="device-section-divider"></div>
 
-        <!-- Always show the regular Riot statements -->
-        ${GeBlock.statementCategories.riotOnly.map(stmtKey =>
-          this.addStatementOptionTemplate(stmtKey)
-        )}
-
-        <!-- Only show procedure-only statements when in a procedure body -->
-        ${this.isProcBody ?
-          GeBlock.statementCategories.procedureOnlyStatements.map(stmtKey =>
+          <!-- Show filtered regular Riot statements -->
+          ${filteredRiotStatements.map(stmtKey =>
             this.addStatementOptionTemplate(stmtKey)
-          )
-          : nothing
-        }
-      </div>
+          )}
+
+          <!-- Only show filtered procedure-only statements when in a procedure body -->
+          ${this.isProcBody && filteredProcedureOnlyStatements.length > 0 ?
+            filteredProcedureOnlyStatements.map(stmtKey =>
+              this.addStatementOptionTemplate(stmtKey)
+            )
+            : nothing
+          }
+        </div>
+      ` : html`
+        <div class="no-available-statements">No matching Riot statements found</div>
+      `}
     `;
 
     // If we're editing a user procedure, only show Riot statements
     if (this.isProcBody) {
       return riotStatementsTemplate;
     }
+
+    // For regular editing, filter device statements
+    const deviceStatements = Object.keys(this.filteredAddStatementOptions).filter(stmtKey => {
+      return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice &&
+        filterStatement(stmtKey);
+    });
+
+    const hasDeviceStatements = deviceStatements.length > 0;
 
     // For regular editing, show both Riot statements and device statements
     return html`
@@ -981,13 +1017,9 @@ export class GeBlock extends LitElement {
       <div class="device-section-divider"></div>
       ${this.devicesTemplate()}
       <div class="add-statement-options">
-        ${Object.keys(this.filteredAddStatementOptions).length > 0
-          ? Object.keys(this.filteredAddStatementOptions).map((stmtKey) => {
-              return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice
-                ? this.addStatementOptionTemplate(stmtKey)
-                : nothing;
-            })
-          : html`<div class="no-available-device-statements">No available device statements</div>`}
+        ${hasDeviceStatements
+          ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
+          : html`<div class="no-available-device-statements">No matching device statements</div>`}
       </div>
     `;
   }
@@ -996,33 +1028,53 @@ export class GeBlock extends LitElement {
     // Make sure user procedures list is up to date
     this.updateUserProceduresList();
 
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the basic blocks
+    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
+
+    // Filter the user procedures
+    const filteredUserProcedures = !this.isProcBody ?
+      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
+
+    // Check if we have any results to show
+    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
+
     return html`
       ${this.addStatementOptionsVisible ? html`
-        <!-- Basic Blocks Section -->
-        <div class="add-statement-options">
-          <div class="device-section-header">Basic Blocks</div>
-          <div class="device-section-divider"></div>
-          ${GeBlock.statementCategories.basicBlocks.map(stmtKey => {
-            if (this.language.statements[stmtKey]) {
-              return this.addStatementOptionTemplate(stmtKey);
-            }
-            return nothing;
-          })}
-        </div>
+        ${hasResults ? html`
+          <!-- Basic Blocks Section -->
+          ${filteredBasicBlocks.length > 0 ? html`
+            <div class="add-statement-options">
+              <div class="device-section-header">Basic Blocks</div>
+              <div class="device-section-divider"></div>
+              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
 
-        <!-- User Procedures Section - only show if not in a procedure body -->
-        ${!this.isProcBody && GeBlock.statementCategories.userProcedures.length > 0 ? html`
-          <div class="add-statement-options" style="margin-top: 1rem;">
-            <div class="device-section-header">Procedures</div>
-            <div class="device-section-divider"></div>
-            ${GeBlock.statementCategories.userProcedures.map(stmtKey => {
-              if (this.language.statements[stmtKey]) {
-                return this.addStatementOptionTemplate(stmtKey);
-              }
-              return nothing;
-            })}
-          </div>
-        ` : nothing}
+          <!-- User Procedures Section - only show if not in a procedure body -->
+          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
+            <div class="add-statement-options" style="margin-top: 1rem;">
+              <div class="device-section-header">Procedures</div>
+              <div class="device-section-divider"></div>
+              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
+        ` : html`
+          <div class="no-available-statements">No matching statements found</div>
+        `}
       ` : nothing}
     `;
   }
