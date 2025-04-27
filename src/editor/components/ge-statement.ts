@@ -10,7 +10,7 @@ import {
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
-import { breakpointsContext, isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
+import { breakpointsContext, isRunningContext, languageContext, parseErrorsContext, parseWarningsContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
@@ -20,7 +20,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
 import { EditorModal } from './editor-modal';
-import { BreakpointMap, PositionalBreakpoint } from './vpl-editor';
+import { BreakpointMap, ParseErrorMap, ParseWarningMap, PositionalBreakpoint } from './vpl-editor';
 import Types from '@vpl/types.ts';
 
 @customElement('ge-statement')
@@ -53,6 +53,142 @@ export class GEStatement extends LitElement {
         gap: 0.35rem;
         position: relative;
         /* width: 100%; */
+      }
+
+      .parse-error-container {
+        display: flex;
+        column-gap: 0.1rem;
+        position: absolute;
+        top: 0;
+        right: 0;
+        border-radius: 0.25rem;
+        transform: translateX(0.15rem) translateY(-0.15rem);
+        --error-color: #c07181;
+        // --warning-color: #efd0a0;
+        // --warning-color: #FFD046;
+        // --warning-color: #FFC20A;
+        --warning-color: #ED9831;
+        --warning-color-bg: #FDF5BF;
+
+
+        color: var(--error-color);
+        overflow-x: hidden;
+        overflow-y: hidden;
+        transition: height 25ms ease-out, width 35ms ease-out, overflow 20ms 35ms;
+        --error-icon-width: 1rem;
+        --error-icon-height: 1rem;
+        z-index: 1002;
+      }
+
+      .parse-error-container[error]:not([open]),
+      .parse-error-container[warning]:not([open]) {
+        --num-error-badges: 1;
+      }
+
+      .parse-error-container[error][warning]:not([open]) {
+        --num-error-badges: 2;
+      }
+
+      .parse-error-container:not([open]) {
+        width: calc((var(--error-icon-width) * 2 + 0.3rem) * var(--num-error-badges, 1));
+        // width: calc((var(--error-icon-width) * 2 + 0.2rem) * 2);
+
+        height: calc(var(--error-icon-height) + 0.45rem);
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .parse-error-container[open] {
+        background-color: color-mix(in srgb, white, var(--error-color) 50%);
+        border-radius: 0.25rem;
+        overflow-x: auto;
+        overflow-y: auto;
+        min-width: 420px;
+        width: 40%;
+        height: 110%;
+        border: solid 1px var(--error-color);
+      }
+
+      .parse-error-container[open] .icon {
+        flex: 1 0 auto;
+      }
+
+      .parse-error-container:not([open]) > .parse-error-overview {
+        display: flex;
+        background-color: color-mix(in srgb, white, var(--error-color) 50%);
+        flex: 1 0 auto;
+      }
+
+      .parse-error-container:not([open]) > .parse-error-overview[warning] {
+        background-color: var(--warning-color-bg);
+        color: var(--warning-color);
+      }
+
+      .parse-error-container[open] > .parse-error-overview {
+        display: none;
+      }
+
+      .parse-error-container:not([open]) > .parse-error-details {
+        display: none;
+      }
+
+      .parse-error-container[open] > .parse-error-details {
+        display: flex;
+        background-color: color-mix(in srgb, white, var(--error-color) 50%);
+      }
+
+      .parse-error-container[open] > .parse-error-details > div[warning] {
+        color: var(--warning-color);
+        background-color: var(--warning-color-bg);
+      }
+
+      .parse-error-container > .parse-error-overview {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: center;
+        color: var(--error-color);
+        cursor: pointer;
+      }
+
+      .parse-error-container .icon {
+        width: var(--error-icon-width);
+        height: var(--error-icon-height);
+      }
+
+      .parse-error-container > .parse-error-overview > .num {
+        margin-right: 0.1rem;
+      }
+
+      .parse-error-container > .parse-error-details {
+        padding-top: 0.5rem;
+        flex-direction: column;
+        row-gap: 0.2rem;
+      }
+
+      .parse-error-container > .parse-error-details > .parse-error {
+        padding: 0 0.5rem;
+        padding-right: 1rem;
+        align-items: center;
+      }
+
+      .parse-error-container > .parse-error-details > .close {
+        position: absolute;
+        top: 0.15rem;
+        right: 0.3rem;
+        height: 0.8rem;
+        width: 0.8rem;
+        cursor: pointer;
+      }
+
+      .parse-error-container > .parse-error-details > .close:hover {
+        color: color-mix(in srgb, black, var(--error-color) 90%);
+      }
+
+      .parse-error-container > .parse-error-details > div {
+        display: flex;
+        flex-direction: row;
+        column-gap: 0.2rem;
       }
 
       .breakpoint-marker,
@@ -385,6 +521,15 @@ export class GEStatement extends LitElement {
 
   @property({attribute: false})
   breakpoint: PositionalBreakpoint|null;
+
+  @consume({ context: parseErrorsContext, subscribe: true })
+  @property({ attribute: false })
+  parseErrorMap: ParseErrorMap = {};
+
+  @consume({ context: parseWarningsContext, subscribe: true })
+  @property({ attribute: false })
+  parseWarningMap: ParseWarningMap = {};
+
   //#endregion
 
 
@@ -392,6 +537,7 @@ export class GEStatement extends LitElement {
   @state() breakpointMarkerDraggingConfirmed: boolean = false;
   @state() breakpointMarkerDraggingOffset: [number, number] = [0,0];
   @state() contextMenuCloseClickListener = null;
+  @state() errorDetailOpen: boolean = false;
 
   //#region Refs
   breakpointMarkerRef: Ref<HTMLElement> = createRef();
@@ -749,6 +895,12 @@ export class GEStatement extends LitElement {
     this.closeContextMenu();
   }
 
+  handleErrorClick(e: MouseEvent) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    this.errorDetailOpen = !this.errorDetailOpen;
+  }
+
   statementTemplate(hasNestedBlock: boolean) {
     return html`
       <div
@@ -761,6 +913,71 @@ export class GEStatement extends LitElement {
         ?breakpoint-dragging=${this.breakpointMarkerDraggingStarted}
         ?running=${this.isRunning}
       >
+
+        <!-- ParseErrors -->
+        ${(this.parseErrorMap[this.statement._uuid] !== undefined || this.parseWarningMap[this.statement._uuid] !== undefined)
+        ? html`
+          <div class="parse-error-container" ?open=${this.errorDetailOpen} ?error=${this.parseErrorMap[this.statement._uuid] !== undefined} ?warning=${this.parseWarningMap[this.statement._uuid] !== undefined}>
+            ${this.parseErrorMap[this.statement._uuid] !== undefined
+              ? html`
+              <div class="parse-error-overview" title="Click to open error details" @click=${this.handleErrorClick}>
+                <div class="icon">
+                  ${icons.closeCircle}
+                </div>
+                <div class="num">
+                  ${this.parseErrorMap[this.statement._uuid].length}
+                </div>
+              </div>
+              `
+              : nothing
+            }
+
+            ${this.parseWarningMap[this.statement._uuid] !== undefined
+            ? html`
+              <div class="parse-error-overview" warning title="Click to open error details" @click=${this.handleErrorClick}>
+                <div class="icon">
+                  ${icons.exclamationDiamond}
+                </div>
+                <div class="num">
+                  ${this.parseWarningMap[this.statement._uuid].length}
+                </div>
+              </div>
+            `
+            : nothing
+            }
+
+            <div class="parse-error-details">
+              <div class="close" @click=${this.handleErrorClick}>
+                ${icons.xLg}
+              </div>
+              ${this.parseErrorMap[this.statement._uuid]?.map(e => html`
+                <div class="parse-error">
+                  <div class="icon">
+                    ${icons.closeCircle}
+                  </div>
+                  <div>
+                    ${e.message}
+                  </div>
+                </div>
+              `)}
+              ${this.parseWarningMap[this.statement._uuid]?.map(e => html`
+                <div class="parse-error" warning>
+                  <div class="icon">
+                    ${icons.exclamationDiamond}
+                  </div>
+                  <div>
+                    ${e.message}
+                  </div>
+                </div>
+              `)}
+            </div>
+
+          </div>
+        `
+        : nothing
+        }
+        <!-- End ParseErrors -->
+
         <!-- Breakpoint -->
         <div
           class="breakpoint-threshold"

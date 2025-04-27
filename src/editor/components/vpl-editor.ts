@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { Language, Statement, Statements } from '@/vpl/language';
 import { AbstractStatement, AbstractStatementWithArgs, Block, CompoundStatement, Expression, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
-import { breakpointsContext, isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
+import { breakpointsContext, isRunningContext, languageContext, parseErrorsContext, parseWarningsContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
@@ -16,6 +16,23 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
 import { EditorControls, SelectedEditorView } from './editor-controls';
+
+type ParseError = {
+  path: BlockPath;
+  name: string;
+  message: string;
+}
+
+type Warning = {
+  path: BlockPath;
+  name: string;
+  message: string;
+}
+
+type ToBlockMap<T> = {[key: string]: T };
+
+export type ParseErrorMap = ToBlockMap<ParseError[]>
+export type ParseWarningMap = ToBlockMap<Warning[]>;
 
 type BlockPath = any[];
 
@@ -76,6 +93,8 @@ export class VplEditor extends LitElement {
   @property({ attribute: false }) runningBlockPath: BlockPath;
   @property({ attribute: false }) breakpointData: Breakpoint[] = [];
   @property({ type: Boolean }) enableBreakpoints: boolean = false;
+  @property({attribute: false}) errors: ParseError[] = [];
+  @property({attribute: false}) warnings: Warning[] = [];
   //#endregion
 
   //#region Refs
@@ -107,6 +126,14 @@ export class VplEditor extends LitElement {
 
   // TODO(filip): add data breakpoin content
 
+  @provide({ context: parseErrorsContext })
+  @property({ attribute: false })
+  parseErrorMap: ParseErrorMap = {};
+
+  @provide({ context: parseWarningsContext })
+  @property({ attribute: false })
+  parseWarningMap: ParseWarningMap = {};
+
   //#endregion
 
   //#region Lifecycle
@@ -116,6 +143,8 @@ export class VplEditor extends LitElement {
       this.handleTextEditorProgramUpdated();
     });
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      this.errors = [...this.errors]; // TODO(filip): remove ?
+      this.warnings = [...this.warnings];
       this.breakpoints = this.updateBreakpoints(this.breakpoints);
       this.handleGraphicalEditorProgramUpdated();
     });
@@ -156,10 +185,6 @@ export class VplEditor extends LitElement {
         this.isSmallScreen = false;
       }
     });
-
-    // window.onbeforeunload = function () {
-    //   return 'Changes may be lost!';
-    // };
   }
 
   connectedCallback() {
@@ -187,9 +212,28 @@ export class VplEditor extends LitElement {
     if (changedProperties.has("breakpoints")) {
       this.emitBreakpointsChangeEvent(this.breakpoints);
     }
+    if (changedProperties.has("errors")) {
+      this.parseErrorMap = this.processParseErrorsWarning(this.errors);
+    }
+    if (changedProperties.has("warnings")) {
+      this.parseWarningMap = this.processParseErrorsWarning(this.warnings);
+    }
   }
 
   //#endregion
+
+  processParseErrorsWarning<T extends ParseError|Warning>(data: T[]): ToBlockMap<T[]> {
+    const pMap: ToBlockMap<T[]> = {};
+    for (let e of data) {
+      const errPath = this.findBlockByPath(e.path, true);
+      if (pMap[errPath] === undefined) {
+        pMap[errPath] = [];
+      }
+      pMap[errPath].push(e);
+    }
+    return pMap;
+  }
+
   emitBreakpointsChangeEvent(breakpoints: BreakpointMap|null) {
     const event = new CustomEvent("vpl-editor-breakpoints-updated", {
       bubbles: true,
@@ -207,7 +251,7 @@ export class VplEditor extends LitElement {
 
     for (let b of breakpoints) {
       switch (b?.type) {
-        case "normal": 
+        case "normal":
           const normalB: PositionalBreakpoint = {...b, blockId: this.findBlockByPath(b.path)};
           if (typeof normalB.blockId === "string" && normalB.blockId.length > 0) {
             bMap[normalB.blockId] = normalB;
@@ -250,7 +294,7 @@ export class VplEditor extends LitElement {
     return bMap;
   }
 
-  findBlockByPath(path: any[]) {
+  findBlockByPath(path: any[], mergeExpressions: boolean = false) {
     if (!path || path.length === 0) {
       return null;
     }
@@ -285,19 +329,19 @@ export class VplEditor extends LitElement {
           return null;
         }
 
-        if (currPtr.type === "statement" && (currPtr.value as AbstractStatementWithArgs).arguments !== undefined) {
+        if (!mergeExpressions && currPtr.type === "statement" && (currPtr.value as AbstractStatementWithArgs).arguments !== undefined) {
           currPtr = {
             type: "expression",
             value: (currPtr.value as AbstractStatementWithArgs).arguments[p.pos] as Expression // TODO(filip): these types...
           }
         }
-        else if (currPtr.type === "expression" && (Array.isArray(currPtr.value))) {
+        else if (!mergeExpressions && currPtr.type === "expression" && (Array.isArray(currPtr.value))) {
           currPtr = {
             type: "expression",
             value: currPtr.value.value[p.pos] as Expression
           }
         }
-        else {
+        else if (!mergeExpressions) {
           console.error("invalid runningBlockPath: expresssion in terminal expression", this.runningBlockPath);
           return null;
         }
