@@ -2,8 +2,8 @@ import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { Language, Statement, Statements } from '@/vpl/language';
-import { AbstractStatementWithArgs, Block, CompoundStatement, Expression, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
-import { isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
+import { AbstractStatement, AbstractStatementWithArgs, Block, CompoundStatement, Expression, Program, ProgramStatement, analyzeBlock } from '@/vpl/program';
+import { breakpointsContext, isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
@@ -17,10 +17,30 @@ import { exampleDevices } from '@/vpl/example.devices';
 import { globalStyles } from '../global-styles';
 import { EditorControls, SelectedEditorView } from './editor-controls';
 
+type BlockPath = any[];
+
 type ProgPointer =
  | { type: "stlist", value: Block }
  | { type: "statement", value: ProgramStatement }
  | { type: "expression", value: Expression }
+
+type Breakpoint = { disabled: boolean } & ( // TODO(filip): import type from debugger lib?
+ | { type: "normal", path: BlockPath }
+ | { type: "conditional", condition: any, path: BlockPath } // TODO(filip): condition type
+ | { type: "data", condition: any } // TODO(filip): condition type
+);
+
+type AddIdToBreakpoint<T> = T extends { type: "normal" | "conditional" } ? T & { blockId: string } : T;
+
+export type BreakpointWithId = AddIdToBreakpoint<Breakpoint>;
+
+type BreakpointWithPositionOnly<T> = T extends { blockId: string } ? T : never;
+
+export type PositionalBreakpoint = BreakpointWithPositionOnly<BreakpointWithId>;
+
+export type BreakpointMap = {
+  [K in PositionalBreakpoint as K["blockId"]]: K
+};
 
 @customElement('vpl-editor')
 export class VplEditor extends LitElement {
@@ -53,7 +73,9 @@ export class VplEditor extends LitElement {
   @property({ type: Boolean }) isSmallScreen: boolean = document.body.clientWidth < 800;
   @property({ type: String }) viewMode: SelectedEditorView;
   @property({ type: Boolean }) showControls: boolean;
-  @property({ attribute: false }) runningBlockPath: any[];
+  @property({ attribute: false }) runningBlockPath: BlockPath;
+  @property({ attribute: false }) breakpointData: Breakpoint[] = [];
+  @property({ type: Boolean }) enableBreakpoints: boolean = false;
   //#endregion
 
   //#region Refs
@@ -78,6 +100,13 @@ export class VplEditor extends LitElement {
   @provide({ context: isRunningContext })
   @property({ attribute: false })
   isRunning = false;
+
+  @provide({ context: breakpointsContext })
+  @property({ attribute: false })
+  breakpoints: BreakpointMap|null = null;
+
+  // TODO(filip): add data breakpoin content
+
   //#endregion
 
   //#region Lifecycle
@@ -87,11 +116,38 @@ export class VplEditor extends LitElement {
       this.handleTextEditorProgramUpdated();
     });
     this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, (e: CustomEvent) => {
+      this.breakpoints = this.updateBreakpoints(this.breakpoints);
       this.handleGraphicalEditorProgramUpdated();
     });
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
       this.viewMode = e.detail.newView;
     });
+
+    this.addEventListener(graphicalEditorCustomEvent.BREAKPOINT_ADDED, (e: CustomEvent) => {
+      this.breakpoints = {
+        ...this.breakpoints,
+        [e.detail.blockId]: {
+          type: "normal",
+          disabled: false,
+          blockId: e.detail.blockId,
+          path: this.getPathOfBlock(e.detail.blockId, this.program.block),
+        }
+      }
+    })
+
+    this.addEventListener(graphicalEditorCustomEvent.BREAKPOINT_UPDATED, (e: CustomEvent) => {
+      this.breakpoints = {
+        ...this.breakpoints,
+        [e.detail.breakpoint.blockId]: e.detail.breakpoint,
+      }
+    })
+
+    this.addEventListener(graphicalEditorCustomEvent.BREAKPOINT_REMOVED, (e: CustomEvent) => {
+      this.breakpoints = {
+        ...this.breakpoints,
+        [e.detail.breakpoint.blockId]: undefined,
+      }
+    })
 
     window.addEventListener('resize', () => {
       if (document.body.clientWidth < 800) {
@@ -118,12 +174,84 @@ export class VplEditor extends LitElement {
     if (changedProperties.has("runningBlockPath")) {
       this.runningBlock = this.findBlockByPath(this.runningBlockPath) || "";
     }
+
+    if (changedProperties.has("enableBreakpoints")) {
+      if (this.enableBreakpoints === true) {
+        this.breakpoints = this.findBreakpointBlocks(this.breakpointData);
+      }
+      else {
+        this.breakpoints = null;
+      }
+    }
+
+    if (changedProperties.has("breakpoints")) {
+      this.emitBreakpointsChangeEvent(this.breakpoints);
+    }
   }
 
   //#endregion
+  emitBreakpointsChangeEvent(breakpoints: BreakpointMap|null) {
+    const event = new CustomEvent("vpl-editor-breakpoints-updated", {
+      bubbles: true,
+      composed: true,
+      detail: { breakpoints: Object.values(breakpoints ?? {}) },
+    });
+    this.dispatchEvent(event);
+  }
+  findBreakpointBlocks(breakpoints: Breakpoint[]): BreakpointMap|null {
+    if (breakpoints === undefined || breakpoints === null) {
+      return null;
+    }
+
+    const bMap: BreakpointMap = {};
+
+    for (let b of breakpoints) {
+      switch (b?.type) {
+        case "normal": 
+          const normalB: PositionalBreakpoint = {...b, blockId: this.findBlockByPath(b.path)};
+          if (typeof normalB.blockId === "string" && normalB.blockId.length > 0) {
+            bMap[normalB.blockId] = normalB;
+          }
+          break;
+        case "conditional":
+          const condB: PositionalBreakpoint = {...b, blockId: this.findBlockByPath(b.path)}; // TODO(filip): parse condition?
+          if (typeof condB.blockId === "string" && condB.blockId.length > 0) {
+            bMap[condB.blockId] = condB;
+          }
+          break;
+        case "data":
+          // TODO(filip): handle data breakpoints
+      }
+    }
+    return bMap;
+  }
+
+
+  updateBreakpoints(breakpoints: BreakpointMap): BreakpointMap|null {
+    if (breakpoints === null) {
+      return null;
+    }
+
+    const bMap: BreakpointMap = {};
+
+    const processBlock = (block: Block) => {
+      for (let st of block) {
+        const b = breakpoints[st._uuid]
+        if (!!b) {
+          bMap[st._uuid] = {...b, path: this.getPathOfBlock(st._uuid, [st])};
+        }
+        if (Array.isArray((st as CompoundStatement).block)) {
+          processBlock((st as CompoundStatement).block);
+        }
+      }
+    }
+    processBlock(this.program.block);
+
+    return bMap;
+  }
 
   findBlockByPath(path: any[]) {
-    if (!this.runningBlockPath || this.runningBlockPath.length === 0) {
+    if (!path || path.length === 0) {
       return null;
     }
 
@@ -141,7 +269,7 @@ export class VplEditor extends LitElement {
           }
         }
         // @ts-ignore
-        else if (currPtr.type === "statement" && currPtr.value.block !== undefined){ // TODO(filip): fix types
+        else if (currPtr.type === "statement" && currPtr.value?.block !== undefined){ // TODO(filip): fix types
           currPtr = {
             type: "statement",
             value: (currPtr.value as CompoundStatement).block[p.pos]
@@ -181,7 +309,23 @@ export class VplEditor extends LitElement {
       return null;
     }
 
-    return currPtr.value._uuid || "";
+    return currPtr.value?._uuid || "";
+  }
+
+  getPathOfBlock(id: string, block: Block): BlockPath|null {
+    for (let i = 0; i < block.length; i++) {
+      const st = block[i];
+      if (st._uuid === id) {
+        return [{type: "statement", pos: i}];
+      }
+      else if (Array.isArray((st as CompoundStatement).block)) {
+        const path = this.getPathOfBlock(id, (st as CompoundStatement).block);
+        if (path !== null) {
+          return [{type: "statement", pos: i}, ...path]
+        }
+      }
+    }
+    return null;
   }
 
   //#region Handlers
@@ -231,7 +375,7 @@ export class VplEditor extends LitElement {
     );
   }
   //#endregion
-  
+
   openVariablesModal() {
     this.controlsRef.value.openVariablesModal();
   }

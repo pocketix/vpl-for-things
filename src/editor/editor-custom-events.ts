@@ -14,6 +14,9 @@ export const textEditorCustomEvent = {
 
 export const graphicalEditorCustomEvent = {
   PROGRAM_UPDATED: 'ge-program-updated',
+  BREAKPOINT_UPDATED: 'ge-breakpoint-updated',
+  BREAKPOINT_REMOVED: 'ge-breakpoint-removed',
+  BREAKPOINT_ADDED: 'ge-breakpoint-added',
 } as const;
 
 export const expressionListCustomEvent = {

@@ -1,5 +1,5 @@
-import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, css, nothing, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import {
   AbstractStatementWithArgs,
   CompoundStatement,
@@ -10,7 +10,7 @@ import {
 } from '@vpl/program';
 import { Argument, Language } from '@vpl/language';
 import { consume } from '@lit/context';
-import { isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
+import { breakpointsContext, isRunningContext, languageContext, programContext, runninBlockContext } from '@/editor/context/editor-context';
 import {
   editorVariablesModalCustomEvent,
   graphicalEditorCustomEvent,
@@ -20,6 +20,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
 import { EditorModal } from './editor-modal';
+import { BreakpointMap, PositionalBreakpoint } from './vpl-editor';
 import Types from '@vpl/types.ts';
 
 @customElement('ge-statement')
@@ -54,7 +55,87 @@ export class GEStatement extends LitElement {
         /* width: 100%; */
       }
 
+      .breakpoint-marker,
+      .breakpoint-threshold {
+        --breakpoint-width: 20px;
+        --breakpoint-height: 20px;
+        touch-action: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .breakpoint-marker {
+        transform: translateX(-20%) translateY(-20%);
+        width: var(--breakpoint-width);
+        height: var(--breakpoint-height);
+        z-index: 1000;
+        transition: opacity 0.15s ease;
+      }
+      .statement-header:not([running]) .breakpoint-marker {
+        cursor: pointer;
+      }
+
+      .statement-header > .context-menu {
+        --context-menu-border-radius: 8px;
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1001;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: var(--context-menu-border-radius);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        color: #1f194c;
+        width: 200px;
+        font-size: 0.9rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .context-menu li {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+      }
+
+      .context-menu li:first-child {
+        border-top-right-radius: var(--context-menu-border-radius);
+        border-top-left-radius: var(--context-menu-border-radius);
+      }
+
+      .context-menu li:last-child {
+        border-bottom: none;
+        border-bottom-right-radius: var(--context-menu-border-radius);
+        border-bottom-left-radius: var(--context-menu-border-radius);
+      }
+
+      .context-menu li:hover {
+        background-color: #f5f5f5;
+      }
+
+
+      .breakpoint-marker > .marker {
+        width: 100%;
+        height: 100%;
+        --breakpoint-color-light: #e55765;
+        --breakpoint-color-dark: #db5c5c;
+        --breakpoint-color: var(--breakpoint-color-light);
+        background-color: var(--breakpoint-color);
+        border-radius: calc(infinity * 1px);
+        border-width: 3px;
+        border-color: var(--breakpoint-color);
+        border-style: solid;
+      }
+
+      .breakpoint-marker[to-be-removed] {
+        opacity: 50%;
+      }
+
       .statement-header {
+        position: relative;
         display: flex;
         flex-direction: row;
         /* justify-content: space-between; */
@@ -64,6 +145,70 @@ export class GEStatement extends LitElement {
         border-top-left-radius: 0.5rem;
         border-top-right-radius: 0.5rem;
         height: 55px;
+      }
+
+      .statement-header[breakpoint-dragging] {
+        user-select: none;
+      }
+
+      .statement-header[breakpoint-dragging] > .breakpoint-threshold[dragging] {
+        width: calc(var(--breakpoint-width) + 35px);
+        height: calc(var(--breakpoint-height) + 35px);
+        transform: translateX(-40%) translateY(-40%);
+        transition: background-color 0.15s ease;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 100%;
+      }
+
+      .statement-header[breakpoint-dragging] > .breakpoint-marker {
+        cursor: grabbing;
+      }
+
+      .statement-header[breakpoint-dragging] > .breakpoint-marker > span {
+        position: absolute;
+        width: 100px;
+        transform: translateX(-30%) translateY(-30%);
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        // border: solid 1px blue;
+      }
+
+
+      .statement-header[breakpoint-dragging] > .breakpoint-marker > .marker {
+        width: var(--breakpoint-width);
+        height: var(--breakpoint-height);
+      }
+
+      .statement-header:not([breakpoints-enabled]) > .breakpoint-marker {
+        display: none;
+      }
+
+      .statement-header > .breakpoint-marker > .marker {
+        visibility: hidden;
+      }
+
+      .statement-header[breakpoints-enabled]:not([running]) > .breakpoint-marker:not([visible]):hover > .marker {
+        visibility: visible;
+        opacity: 90%;
+        // border-color: color-mix(in srgb, black, var(--breakpoint-color) 90%);
+        // background-color: color-mix(in srgb, white, var(--breakpoint-color) 80%);
+      }
+
+      .statement-header[breakpoints-enabled]:not([running]) > .breakpoint-marker[visible]:hover > .marker {
+        border-style: dashed;
+        border-color: color-mix(in srgb, black, var(--breakpoint-color) 90%);
+        background-color: color-mix(in srgb, white, var(--breakpoint-color) 80%);
+      }
+
+      .statement-header[breakpoints-enabled] > .breakpoint-marker[visible] > .marker {
+        visibility: visible;
+      }
+
+      .statement-header[breakpoints-enabled] > .breakpoint-marker[visible][disabled] > .marker {
+        // opacity: 45%;
+        background-color: color-mix(in oklab, var(--breakpoint-color) 50%, white);
       }
 
       .nested {
@@ -88,7 +233,7 @@ export class GEStatement extends LitElement {
 
       .statement-controls-modal {
         bottom: 0;
-        left: -94px;
+        left: -110px;
       }
 
       .statement-controls-modal::part(dialog) {
@@ -209,21 +354,21 @@ export class GEStatement extends LitElement {
   //#endregion
 
   //#region Props
-  @property() statement: ProgramStatement;
-  @property() index: number;
-  @property() nestedBlockVisible: boolean = true;
-  @property() isProcBody: boolean = false;
-  @property() isExample: boolean = false;
-  @property() exampleBlockIsVisible: boolean = false;
+  @property({attribute: false}) statement: ProgramStatement;
+  @property({type: Number}) index: number;
+  @property({type: Boolean}) nestedBlockVisible: boolean = true;
+  @property({type: Boolean}) isProcBody: boolean = false;
+  @property({type: Boolean}) isExample: boolean = false;
+  @property({type: Boolean}) exampleBlockIsVisible: boolean = false;
   //#endregion
 
   //#region Context
   @consume({ context: languageContext })
-  @property()
+  @property({attribute: false})
   language?: Language;
 
   @consume({ context: programContext })
-  @property()
+  @property({attribute: false})
   program?: Program;
 
   @consume({ context: runninBlockContext, subscribe: true })
@@ -233,9 +378,24 @@ export class GEStatement extends LitElement {
   @consume({ context: isRunningContext, subscribe: true })
   @property({type: Boolean})
   isRunning?: boolean;
+
+  @consume({ context: breakpointsContext, subscribe: true })
+  @property({attribute: false})
+  breakpoints?: BreakpointMap|null;
+
+  @property({attribute: false})
+  breakpoint: PositionalBreakpoint|null;
   //#endregion
 
+
+  @state() breakpointMarkerDraggingStarted: boolean = false;
+  @state() breakpointMarkerDraggingConfirmed: boolean = false;
+  @state() breakpointMarkerDraggingOffset: [number, number] = [0,0];
+  @state() contextMenuCloseClickListener = null;
+
   //#region Refs
+  breakpointMarkerRef: Ref<HTMLElement> = createRef();
+  breakpointMarkerContextMenuRef: Ref<HTMLElement> = createRef();
   statementHeaderRef: Ref<HTMLElement> = createRef();
   statementNestedBlockRef: Ref<HTMLElement> = createRef();
   statementControlsModalRef: Ref<EditorModal> = createRef();
@@ -274,6 +434,16 @@ export class GEStatement extends LitElement {
         this.dispatchEvent(event);
       }
     });
+  }
+
+  willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("breakpoints")) {
+      if (this.breakpoints === null || this.breakpoints === undefined) {
+        this.breakpoint = null;
+        return;
+      }
+      this.breakpoint = this.breakpoints[this.statement._uuid] ?? null;
+    }
   }
 
   updated() {
@@ -395,6 +565,190 @@ export class GEStatement extends LitElement {
     `;
   }
 
+  hasBreakpoint(breakpoint: PositionalBreakpoint|null): boolean {
+    return breakpoint !== undefined && breakpoint !== null;
+  }
+
+  computeBreakpointTitle(breakpoint: PositionalBreakpoint|null): string {
+    if (this.hasBreakpoint(breakpoint) && !breakpoint.disabled) {
+      return this.isRunning ? "Enabled breakpoint" : "Disable breakpoint"
+    }
+    else if (this.hasBreakpoint(breakpoint)) {
+      return this.isRunning ? "Disabled breakpoint" : `Enable${this.isRunning ? "d":""} breakpoint`
+    }
+    return this.isRunning ? "" : "Set breakpoint"
+  }
+
+  emitBreakpointChangeEvent(breakpoint: PositionalBreakpoint, remove: boolean = false) {
+    const eventName = remove ? graphicalEditorCustomEvent.BREAKPOINT_REMOVED : graphicalEditorCustomEvent.BREAKPOINT_UPDATED;
+    const event = new CustomEvent(eventName, {
+      bubbles: true,
+      composed: true,
+      detail: { breakpoint },
+    });
+    this.dispatchEvent(event);
+  }
+
+  handleBreakpointRemove() {
+    this.emitBreakpointChangeEvent(this.breakpoint, true);
+  }
+
+  handleBreakpointConfigure() {
+    // TODO(filip): configure breakpoint
+  }
+
+  handleBreakpointAdd() {
+    const event = new CustomEvent(graphicalEditorCustomEvent.BREAKPOINT_ADDED, {
+      bubbles: true,
+      composed: true,
+      detail: { blockId: this.statement._uuid },
+    });
+    this.dispatchEvent(event);
+  }
+
+  handleBreakpointDisable() {
+    this.breakpoint.disabled = true;
+    this.emitBreakpointChangeEvent(this.breakpoint);
+  }
+
+  handleBreakpointEnable() {
+    this.breakpoint.disabled = false;
+    this.emitBreakpointChangeEvent(this.breakpoint);
+  }
+
+  handleBreakpointMarkerClick(e: MouseEvent) {
+    if (this.hasBreakpoint(this.breakpoint) && !this.breakpoint.disabled) {
+      this.handleBreakpointDisable();
+    }
+    else if (this.hasBreakpoint(this.breakpoint)) {
+      this.handleBreakpointEnable();
+    }
+    else {
+      this.handleBreakpointAdd();
+    }
+  }
+
+  handleBreakpointMarkerMouseDown(e: MouseEvent) {
+    if (e.button !== 0) {
+      return;
+    }
+    if (this.hasBreakpoint(this.breakpoint)) {
+      this.breakpointMarkerDraggingStarted = true;
+      this.breakpointMarkerDraggingOffset[0] = e.clientX - this.breakpointMarkerRef.value.offsetLeft;
+      this.breakpointMarkerDraggingOffset[1] = e.clientY - this.breakpointMarkerRef.value.offsetTop;
+    }
+  }
+
+  resetBreakpointMarkerDraggingState() {
+    this.breakpointMarkerDraggingStarted = false;
+    this.breakpointMarkerDraggingOffset = [0,0];
+    this.breakpointMarkerRef.value.style.left = "0px";
+    this.breakpointMarkerRef.value.style.top = "0px";
+    this.breakpointMarkerRef.value.removeAttribute("to-be-removed");
+    // this.breakpointMarkerRef.value.removeAttribute("dragging");
+    this.breakpointMarkerDraggingConfirmed = false;
+  }
+
+  getBreakpointDragDistance(): [number, number] {
+    const l = parseInt(this.breakpointMarkerRef.value.style.left);
+    const t = parseInt(this.breakpointMarkerRef.value.style.top);
+    return [l, t];
+  }
+
+  handleBreakpointMarkerMouseUp(e: MouseEvent) {
+    if (e.button !== 0) {
+      return;
+    }
+    const toBeRemoved = this.breakpointMarkerRef.value.getAttribute("to-be-removed") !== null;
+    const dragging = this.breakpointMarkerRef.value.getAttribute("dragging") !== null;
+    if (this.breakpointMarkerDraggingStarted) {
+      this.resetBreakpointMarkerDraggingState();
+      if (toBeRemoved) {
+        this.handleBreakpointRemove();
+      }
+    }
+    if (!dragging) {
+      this.handleBreakpointMarkerClick(e);
+    }
+  }
+
+  handleBreakpointMarkerMouseMove(e: MouseEvent) {
+    if (!this.breakpointMarkerDraggingStarted) return;
+    e.preventDefault();
+    const xOff = e.clientX - this.breakpointMarkerDraggingOffset[0];
+    const yOff = e.clientY - this.breakpointMarkerDraggingOffset[1];
+    this.breakpointMarkerRef.value.style.left = `${xOff}px`;
+    this.breakpointMarkerRef.value.style.top = `${yOff}px`;
+
+    if (Math.abs(xOff) > 1 || Math.abs(yOff) > 1) {
+      this.breakpointMarkerRef.value.setAttribute("dragging", "true");
+      this.breakpointMarkerDraggingConfirmed = true;
+    }
+
+    const threshold = 30;
+    if (Math.abs(xOff) > threshold || Math.abs(yOff) > threshold) {
+      this.breakpointMarkerRef.value.setAttribute("to-be-removed", "true");
+    }
+    else {
+      this.breakpointMarkerRef.value.removeAttribute("to-be-removed");
+    }
+
+  }
+
+  handleBreakpointMarkerMouseLeave(e: MouseEvent) {
+    if (this.breakpointMarkerDraggingStarted) {
+      this.resetBreakpointMarkerDraggingState();
+    }
+  }
+
+  handleBreakpointMarkerContextMenu(e: MouseEvent) {
+    if (!this.hasBreakpoint(this.breakpoint)) {
+      return;
+    }
+    e.preventDefault();
+    const offsets = this.breakpointMarkerRef.value.getBoundingClientRect();
+    const mouseX = e.clientX - offsets.left;
+    const mouseY = e.clientY - offsets.top;
+    const menu = this.breakpointMarkerContextMenuRef.value;
+    menu.style.left = mouseX + "px";
+    menu.style.top = mouseY + "px";
+    menu.style.display = "block";
+
+    const listener = () => {
+      menu.style.display = "none";
+      window.removeEventListener("click", listener);
+    }
+    this.contextMenuCloseClickListener = listener;
+    window.addEventListener("click", listener);
+  }
+
+  closeContextMenu() {
+    if (this.contextMenuCloseClickListener !== null) {
+      this.contextMenuCloseClickListener();
+    }
+  }
+
+  handleBreakpointContextMenuClick(e: MouseEvent, button: string) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    switch (button) {
+      case "disable":
+        this.handleBreakpointDisable();
+        break;
+      case "enable":
+        this.handleBreakpointEnable();
+        break;
+      case "configure":
+        this.handleBreakpointConfigure();
+        break;
+      case "remove":
+        this.handleBreakpointRemove();
+        break;
+    }
+    this.closeContextMenu();
+  }
+
   statementTemplate(hasNestedBlock: boolean) {
     return html`
       <div
@@ -402,7 +756,49 @@ export class GEStatement extends LitElement {
         class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''} ${this.language
           .statements[this.statement.id].isUserProcedure
           ? 'user-proc'
-          : ''}">
+          : ''}"
+        ?breakpoints-enabled=${this.breakpoints !== undefined && this.breakpoints !== null && !this.isExample}
+        ?breakpoint-dragging=${this.breakpointMarkerDraggingStarted}
+        ?running=${this.isRunning}
+      >
+        <!-- Breakpoint -->
+        <div
+          class="breakpoint-threshold"
+          ?dragging=${this.breakpointMarkerDraggingConfirmed}
+        ></div>
+        <ul
+          ${ref(this.breakpointMarkerContextMenuRef)}
+          id="context-menu"
+          class="context-menu"
+          @pointerdown=${(e: MouseEvent) => {e.preventDefault();e.stopImmediatePropagation();}}
+          @pointerup=${(e: MouseEvent) => {e.preventDefault();e.stopImmediatePropagation();}}
+          @pointermove=${(e: MouseEvent) => {e.preventDefault();e.stopImmediatePropagation();}}
+        >
+          ${this.breakpoint?.disabled
+            ? html`<li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "enable")}>Enable</li>`
+            : html`<li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "disable")}>Disable</li>`
+          }
+          <li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "configure")}>Configure</li>
+          <li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "remove")}>Remove</li>
+        </ul>
+        <div
+          ${ref(this.breakpointMarkerRef)}
+          class="breakpoint-marker"
+          ?visible=${this.hasBreakpoint(this.breakpoint)}
+          ?disabled=${this.breakpoint?.disabled}
+          ?dragging=${this.breakpointMarkerDraggingConfirmed}
+          .title=${this.computeBreakpointTitle(this.breakpoint)}
+          @pointerdown=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseDown}
+          @pointerup=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseUp}
+          @pointermove=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseMove}
+          @pointerleave=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseLeave}
+          @contextmenu=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerContextMenu}
+        >
+          <span></span>  <!-- Drag spacer -- grows when dragging to prevent losing "focus" -->
+          <div class="marker"></div> <!-- the visible breakpoint marker element -->
+        </div>
+        <!-- End Breakpoint -->
+
         <div class="statement-label-wrapper">
           ${this.language.statements[this.statement.id].icon
             ? html`
@@ -508,6 +904,50 @@ export class GEStatement extends LitElement {
                         <editor-icon .icon="${icons.trash}"></editor-icon>
                         Delete
                       </editor-button>
+                      ${this.breakpoints !== null
+                      ? this.hasBreakpoint(this.breakpoint)
+                        ? html`
+                          <editor-button
+                            @click="${this.handleBreakpointRemove}"
+                            title="Remove breakpoint">
+                            <editor-icon .icon="${icons.trash}"></editor-icon>
+                            Remove breakpoint
+                          </editor-button>
+                          <editor-button
+                            @click="${this.handleBreakpointConfigure}"
+                            title="Configure breakpoint">
+                            <editor-icon .icon="${icons.pencilSquare}"></editor-icon>
+                            Configure breakpoint
+                          </editor-button>
+                          ${this.breakpoint?.disabled
+                          ? html`
+                            <editor-button
+                              @click="${this.handleBreakpointEnable}"
+                              title="Enable breakpoint">
+                              <editor-icon .icon="${icons.checkLg}"></editor-icon>
+                              Enable breakpoint
+                            </editor-button>
+                            `
+                          : html`
+                            <editor-button
+                              @click="${this.handleBreakpointDisable}"
+                              title="Disable breakpoint">
+                              <editor-icon .icon="${icons.xLg}"></editor-icon>
+                              Disable breakpoint
+                            </editor-button>
+                            `
+                          }
+                        `
+                        : html`
+                          <editor-button
+                            @click="${this.handleBreakpointAdd}"
+                            title="Add breakpoint">
+                            <editor-icon .icon="${icons.plusLg}"></editor-icon>
+                            Add breakpoint
+                          </editor-button>
+                        `
+                      : nothing
+                      }
                     </div>
                   </editor-modal>
                 `
