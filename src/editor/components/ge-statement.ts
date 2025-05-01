@@ -596,7 +596,9 @@ export class GEStatement extends LitElement {
     const bgColor = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].backgroundColor;
     const color = this.language.statements[this.statement.isInvalid ? "_err" : this.statement.id].foregroundColor;
     const invalidStyle = this.statement.isInvalid ? "outline: 4px dashed #facc15; outline-offset: -4px; border-left: 4px solid transparent;" : null;
-    const runningStyle = this.statement._uuid === this.runningBlock ? "outline: 4px dashed #0000ff; outline-offset: -4px; border-left: 4px solid transparent;" : null;
+    const runningColor = "#ff0040";
+    // const runningColor = "#0000ff";
+    const runningStyle = this.statement._uuid === this.runningBlock ? `outline: 4px dashed ${runningColor}; outline-offset: 1px; border-left: 0px solid transparent;` : null;
 
     this.statementHeaderRef.value.setAttribute(
       'style',
