@@ -83,7 +83,7 @@ export const baseLanguageStatements: Statements = {
     foregroundColor: '#ffffff',
     backgroundColor: '#3b82f6',
     arguments: [{ type: Types.boolean_expression, label: 'Condition' }],
-    predecessors: ['if'],
+    predecessors: ['if', 'elseif'],
     description: {
       brief:
         'Sometimes, you might have multiple conditions to check. The "Else If" statement allows you to check for additional conditions if the first condition is not met.',
