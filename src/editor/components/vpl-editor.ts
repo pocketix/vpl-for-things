@@ -196,6 +196,9 @@ export class VplEditor extends LitElement {
     );
   }
   willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("breakpointData")) {
+      this.breakpoints = this.findBreakpointBlocks(this.breakpointData);
+    }
     if (changedProperties.has("runningBlockPath")) {
       this.runningBlock = this.findBlockByPath(this.runningBlockPath) || "";
     }
@@ -209,7 +212,7 @@ export class VplEditor extends LitElement {
       }
     }
 
-    if (changedProperties.has("breakpoints")) {
+    if (changedProperties.has("breakpoints") && !changedProperties.has("breakpointData")) { // breakpoints were changed from inside, not outside
       this.emitBreakpointsChangeEvent(this.breakpoints);
     }
     if (changedProperties.has("errors")) {
