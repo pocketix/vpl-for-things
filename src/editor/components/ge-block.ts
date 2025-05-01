@@ -233,7 +233,7 @@ export class GeBlock extends LitElement {
     riotOnly: ['setvar', 'alert'],
 
     // Statements that should be excluded from device selection
-    excludeFromDeviceSelection: ['deviceType'],
+    excludeFromDeviceSelection: ['deviceType', 'alert'],
 
     // Statements that are available ONLY in user procedures (not in main body)
     procedureOnlyStatements: ['deviceType'],
@@ -770,6 +770,12 @@ export class GeBlock extends LitElement {
     // Get all device statements
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
       // Filter out non-device groups and statements that should be excluded
       // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
@@ -797,6 +803,13 @@ export class GeBlock extends LitElement {
     this.otherDeviceStatements = [];
 
     deviceStatements.forEach(stmtKey => {
+      // Special handling for deviceType statement
+      if (stmtKey === 'deviceType') {
+        // Always put deviceType in the Other category
+        this.otherDeviceStatements.push(stmtKey);
+        return;
+      }
+
       const deviceName = stmtKey.split('.')[0];
       const deviceType = this.language.deviceListWithTypes[deviceName];
 
@@ -812,9 +825,18 @@ export class GeBlock extends LitElement {
     this.deviceSearchInput = (e.currentTarget as HTMLInputElement).value;
     const searchTerm = this.deviceSearchInput.toLowerCase();
 
+    // Find the clicked block
+    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
+
     // Filter all device statements based on search input
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock && clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
       // Filter out non-device groups and statements that should be excluded
       // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
@@ -833,7 +855,6 @@ export class GeBlock extends LitElement {
     }
 
     // Find the device type of the clicked block if it's a deviceType statement
-    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
     let selectedDeviceType = '';
     if (clickedBlock && clickedBlock.id === 'deviceType' && (clickedBlock as AbstractStatementWithArgs).arguments?.[0]) {
       selectedDeviceType = String((clickedBlock as AbstractStatementWithArgs).arguments[0].value);
@@ -1127,9 +1148,6 @@ export class GeBlock extends LitElement {
     const riotStatementsTemplate = html`
       ${hasRiotStatements ? html`
         <div class="add-statement-options">
-          <div class="device-section-header">Riot Statements</div>
-          <div class="device-section-divider"></div>
-
           <!-- Show filtered regular Riot statements -->
           ${filteredRiotStatements.map(stmtKey =>
             this.addStatementOptionTemplate(stmtKey)
@@ -1150,7 +1168,11 @@ export class GeBlock extends LitElement {
 
     // If we're editing a user procedure, only show Riot statements
     if (this.isProcBody) {
-      return riotStatementsTemplate;
+      return html`
+        <div class="device-section-header">Riot Statements</div>
+        <div class="device-section-divider"></div>
+        ${riotStatementsTemplate}
+      `;
     }
 
     // For regular editing, filter device statements
@@ -1161,10 +1183,9 @@ export class GeBlock extends LitElement {
 
     const hasDeviceStatements = deviceStatements.length > 0;
 
-    // For regular editing, show both Riot statements and device statements
+    // For regular editing, show both Device statements and Riot statements (Device statements first)
     return html`
-      ${riotStatementsTemplate}
-      <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
+      <div class="device-section-header">Device Statements</div>
       <div class="device-section-divider"></div>
       ${riotStatementsTemplate}
       <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
@@ -1175,6 +1196,10 @@ export class GeBlock extends LitElement {
           ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
           : html`<div class="no-available-device-statements">No matching device statements</div>`}
       </div>
+
+      <div class="device-section-header" style="margin-top: 1rem;">Riot Statements</div>
+      <div class="device-section-divider"></div>
+      ${riotStatementsTemplate}
     `;
   }
 
