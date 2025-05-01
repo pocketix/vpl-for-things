@@ -603,6 +603,16 @@ export class GEStatement extends LitElement {
       `background-color: ${bgColor}; color: ${color}; ${invalidStyle ?? ""} ${runningStyle ?? ""}`
     );
 
+    // scroll into view if needed
+    if (this.statement._uuid === this.runningBlock) {
+      const target = this.statementHeaderRef.value;
+      // @ts-ignore
+      const container = this.statementHeaderRef.value.getRootNode().host.getRootNode().host.getRootNode().host;
+      if (target.getBoundingClientRect().bottom > container.getBoundingClientRect().bottom || target.getBoundingClientRect().top < 0) {
+          target.scrollIntoView({behavior: "smooth"});
+      }
+    }
+
     if (this.statementNestedBlockRef.value) {
       const bgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor;
       const color = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor;
