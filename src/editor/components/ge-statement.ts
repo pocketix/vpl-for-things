@@ -606,8 +606,12 @@ export class GEStatement extends LitElement {
     // scroll into view if needed
     if (this.statement._uuid === this.runningBlock) {
       const target = this.statementHeaderRef.value;
+      const containerName = "GRAPHICAL-EDITOR";
       // @ts-ignore
-      const container = this.statementHeaderRef.value.getRootNode().host.getRootNode().host.getRootNode().host;
+      let container = this.statementHeaderRef.value.getRootNode().host.getRootNode().host.getRootNode().host;
+      while (container.tagName !== containerName) {
+        container = container.getRootNode().host;
+      }
       if (target.getBoundingClientRect().bottom > container.getBoundingClientRect().bottom || target.getBoundingClientRect().top < 0) {
           target.scrollIntoView({behavior: "smooth"});
       }
