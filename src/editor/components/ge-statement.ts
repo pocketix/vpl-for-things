@@ -207,8 +207,6 @@ export class GEStatement extends LitElement {
         height: var(--breakpoint-height);
         z-index: 1000;
         transition: opacity 0.15s ease;
-      }
-      .statement-header:not([running]) .breakpoint-marker {
         cursor: pointer;
       }
 
@@ -277,10 +275,10 @@ export class GEStatement extends LitElement {
         /* justify-content: space-between; */
         align-items: center;
         gap: 0.35rem;
-        padding: 0.5rem;
+        padding: 0.4rem 0.5rem;
         border-top-left-radius: 0.5rem;
         border-top-right-radius: 0.5rem;
-        height: 55px;
+        height: 50px;
       }
 
       .statement-header[breakpoint-dragging] {
@@ -325,17 +323,17 @@ export class GEStatement extends LitElement {
         visibility: hidden;
       }
 
-      .statement-header[breakpoints-enabled]:not([running]) > .breakpoint-marker:not([visible]):hover > .marker {
+      .statement-header[breakpoints-enabled] > .breakpoint-marker:not([visible]):hover > .marker {
         visibility: visible;
         opacity: 90%;
         // border-color: color-mix(in srgb, black, var(--breakpoint-color) 90%);
         // background-color: color-mix(in srgb, white, var(--breakpoint-color) 80%);
       }
 
-      .statement-header[breakpoints-enabled]:not([running]) > .breakpoint-marker[visible]:hover > .marker {
+      .statement-header[breakpoints-enabled] > .breakpoint-marker[visible]:hover > .marker {
         border-style: dashed;
         border-color: color-mix(in srgb, black, var(--breakpoint-color) 90%);
-        background-color: color-mix(in srgb, white, var(--breakpoint-color) 80%);
+        // background-color: color-mix(in srgb, white, var(--breakpoint-color) 80%);
       }
 
       .statement-header[breakpoints-enabled] > .breakpoint-marker[visible] > .marker {
@@ -348,7 +346,7 @@ export class GEStatement extends LitElement {
       }
 
       .nested {
-        padding: 0.75rem;
+        padding: 0.6rem 0.5rem;
         border-bottom-left-radius: 0.5rem;
         border-bottom-right-radius: 0.5rem;
       }
@@ -733,12 +731,12 @@ export class GEStatement extends LitElement {
 
   computeBreakpointTitle(breakpoint: PositionalBreakpoint|null): string {
     if (this.hasBreakpoint(breakpoint) && !breakpoint.disabled) {
-      return this.isRunning ? "Enabled breakpoint" : "Disable breakpoint"
+      return "Disable breakpoint"
     }
     else if (this.hasBreakpoint(breakpoint)) {
-      return this.isRunning ? "Disabled breakpoint" : `Enable${this.isRunning ? "d":""} breakpoint`
+      return `Enable${this.isRunning ? "d":""} breakpoint`
     }
-    return this.isRunning ? "" : "Set breakpoint"
+    return "Set breakpoint"
   }
 
   emitBreakpointChangeEvent(breakpoint: PositionalBreakpoint, remove: boolean = false) {
@@ -1021,11 +1019,11 @@ export class GEStatement extends LitElement {
           ?disabled=${this.breakpoint?.disabled}
           ?dragging=${this.breakpointMarkerDraggingConfirmed}
           .title=${this.computeBreakpointTitle(this.breakpoint)}
-          @pointerdown=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseDown}
-          @pointerup=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseUp}
-          @pointermove=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseMove}
-          @pointerleave=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerMouseLeave}
-          @contextmenu=${this.isRunning ? ()=>{} : this.handleBreakpointMarkerContextMenu}
+          @pointerdown=${this.handleBreakpointMarkerMouseDown}
+          @pointerup=${this.handleBreakpointMarkerMouseUp}
+          @pointermove=${this.handleBreakpointMarkerMouseMove}
+          @pointerleave=${this.handleBreakpointMarkerMouseLeave}
+          @contextmenu=${this.handleBreakpointMarkerContextMenu}
         >
           <span></span>  <!-- Drag spacer -- grows when dragging to prevent losing "focus" -->
           <div class="marker"></div> <!-- the visible breakpoint marker element -->
