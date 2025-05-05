@@ -219,13 +219,14 @@ export class EditorExpressionOperandList extends LitElement {
       return;
     }
 
-    // Use initDefaultArgumentType to get the default value for the unknown type
-    // This ensures consistency with how other parts of the code initialize values
+    // Create a new operand with the correct type
+    // For ExpressionOperand, the value must be string | number | boolean | Expression
+    // not an array type like Expression[] or Devices[]
     this.operands.push({
       type: Types.unknown,
-      value: initDefaultArgumentType(Types.string), // Use string as default for unknown type
+      value: '', // Use empty string as default for unknown type (simpler than using initDefaultArgumentType)
       _uuid: uuidv4()
-    });
+    } as ExpressionOperand);
 
     this.opdModalVisibleOnRender = true;
 
@@ -304,9 +305,10 @@ export class EditorExpressionOperandList extends LitElement {
       return;
     }
 
+    // When grouping expressions, we explicitly set the type based on the selected operator
     let newGroup = {
       value: [...this.selectedExpressions],
-      type: groupOpr,
+      type: groupOpr, // This is correct - we want to set the type when grouping
       _uuid: uuidv4(),
     } as Expression;
 
@@ -397,7 +399,9 @@ export class EditorExpressionOperandList extends LitElement {
 
     // Ensure parentExpr is defined
     if (!this.parentExpr) {
-      this.parentExpr = { value: [], _uuid: uuidv4() };
+      // Initialize with an empty array without specifying a type
+      // This represents an uninitialized expression
+      this.parentExpr = { value: [], _uuid: uuidv4() } as Expression;
     }
 
     return html`
@@ -416,7 +420,7 @@ export class EditorExpressionOperandList extends LitElement {
                 (operand, i) => {
                   // Ensure operand is properly initialized
                   if (!operand) {
-                    operand = { type: Types.unknown, value: null, _uuid: uuidv4() };
+                    operand = { type: Types.unknown, value: '', _uuid: uuidv4() } as ExpressionOperand;
                   }
 
                   // Safely check if operand has a value property that's an array

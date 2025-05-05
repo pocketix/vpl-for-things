@@ -48,8 +48,8 @@ export function initDefaultArgumentType(argumentType: ArgumentType): string | nu
       return true;
     case Types.boolean_expression:
       // Return an array with a properly structured expression object
+      // Don't set a default type to ensure it's properly initialized by the user
       return [{
-        type: '&&',
         value: [],
         _uuid: uuidv4()
       }] as Expression[];

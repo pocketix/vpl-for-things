@@ -977,8 +977,8 @@ export class EditorControls extends LitElement {
                 </td>
                 <td>
                   ${this.variablesTableMode === 'display'
-                    ? this.userVaribleInitialValueTemplate(key)
-                    : this.userVaribleModifyInitialValueTemplate(key)}
+                    ? this.userVariableInitialValueTemplate(key)
+                    : this.userVariableModifyInitialValueTemplate(key)}
                 </td>
                 ${this.variablesTableMode === 'edit'
                   ? html`
@@ -997,7 +997,7 @@ export class EditorControls extends LitElement {
     `;
   }
 
-  userVaribleInitialValueTemplate(varKey: string) {
+  userVariableInitialValueTemplate(varKey: string) {
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`<span style="text-transform: capitalize;"
@@ -1019,7 +1019,7 @@ export class EditorControls extends LitElement {
     }
   }
 
-  userVaribleModifyInitialValueTemplate(varKey: string) {
+  userVariableModifyInitialValueTemplate(varKey: string) {
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`
