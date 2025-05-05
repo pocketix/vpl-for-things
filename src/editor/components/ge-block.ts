@@ -234,6 +234,7 @@ export class GeBlock extends LitElement {
 
     // Statements that should be excluded from device selection
     excludeFromDeviceSelection: ['deviceType', 'alert'],
+    excludeFromDeviceSelection: ['deviceType', 'alert'],
 
     // Statements that are available ONLY in user procedures (not in main body)
     procedureOnlyStatements: ['deviceType'],
@@ -777,6 +778,12 @@ export class GeBlock extends LitElement {
       }
 
       // Filter out non-device groups and statements that should be excluded
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
       // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
@@ -810,6 +817,13 @@ export class GeBlock extends LitElement {
         return;
       }
 
+      // Special handling for deviceType statement
+      if (stmtKey === 'deviceType') {
+        // Always put deviceType in the Other category
+        this.otherDeviceStatements.push(stmtKey);
+        return;
+      }
+
       const deviceName = stmtKey.split('.')[0];
       const deviceType = this.language.deviceListWithTypes[deviceName];
 
@@ -828,6 +842,9 @@ export class GeBlock extends LitElement {
     // Find the clicked block
     const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
 
+    // Find the clicked block
+    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
+
     // Filter all device statements based on search input
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
@@ -838,6 +855,12 @@ export class GeBlock extends LitElement {
       }
 
       // Filter out non-device groups and statements that should be excluded
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock && clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
       // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
@@ -1048,10 +1071,20 @@ export class GeBlock extends LitElement {
   }
 
   statementsTemplate() {
+    // Add defensive checks
+    if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
+      console.error('Missing required data for statements template:',
+        { block: this.block, program: this.program });
+      return html`<div class="error-statements">Error: Invalid block or program data</div>`;
+    }
+
+    // Ensure skeletonize_uuid exists
+    const skeletonizeUuids = this.program.header.skeletonize_uuid || [];
+
     return html`
       ${repeat(
         this.block,
-        (stmt) => stmt._uuid,
+        (stmt) => stmt._uuid || '',
         (stmt, i) =>
           html`
             <ge-statement
@@ -1068,10 +1101,8 @@ export class GeBlock extends LitElement {
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
-              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
-              .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
-              .isSelected="${this.selectedStatements.has(stmt._uuid)}"
-              .isHighlighted="${this.program.header.skeletonize_uuid.includes(stmt._uuid)}"
+              .isSelected="${stmt._uuid ? this.selectedStatements.has(stmt._uuid) : false}"
+              .isHighlighted="${stmt._uuid ? skeletonizeUuids.includes(stmt._uuid) : false}"
               .uuidMetadata="${this.tmpUUID}"
               .uuidMetadata="${this.tmpUUID}"
               .editorMode="${this.editorMode}"
@@ -1079,13 +1110,17 @@ export class GeBlock extends LitElement {
               .editorMode="${this.editorMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
-                console.log(`Block clicked: UUID ${stmt._uuid}`);
-                this.toggleStatementSelection(stmt._uuid, true);
+                if (stmt._uuid) {
+                  console.log(`Block clicked: UUID ${stmt._uuid}`);
+                  this.toggleStatementSelection(stmt._uuid, true);
+                }
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
-                console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
-                this.toggleStatementSelection(e.detail.uuid, false);
+                if (e.detail && e.detail.uuid) {
+                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
+                  this.toggleStatementSelection(e.detail.uuid, false);
+                }
               }}">
             </ge-statement>
           `
@@ -1093,19 +1128,28 @@ export class GeBlock extends LitElement {
     `;
   }
 
-  addStatementOptionTemplate(stmtKey: string, idx: number = 0) {
-    // const isSelected = (this.selectedStmtKey === null && idx === 0) || stmtKey === this.selectedStmtKey;
-    const isSelected = this.selectedStmtIdx === idx;
+  addStatementOptionTemplate(stmtKey: string) {
+    // Add defensive checks
+    if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
+      console.error(`Statement with key "${stmtKey}" not found in language statements`);
+      return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
+    }
+
+    const statement = this.language.statements[stmtKey];
+    const foregroundColor = statement.foregroundColor || '#ffffff';
+    const backgroundColor = statement.backgroundColor || '#cccccc';
+    const icon = statement.icon && icons[statement.icon] ? icons[statement.icon] : icons.questionCircle;
+    const label = statement.label || stmtKey;
 
     return html`
       <editor-button
         .value="${stmtKey}"
         @click="${this.handleAddNewStatement}"
         .title="${stmtKey}"
-        class="add-statament-option-button ${classMap({ selected: isSelected })}"
-        btnStyle="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
-        <editor-icon .icon="${icons[this.language.statements[stmtKey].icon]}"></editor-icon>
-        <span>${this.language.statements[stmtKey].label}</span>
+        class="add-statament-option-button"
+        style="${`color: ${foregroundColor}; background-color: ${backgroundColor}`}">
+        <editor-icon .icon="${icon}"></editor-icon>
+        <span>${label}</span>
       </editor-button>
     `;
   }
@@ -1144,6 +1188,30 @@ export class GeBlock extends LitElement {
     // Check if we have any Riot statements to show
     const hasRiotStatements = filteredRiotStatements.length > 0 || filteredProcedureOnlyStatements.length > 0;
 
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the Riot statements
+    const filteredRiotStatements = GeBlock.statementCategories.riotOnly.filter(filterStatement);
+
+    // Filter the procedure-only statements
+    const filteredProcedureOnlyStatements = this.isProcBody ?
+      GeBlock.statementCategories.procedureOnlyStatements.filter(filterStatement) : [];
+
+    // Check if we have any Riot statements to show
+    const hasRiotStatements = filteredRiotStatements.length > 0 || filteredProcedureOnlyStatements.length > 0;
+
     // Create the Riot statements section based on context
     const riotStatementsTemplate = html`
       ${hasRiotStatements ? html`
@@ -1152,7 +1220,24 @@ export class GeBlock extends LitElement {
           ${filteredRiotStatements.map(stmtKey =>
             this.addStatementOptionTemplate(stmtKey)
           )}
+      ${hasRiotStatements ? html`
+        <div class="add-statement-options">
+          <!-- Show filtered regular Riot statements -->
+          ${filteredRiotStatements.map(stmtKey =>
+            this.addStatementOptionTemplate(stmtKey)
+          )}
 
+          <!-- Only show filtered procedure-only statements when in a procedure body -->
+          ${this.isProcBody && filteredProcedureOnlyStatements.length > 0 ?
+            filteredProcedureOnlyStatements.map(stmtKey =>
+              this.addStatementOptionTemplate(stmtKey)
+            )
+            : nothing
+          }
+        </div>
+      ` : html`
+        <div class="no-available-statements">No matching Riot statements found</div>
+      `}
           <!-- Only show filtered procedure-only statements when in a procedure body -->
           ${this.isProcBody && filteredProcedureOnlyStatements.length > 0 ?
             filteredProcedureOnlyStatements.map(stmtKey =>
@@ -1173,8 +1258,22 @@ export class GeBlock extends LitElement {
         <div class="device-section-divider"></div>
         ${riotStatementsTemplate}
       `;
+      return html`
+        <div class="device-section-header">Riot Statements</div>
+        <div class="device-section-divider"></div>
+        ${riotStatementsTemplate}
+      `;
     }
 
+    // For regular editing, filter device statements
+    const deviceStatements = Object.keys(this.filteredAddStatementOptions).filter(stmtKey => {
+      return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice &&
+        filterStatement(stmtKey);
+    });
+
+    const hasDeviceStatements = deviceStatements.length > 0;
+
+    // For regular editing, show both Device statements and Riot statements (Device statements first)
     // For regular editing, filter device statements
     const deviceStatements = Object.keys(this.filteredAddStatementOptions).filter(stmtKey => {
       return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice &&
@@ -1189,13 +1288,21 @@ export class GeBlock extends LitElement {
       <div class="device-section-divider"></div>
       ${riotStatementsTemplate}
       <div class="device-section-header" style="margin-top: 1rem;">Device Statements</div>
+      <div class="device-section-header">Device Statements</div>
       <div class="device-section-divider"></div>
       ${this.devicesTemplate()}
       <div class="add-statement-options">
         ${hasDeviceStatements
           ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
           : html`<div class="no-available-device-statements">No matching device statements</div>`}
+        ${hasDeviceStatements
+          ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
+          : html`<div class="no-available-device-statements">No matching device statements</div>`}
       </div>
+
+      <div class="device-section-header" style="margin-top: 1rem;">Riot Statements</div>
+      <div class="device-section-divider"></div>
+      ${riotStatementsTemplate}
 
       <div class="device-section-header" style="margin-top: 1rem;">Riot Statements</div>
       <div class="device-section-divider"></div>
@@ -1206,6 +1313,30 @@ export class GeBlock extends LitElement {
   basicStatementsTemplate() {
     // Make sure user procedures list is up to date
     this.updateUserProceduresList();
+
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the basic blocks
+    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
+
+    // Filter the user procedures
+    const filteredUserProcedures = !this.isProcBody ?
+      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
+
+    // Check if we have any results to show
+    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
 
     // Filter statements based on search input
     const filterStatement = (stmtKey: string): boolean => {
@@ -1242,7 +1373,27 @@ export class GeBlock extends LitElement {
               ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
             </div>
           ` : nothing}
+        ${hasResults ? html`
+          <!-- Basic Blocks Section -->
+          ${filteredBasicBlocks.length > 0 ? html`
+            <div class="add-statement-options">
+              <div class="device-section-header">Basic Blocks</div>
+              <div class="device-section-divider"></div>
+              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
 
+          <!-- User Procedures Section - only show if not in a procedure body -->
+          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
+            <div class="add-statement-options" style="margin-top: 1rem;">
+              <div class="device-section-header">Procedures</div>
+              <div class="device-section-divider"></div>
+              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
+        ` : html`
+          <div class="no-available-statements">No matching statements found</div>
+        `}
           <!-- User Procedures Section - only show if not in a procedure body -->
           ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
             <div class="add-statement-options" style="margin-top: 1rem;">
@@ -1259,6 +1410,22 @@ export class GeBlock extends LitElement {
   }
 
   devicesTemplate() {
+    // Add defensive checks
+    if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
+      console.error('Missing device list in language:', this.language);
+      return html`<div class="error-devices">Error: No devices available</div>`;
+    }
+
+    // If device list is empty, show a message
+    if (this.language.deviceList.length === 0) {
+      return html`<div class="no-devices-message">No devices available</div>`;
+    }
+
+    // Ensure selectedDevice is set to a valid device
+    if (!this.selectedDevice || !this.language.deviceList.includes(this.selectedDevice)) {
+      this.selectedDevice = this.language.deviceList[0];
+    }
+
     return html`
       <div class="device-select-wrapper">
         <label for="device-select" class="device-select-label">Device</label>
@@ -1329,6 +1496,18 @@ export class GeBlock extends LitElement {
   }
 
   render() {
+    // Add defensive checks to prevent errors
+    if (!this.language || !this.program) {
+      console.error('Missing required context for rendering block:',
+        { language: this.language, program: this.program });
+      return html`<div class="error-block">Error: Missing language or program context</div>`;
+    }
+
+    // Check if block is defined
+    if (!this.block || !Array.isArray(this.block)) {
+      console.error('Block is not defined or not an array:', this.block);
+      return html`<div class="error-block">Error: Invalid block data</div>`;
+    }
 
     return html`
       ${this.isExample

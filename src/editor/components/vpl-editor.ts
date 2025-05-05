@@ -66,6 +66,22 @@ export class VplEditor extends LitElement {
   get initialProgram() {
     return this._initialProgram;
   }
+
+  // Property to allow parent components to pass in custom devices
+  private _customDevices: any = null;
+
+  @property({ attribute: false })
+  set devices(value: any) {
+    if (value) {
+      console.log('Custom devices set:', value);
+      this._customDevices = value;
+      this.setVplDevices(value);
+    }
+  }
+
+  get devices() {
+    return this._customDevices;
+  }
   //#endregion
 
   //#region Refs
@@ -105,6 +121,82 @@ export class VplEditor extends LitElement {
       composed: true
     });
     this.dispatchEvent(event);
+  }
+
+  /**
+   * Updates the devices in the language context
+   * @param newDevices The new devices to set (Device[] array)
+   */
+  setVplDevices(newDevices: any): void {
+    console.log('Updating devices in VPL editor');
+
+    if (!Array.isArray(newDevices)) {
+      console.error('Invalid devices type. Expected an array of Device objects.');
+      return; // Exit early
+    }
+
+    // Clear only the device-related properties
+    // Remove existing device variables
+    Object.keys(this.language.variables).forEach(key => {
+      if (key.includes('.')) { // Device variables contain a dot (deviceName.attribute)
+        delete this.language.variables[key];
+      }
+    });
+
+    // Remove existing device statements
+    Object.keys(this.language.statements).forEach(key => {
+      if (key.includes('.')) { // Device statements contain a dot (deviceName.function)
+        delete this.language.statements[key];
+      }
+    });
+
+    // Clear device lists
+    this.language.deviceList = [];
+    this.language.deviceListWithTypes = {};
+    this.language.uniqueDeviceTypes = [];
+
+    // Process the new devices
+    for (let device of newDevices) {
+      // Converts device attributes to language variables.
+      for (let attr of device.attributes) {
+        this.language.variables[`${device.deviceName}.${attr}`] = { type: 'device', label: `${device.deviceName}.${attr}` };
+      }
+
+      // Converts device functions to language statements.
+      for (let func of device.functions) {
+        this.language.statements[`${device.deviceName}.${func.label}`] = {
+          ...func,
+          deviceName: device.deviceName,
+          label: `${device.deviceName}.${func.label}`,
+        };
+      }
+
+      // Store device type in deviceListWithTypes
+      this.language.deviceListWithTypes[device.deviceName] = device.deviceType;
+
+      // Add device type to uniqueDeviceTypes if not already present
+      if (!this.language.uniqueDeviceTypes.includes(device.deviceType)) {
+        this.language.uniqueDeviceTypes.push(device.deviceType);
+      }
+
+      // Do not include devices with no functions
+      if (device.functions.length > 0) {
+        this.language.deviceList.push(device.deviceName);
+      }
+    }
+
+    console.log('Device List:', this.language.deviceList);
+    console.log('Device deviceListWithTypes:', this.language.deviceListWithTypes);
+    console.log('Unique Device Types:', this.language.uniqueDeviceTypes);
+
+    // Request an update to refresh the UI
+    this.requestUpdate();
+
+    // Dispatch events to update child components
+    this.dispatchGraphicalEditorProgramUpdatedEvent();
+    this.dispatchTextEditorProgramUpdatedEvent();
+
+    console.log('Devices update complete');
   }
 
   /**
@@ -216,6 +308,9 @@ export class VplEditor extends LitElement {
 
     // This is the method that external code will call: typedEditor.updateProgram(currentProgramData)
     host.updateProgram = this.setVplProgram.bind(this);
+
+    // This is the method that external code will call: typedEditor.updateDevices(customDevices)
+    host.updateDevices = this.setVplDevices.bind(this);
 
     // Set the style based on width and height properties
     (this.shadowRoot.host as HTMLElement).setAttribute(
@@ -351,7 +446,8 @@ declare global {
   // Extend HTMLElement interface to include our custom methods
   interface HTMLElement {
     updateProgram?: (newProgram: any) => void;
-    setProgram?: (newProgram: any) => void;
+    updateDevices?: (newDevices: any) => void;
     initialProgram?: any;
+    devices?: any;
   }
 }
