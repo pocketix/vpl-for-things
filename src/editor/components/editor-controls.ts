@@ -554,7 +554,10 @@ export class EditorControls extends LitElement {
         }
         break;
       case Types.boolean_expression:
-        if (this.selectedAddVariableInitialValueBoolExpr.length === 0) {
+        // Check if the expression is properly initialized
+        if (!this.selectedAddVariableInitialValueBoolExpr ||
+            !Array.isArray(this.selectedAddVariableInitialValueBoolExpr) ||
+            this.selectedAddVariableInitialValueBoolExpr.length === 0) {
           this.addVariableInitialValueIsMissing = true;
           return;
         }
@@ -578,6 +581,7 @@ export class EditorControls extends LitElement {
           break;
         case Types.boolean_expression:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
+          // Reset with a properly initialized expression object using the initDefaultArgumentType function
           this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
           break;
         case Types.number:

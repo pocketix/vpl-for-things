@@ -912,10 +912,20 @@ export class GeBlock extends LitElement {
   }
 
   statementsTemplate() {
+    // Add defensive checks
+    if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
+      console.error('Missing required data for statements template:',
+        { block: this.block, program: this.program });
+      return html`<div class="error-statements">Error: Invalid block or program data</div>`;
+    }
+
+    // Ensure skeletonize_uuid exists
+    const skeletonizeUuids = this.program.header.skeletonize_uuid || [];
+
     return html`
       ${repeat(
         this.block,
-        (stmt) => stmt._uuid,
+        (stmt) => stmt._uuid || '',
         (stmt, i) =>
           html`
             <ge-statement
@@ -925,19 +935,23 @@ export class GeBlock extends LitElement {
               .isExample="${this.isExample}"
               .skeletonizeMode="${this.skeletonizeMode}"
               .restrainedMode="${this.restrainedMode || (this.editorMode === 'initialize')}"
-              .isSelected="${this.selectedStatements.has(stmt._uuid)}"
-              .isHighlighted="${this.program.header.skeletonize_uuid.includes(stmt._uuid)}"
+              .isSelected="${stmt._uuid ? this.selectedStatements.has(stmt._uuid) : false}"
+              .isHighlighted="${stmt._uuid ? skeletonizeUuids.includes(stmt._uuid) : false}"
               .uuidMetadata="${this.tmpUUID}"
               .editorMode="${this.editorMode}"
               @click="${(e: Event) => {
                 e.stopPropagation();
-                console.log(`Block clicked: UUID ${stmt._uuid}`);
-                this.toggleStatementSelection(stmt._uuid, true);
+                if (stmt._uuid) {
+                  console.log(`Block clicked: UUID ${stmt._uuid}`);
+                  this.toggleStatementSelection(stmt._uuid, true);
+                }
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
-                console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
-                this.toggleStatementSelection(e.detail.uuid, false);
+                if (e.detail && e.detail.uuid) {
+                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
+                  this.toggleStatementSelection(e.detail.uuid, false);
+                }
               }}">
             </ge-statement>
           `
@@ -946,15 +960,27 @@ export class GeBlock extends LitElement {
   }
 
   addStatementOptionTemplate(stmtKey: string) {
+    // Add defensive checks
+    if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
+      console.error(`Statement with key "${stmtKey}" not found in language statements`);
+      return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
+    }
+
+    const statement = this.language.statements[stmtKey];
+    const foregroundColor = statement.foregroundColor || '#ffffff';
+    const backgroundColor = statement.backgroundColor || '#cccccc';
+    const icon = statement.icon && icons[statement.icon] ? icons[statement.icon] : icons.questionCircle;
+    const label = statement.label || stmtKey;
+
     return html`
       <editor-button
         .value="${stmtKey}"
         @click="${this.handleAddNewStatement}"
         .title="${stmtKey}"
         class="add-statament-option-button"
-        style="${`color: ${this.language.statements[stmtKey].foregroundColor}; background-color: ${this.language.statements[stmtKey].backgroundColor}`}">
-        <editor-icon .icon="${icons[this.language.statements[stmtKey].icon]}"></editor-icon>
-        <span>${this.language.statements[stmtKey].label}</span>
+        style="${`color: ${foregroundColor}; background-color: ${backgroundColor}`}">
+        <editor-icon .icon="${icon}"></editor-icon>
+        <span>${label}</span>
       </editor-button>
     `;
   }
@@ -1105,6 +1131,22 @@ export class GeBlock extends LitElement {
   }
 
   devicesTemplate() {
+    // Add defensive checks
+    if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
+      console.error('Missing device list in language:', this.language);
+      return html`<div class="error-devices">Error: No devices available</div>`;
+    }
+
+    // If device list is empty, show a message
+    if (this.language.deviceList.length === 0) {
+      return html`<div class="no-devices-message">No devices available</div>`;
+    }
+
+    // Ensure selectedDevice is set to a valid device
+    if (!this.selectedDevice || !this.language.deviceList.includes(this.selectedDevice)) {
+      this.selectedDevice = this.language.deviceList[0];
+    }
+
     return html`
       <div class="device-select-wrapper">
         <label for="device-select" class="device-select-label">Device</label>
@@ -1158,6 +1200,18 @@ export class GeBlock extends LitElement {
   }
 
   render() {
+    // Add defensive checks to prevent errors
+    if (!this.language || !this.program) {
+      console.error('Missing required context for rendering block:',
+        { language: this.language, program: this.program });
+      return html`<div class="error-block">Error: Missing language or program context</div>`;
+    }
+
+    // Check if block is defined
+    if (!this.block || !Array.isArray(this.block)) {
+      console.error('Block is not defined or not an array:', this.block);
+      return html`<div class="error-block">Error: Invalid block data</div>`;
+    }
 
     return html`
       ${this.isExample

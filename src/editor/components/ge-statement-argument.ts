@@ -107,15 +107,30 @@ export class GeStatementArgument extends LitElement {
   selectArgumentVariableModalRef: Ref<EditorModal> = createRef();
 
   handleShowExpressionModal() {
-    this.expressionModalRef.value.showModal();
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.expressionModalRef && this.expressionModalRef.value) {
+      this.expressionModalRef.value.showModal();
+    } else {
+      console.error('Expression modal reference is undefined in ge-statement-argument');
+    }
   }
 
   handleShowSelectArgumentVariableModal() {
-    this.selectArgumentVariableModalRef.value.showModal();
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.selectArgumentVariableModalRef && this.selectArgumentVariableModalRef.value) {
+      this.selectArgumentVariableModalRef.value.showModal();
+    } else {
+      console.error('Select argument variable modal reference is undefined');
+    }
   }
 
   handleHideSelectArgumentVariableModal() {
-    this.selectArgumentVariableModalRef.value.hideModal();
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.selectArgumentVariableModalRef && this.selectArgumentVariableModalRef.value) {
+      this.selectArgumentVariableModalRef.value.hideModal();
+    } else {
+      console.error('Select argument variable modal reference is undefined');
+    }
   }
 
   handleValueChange(e: Event) {
@@ -170,7 +185,7 @@ export class GeStatementArgument extends LitElement {
       bubbles: true,
       composed: true,
     });
-    
+    this.dispatchEvent(event);
   }
 
   constructor() {
@@ -194,25 +209,49 @@ export class GeStatementArgument extends LitElement {
   }
 
   argumentLabelTemplate(labelId: string) {
-    return (this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs)
-      .arguments[this.argPosition].label && this.showLabel
+    // Add defensive checks
+    if (!this.language || !this.language.statements || !this.stmtId ||
+        !this.language.statements[this.stmtId] ||
+        !(this.language.statements[this.stmtId] as any).arguments ||
+        !Array.isArray((this.language.statements[this.stmtId] as any).arguments) ||
+        this.argPosition === undefined ||
+        this.argPosition < 0 ||
+        this.argPosition >= (this.language.statements[this.stmtId] as any).arguments.length) {
+      return nothing;
+    }
+
+    const statementArgs = (this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs).arguments;
+    const argLabel = statementArgs[this.argPosition].label;
+
+    return argLabel && this.showLabel
       ? html`
-          <label for="${labelId}"
-            >${(
-              this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-            ).arguments[this.argPosition].label}</label
-          >
+          <label for="${labelId}">${argLabel}</label>
         `
       : nothing;
   }
 
   useVariableTemplate() {
+    // Add defensive checks
+    if (!this.argument || !this.argument.type || !this.language || !this.program) {
+      console.error('Missing required data for variable template:',
+        { argument: this.argument, language: this.language, program: this.program });
+      return html`<div class="error-variable">Error: Invalid variable data</div>`;
+    }
+
     let permittedVarType: string | ArgumentType;
+
     if (this.argument.type === Types.variable && this.argument.value !== null) {
-      if (this.program.header.userVariables[this.argument.value as string] === undefined) {
-        permittedVarType = (
-          this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
-        ).arguments[this.argPosition].type;
+      if (!this.program.header || !this.program.header.userVariables ||
+          this.program.header.userVariables[this.argument.value as string] === undefined) {
+        // Fallback to statement argument type if user variable not found
+        try {
+          permittedVarType = (
+            this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
+          ).arguments[this.argPosition].type;
+        } catch (error) {
+          console.error('Error getting argument type from statement:', error);
+          permittedVarType = this.argument.type;
+        }
       } else {
         permittedVarType = this.program.header.userVariables[this.argument.value as string].type;
       }
@@ -268,7 +307,15 @@ export class GeStatementArgument extends LitElement {
   }
 
   deviceTypeTemplate(argumentElementId: string) {
-    const bgColor = this.language.statements['deviceType'].backgroundColor;
+    // Add defensive checks
+    if (!this.language || !this.language.statements ||
+        !this.language.statements['deviceType']) {
+      console.error('Missing deviceType statement in language');
+      return html`<div class="error-argument">Error: deviceType statement not found</div>`;
+    }
+
+    const bgColor = this.language.statements['deviceType'].backgroundColor || '#d977f6';
+    const value = this.argument?.value || '';
 
     return html`
       <div class="argument-wrapper">
@@ -276,7 +323,7 @@ export class GeStatementArgument extends LitElement {
         <div class="argument-var-wrapper">
           <div
             style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-            <span>${this.argument.value}</span>
+            <span>${value}</span>
             <span
               @click="${this.handleEditDeviceType}"
               style="cursor: pointer; display: inline-flex; align-items: center;"
@@ -290,6 +337,25 @@ export class GeStatementArgument extends LitElement {
   }
 
   render() {
+    // Add defensive checks to prevent errors
+    if (!this.argument || !this.stmtId || !this.language || !this.language.statements) {
+      console.error('Missing required data for rendering argument:',
+        { argument: this.argument, stmtId: this.stmtId, language: this.language });
+      return html`<div class="error-argument">Error: Invalid argument data</div>`;
+    }
+
+    // Check if the statement exists in the language
+    if (!this.language.statements[this.stmtId]) {
+      console.error(`Statement with ID "${this.stmtId}" not found in language statements`);
+      return html`<div class="error-argument">Error: Unknown statement type: ${this.stmtId}</div>`;
+    }
+
+    // Check if the argument exists
+    if (!this.argument.type) {
+      console.error('Argument has no type:', this.argument);
+      return html`<div class="error-argument">Error: Invalid argument (no type)</div>`;
+    }
+
     let argumentElementId = uuidv4();
 
     if (this.stmtId === 'deviceType' && this.argument.type === Types.string) {
@@ -372,7 +438,7 @@ export class GeStatementArgument extends LitElement {
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
                 @click="${(e: Event) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   this.handleValueChange(e);
                 }}">
                 ${(
@@ -415,7 +481,7 @@ export class GeStatementArgument extends LitElement {
                 .value="${this.argument.value}"
                 @change="${this.handleValueChange}"
                 @click="${(e: Event) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   this.handleValueChange(e);
                 }}">
                 ${(

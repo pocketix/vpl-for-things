@@ -127,7 +127,12 @@ export class EditorExpressionOperand extends LitElement {
   }
 
   handleAddExpressionOperand() {
-    this.exprAddOperandModalRef.value.showModal();
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
+      this.exprAddOperandModalRef.value.showModal();
+    } else {
+      console.error('Expression add operand modal reference is undefined');
+    }
   }
 
   handleSelectOperandTypeChange(e: Event) {
@@ -158,7 +163,13 @@ export class EditorExpressionOperand extends LitElement {
       this.operandValueIsMissing = true;
       return;
     }
-    this.exprAddOperandModalRef.value.hideModal();
+
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
+      this.exprAddOperandModalRef.value.hideModal();
+    } else {
+      console.error('Expression add operand modal reference is undefined');
+    }
   }
 
   handleCancelOperand() {
@@ -169,7 +180,13 @@ export class EditorExpressionOperand extends LitElement {
       });
       this.dispatchEvent(event);
     }
-    this.exprAddOperandModalRef.value.hideModal();
+
+    // Add defensive check to prevent errors when the modal reference is undefined
+    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
+      this.exprAddOperandModalRef.value.hideModal();
+    } else {
+      console.error('Expression add operand modal reference is undefined');
+    }
   }
 
   handleOperandValueChange(e: Event) {
@@ -290,7 +307,13 @@ export class EditorExpressionOperand extends LitElement {
         <editor-button
           class="${this.operand.type === Types.variable && this.operand.value ? 'operand-var-input' : ''}"
           style="height: 100%; width: 100%;"
-          @click="${() => this.variablesModalRef.value.showModal()}">
+          @click="${() => {
+            if (this.variablesModalRef && this.variablesModalRef.value) {
+              this.variablesModalRef.value.showModal();
+            } else {
+              console.error('Variables modal reference is undefined');
+            }
+          }}">
           ${this.operand.type === Types.variable && this.operand.value
             ? this.operand.value
             : html`<div class="variables-icon">𝑥</div>`}

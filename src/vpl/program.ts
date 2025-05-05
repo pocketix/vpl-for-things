@@ -42,20 +42,32 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
   }
 }
 
-export function initDefaultArgumentType(argumentType: ArgumentType) {
+export function initDefaultArgumentType(argumentType: ArgumentType): string | number | boolean | Expression[] | Devices[] {
   switch (argumentType) {
     case Types.boolean:
       return true;
     case Types.boolean_expression:
-      return [] as Expression[];
+      // Return an array with a properly structured expression object
+      return [{
+        type: '&&',
+        value: [],
+        _uuid: uuidv4()
+      }] as Expression[];
     case Types.number:
       return 0;
     case Types.string:
       return '';
     case Types.multi_device:
-        return [] as Devices[];
+      return [] as Devices[];
+    case Types.variable:
+    case Types.unknown:
+    case 'device':
+    case 'invalid':
+    case 'str_opt':
+    case 'num_opt':
+      return '';
     default:
-      return null;
+      return '';
   }
 }
 
@@ -191,30 +203,55 @@ export class Program {
 
     function removeUuidFromExprOperands(expr: Expression) {
       delete expr._uuid;
-      for (let opd of expr.value) {
-        delete opd._uuid;
-        if (Array.isArray((opd as Expression).value)) {
-          removeUuidFromExprOperands(opd as Expression);
+      // Check if expr.value is an array before trying to iterate over it
+      if (Array.isArray(expr.value)) {
+        for (let opd of expr.value) {
+          if (opd) { // Make sure opd is not null or undefined
+            delete opd._uuid;
+            if (Array.isArray((opd as Expression).value)) {
+              removeUuidFromExprOperands(opd as Expression);
+            }
+          }
         }
       }
     }
 
     function removeUuidFromBlock(block: Block) {
+      if (!Array.isArray(block)) {
+        console.error('Block is not an array:', block);
+        return;
+      }
+
       for (let stmt of block) {
+        if (!stmt) {
+          console.error('Statement is null or undefined');
+          continue;
+        }
+
         delete stmt._uuid;
         if (stmt.isInvalid) {
           delete stmt.isInvalid;
         }
+
+        // Check if arguments exist
         if ((stmt as AbstractStatementWithArgs).arguments) {
           for (let arg of (stmt as AbstractStatementWithArgs).arguments) {
-            if (arg.type === Types.boolean_expression) {
+            if (arg && arg.type === Types.boolean_expression) {
               if (isExpressionArray(arg)) {
-                (arg.value as Expression[]).forEach(item => removeUuidFromExprOperands(item));
+                // Make sure arg.value is an array before trying to iterate
+                if (Array.isArray(arg.value)) {
+                  (arg.value as Expression[]).forEach(item => {
+                    if (item) { // Make sure item is not null or undefined
+                      removeUuidFromExprOperands(item);
+                    }
+                  });
+                }
               }
             }
           }
         }
 
+        // Check if block exists
         if ((stmt as CompoundStatement).block) {
           removeUuidFromBlock((stmt as CompoundStatement).block);
         }
@@ -253,7 +290,7 @@ export class Program {
           // For select options, use the first option as default
           defaultValue = arg.options && arg.options.length > 0 ? arg.options[0].id : null;
         } else {
-          // For other types, use the default value based on type
+          // For all other types, use the default value based on type
           defaultValue = initDefaultArgumentType(arg.type);
         }
 
@@ -432,4 +469,7 @@ export const isExpressionOperator = (operator: string) => {
   return operator in compareOperators || operator in boolOperators || operator in numericOperators;
 }
 
-export const isExpressionArray = (argument: ProgramStatementArgument) => Array.isArray(argument.value);
+export const isExpressionArray = (argument: ProgramStatementArgument) => {
+  // Check if argument and argument.value exist before checking if it's an array
+  return argument && argument.value && Array.isArray(argument.value);
+};

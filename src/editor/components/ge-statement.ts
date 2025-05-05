@@ -692,22 +692,37 @@ export class GEStatement extends LitElement {
   }
 
   statementTemplate(hasNestedBlock: boolean) {
+    // Add defensive checks to prevent errors when statement or language data is missing
+    if (!this.statement || !this.statement.id || !this.language || !this.language.statements) {
+      console.error('Missing required data for rendering statement:',
+        { statement: this.statement, language: this.language });
+      return html`<div class="error-statement">Error: Invalid statement data</div>`;
+    }
+
+    // Check if the statement exists in the language
+    if (!this.language.statements[this.statement.id]) {
+      console.error(`Statement with ID "${this.statement.id}" not found in language statements`);
+      return html`<div class="error-statement">Error: Unknown statement type: ${this.statement.id}</div>`;
+    }
+
+    const statementDef = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id];
+    const isUserProcedure = statementDef.isUserProcedure || false;
+
     return html`
       <div
         ${ref(this.statementHeaderRef)}
-        class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''} ${this.language
-          .statements[this.statement.id].isUserProcedure
+        class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''} ${isUserProcedure
           ? 'user-proc'
           : ''}">
         <div class="statement-label-wrapper">
-          ${this.language.statements[this.statement.id].icon
+          ${statementDef.icon
             ? html`
                 <editor-icon
                   class="stmt-icon"
                   title="Show Help"
                   @click="${this.handleShowStmtDescModal}"
-                  .icon="${icons[this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].icon]}"
-                  .color="${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}"
+                  .icon="${icons[statementDef.icon] || icons.questionCircle}"
+                  .color="${statementDef.foregroundColor}"
                   .width="${24}"
                   .height="${24}">
                 </editor-icon>
@@ -754,23 +769,36 @@ export class GEStatement extends LitElement {
               `
             : nothing}
 
-          <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
+          <div class="statement-label">${statementDef.label || 'Unknown Statement'}</div>
         </div>
-        ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments
-          ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments.length === 1
-            ? html`
-                <ge-statement-argument
-                  ?disabled="${this.statement.isInvalid || this.skeletonizeMode}"
-                  .argument="${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments[0]}"
-                  .argPosition="${0}"
-                  .stmtId="${this.statement.id}"
-                  .isExample="${this.isExample}">
-                </ge-statement-argument>
-              `
-            : this.multipleArgumentTemplate(
-                (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments
-              )
-          : nothing}
+        ${(() => {
+          // Check if statement has arguments
+          const stmt = this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs;
+          if (!stmt.arguments) {
+            return nothing;
+          }
+
+          // Check if arguments is an array
+          if (!Array.isArray(stmt.arguments)) {
+            return nothing;
+          }
+
+          // Handle single argument
+          if (stmt.arguments.length === 1) {
+            return html`
+              <ge-statement-argument
+                ?disabled="${this.statement.isInvalid || this.skeletonizeMode}"
+                .argument="${stmt.arguments[0]}"
+                .argPosition="${0}"
+                .stmtId="${this.statement.id}"
+                .isExample="${this.isExample}">
+              </ge-statement-argument>
+            `;
+          }
+
+          // Handle multiple arguments
+          return this.multipleArgumentTemplate(stmt.arguments);
+        })()}
         <div class="statement-controls">
           ${this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
             ? html`
@@ -836,9 +864,25 @@ export class GEStatement extends LitElement {
 
   //#region Render
   render() {
+    // Add defensive checks to prevent errors when statement or language data is missing
+    if (!this.statement || !this.statement.id || !this.language || !this.language.statements) {
+      console.error('Missing required data for rendering statement:',
+        { statement: this.statement, language: this.language });
+      return html`<div class="error-statement">Error: Invalid statement data</div>`;
+    }
+
+    // Check if the statement exists in the language
+    if (!this.language.statements[this.statement.id]) {
+      console.error(`Statement with ID "${this.statement.id}" not found in language statements`);
+      return html`<div class="error-statement">Error: Unknown statement type: ${this.statement.id}</div>`;
+    }
+
+    const statementDef = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id];
+    const isCompoundStatement = !!(this.statement as CompoundStatement).block;
+    const isUserProcedure = statementDef.isUserProcedure && !this.isProcBody;
 
     return html`
-            <div
+      <div
         class="statement-wrapper ${this.isHighlighted || this.isSelected ? 'highlight-active' : ''}"
         uuid="${this.statement._uuid || ''}"
         @click="${() => {
@@ -854,12 +898,12 @@ export class GEStatement extends LitElement {
           });
           this.dispatchEvent(event);
         }}">
-        ${(this.statement as CompoundStatement).block
+        ${isCompoundStatement
           ? html`
               ${this.statementTemplate(true)}
               <ge-block
                 ${ref(this.statementNestedBlockRef)}
-                style="background-color: ${this.language.statements[this.statement.id].backgroundColor}aa;"
+                style="background-color: ${statementDef.backgroundColor || '#cccccc'}aa;"
                 class="nested ${this.nestedBlockVisible ? '' : 'hidden'} ${this.isHighlighted ? 'highlight-active' : ''}"
                 .block="${(this.statement as CompoundStatement).block}"
                 .parentStmt="${this.statement}"
@@ -879,7 +923,7 @@ export class GEStatement extends LitElement {
                 }}">
               </ge-block>
             `
-          : this.language.statements[this.statement.id]?.isUserProcedure && !this.isProcBody
+          : isUserProcedure
           ? html`
               <editor-button
                 @click="${this.handleShowProcDef}"
@@ -889,23 +933,23 @@ export class GEStatement extends LitElement {
               </editor-button>
               <editor-modal
                 ${ref(this.procModalRef)}
-                .modalTitle="${this.language.statements[this.statement.id]?.label}"
-                .modalIcon="${icons[this.language.statements[this.statement.id]?.icon]}"
-                .backgroundColor="${this.language.statements[this.statement.id]?.backgroundColor}"
-                .foregroundColor="${this.language.statements[this.statement.id]?.foregroundColor}"
+                .modalTitle="${statementDef.label || 'User Procedure'}"
+                .modalIcon="${icons[statementDef.icon || 'lightningChargeFill']}"
+                .backgroundColor="${statementDef.backgroundColor || '#d946ef'}"
+                .foregroundColor="${statementDef.foregroundColor || '#ffffff'}"
                 .isFullWidth="${true}"
                 .isFullHeight="${true}"
                 .isFromBody="${true}">
                 <ge-block
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
-                  .block="${this.procedureBlockCopy }"
+                  .block="${this.procedureBlockCopy}"
                   .skeletonizeMode="${this.skeletonizeMode}"
                   .restrainedMode="${this.restrainedMode}"
                   .tmpUUID="${this.uuidMetadata}"
                   .editorMode="${this.editorMode}"
-                  .parentProcedureUuid="${this.statement._uuid}" <!-- Pass the UUID -->
-                ></ge-block>
+                  .parentProcedureUuid="${this.statement._uuid}">
+                </ge-block>
               </editor-modal>
             `
           : this.statementTemplate(false)}

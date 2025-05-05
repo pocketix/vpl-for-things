@@ -8,6 +8,7 @@ import {
   boolOperators,
   compareOperators,
   convertOprToDisplayOpr,
+  initDefaultArgumentType,
   numericOperators,
 } from '@/index';
 import { LitElement, html, css, nothing } from 'lit';
@@ -174,7 +175,7 @@ export class EditorExpressionOperandList extends LitElement {
   ];
 
   @property() parentExpr: Expression;
-  @property() operands: ExpressionOperands;
+  @property() operands: ExpressionOperands = [];
   @property() nestedLevel: number;
   @property() exprIsSelected: boolean;
   @property() highlightedExpr: HTMLElement;
@@ -201,10 +202,31 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   handleAddNewOpd() {
+    // Ensure parentExpr and operands are defined before proceeding
+    if (!this.parentExpr || !this.operands) {
+      console.warn('Cannot add operand: parentExpr or operands is undefined');
+      // Initialize operands as an empty array if it's undefined
+      if (!this.operands) {
+        this.operands = [];
+      }
+      // If parentExpr is undefined, we can't proceed further
+      if (!this.parentExpr) {
+        return;
+      }
+    }
+
     if (this.parentExpr.type === '!' && this.operands.length > 0) {
       return;
     }
-    this.operands.push({ type: Types.unknown, value: null, _uuid: uuidv4() });
+
+    // Use initDefaultArgumentType to get the default value for the unknown type
+    // This ensures consistency with how other parts of the code initialize values
+    this.operands.push({
+      type: Types.unknown,
+      value: initDefaultArgumentType(Types.string), // Use string as default for unknown type
+      _uuid: uuidv4()
+    });
+
     this.opdModalVisibleOnRender = true;
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -215,6 +237,13 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   handleCancelAddOpd() {
+    // Ensure operands is defined before trying to pop
+    if (!this.operands) {
+      console.warn('Cannot cancel add operand: operands is undefined');
+      this.operands = [];
+      return;
+    }
+
     this.operands.pop();
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -363,9 +392,17 @@ export class EditorExpressionOperandList extends LitElement {
   }
 
   render() {
+    // Add defensive check to ensure operands is defined and is an array
+    const operands = Array.isArray(this.operands) ? this.operands : [];
+
+    // Ensure parentExpr is defined
+    if (!this.parentExpr) {
+      this.parentExpr = { value: [], _uuid: uuidv4() };
+    }
+
     return html`
       <div class="expr-opd-list-wrapper">
-        ${this.operands.length < 1
+        ${operands.length < 1
           ? html`
               <div class="no-opd-message" style="${this.nestedLevel > 0 ? 'padding-top: 10px;' : ''}">
                 <div>Click on "+ Add Operand"</div>
@@ -374,20 +411,28 @@ export class EditorExpressionOperandList extends LitElement {
             `
           : html`
               ${repeat(
-                this.operands,
-                (opd) => opd['_uuid'],
-                (operand, i) =>
-                  html`
-                    <div class="${(operand as Expression).value ? 'nested-expr-wrapper' : 'opd-wrapper'}">
+                operands,
+                (opd) => opd && opd['_uuid'] ? opd['_uuid'] : uuidv4(),
+                (operand, i) => {
+                  // Ensure operand is properly initialized
+                  if (!operand) {
+                    operand = { type: Types.unknown, value: null, _uuid: uuidv4() };
+                  }
+
+                  // Safely check if operand has a value property that's an array
+                  const hasArrayValue = operand && (operand as Expression).value && Array.isArray((operand as Expression).value);
+
+                  return html`
+                    <div class="${hasArrayValue ? 'nested-expr-wrapper' : 'opd-wrapper'}">
                       ${this.nestedLevel > 0
                         ? html`
                             <div
-                              class="${(operand as Expression).value
+                              class="${hasArrayValue
                                 ? 'expr-indent-line indent-line'
                                 : 'indent-line'}"></div>
                           `
                         : nothing}
-                      ${Array.isArray((operand as Expression).value)
+                      ${hasArrayValue
                         ? html`
                             <editor-expression
                               .expression="${operand}"
@@ -407,7 +452,7 @@ export class EditorExpressionOperandList extends LitElement {
                               .visibleOnRender="${this.opdModalVisibleOnRender}">
                             </editor-expression-operand>
                           `}
-                      ${!(operand as Expression).value &&
+                      ${!hasArrayValue &&
                       !this.groupModeIsActive &&
                       (this.exprIsSelected || this.nestedLevel === 0) &&
                       !this.isExample
@@ -427,15 +472,16 @@ export class EditorExpressionOperandList extends LitElement {
                               name=""
                               id=""
                               style="${`position: sticky; top: ${
-                                (operand as Expression).value ? this.nestedLevel * 37 + 9 : this.nestedLevel * 37
-                              }px; z-index: ${200 - (this.nestedLevel + 4)};`} ${(operand as Expression).value
+                                hasArrayValue ? this.nestedLevel * 37 + 9 : this.nestedLevel * 37
+                              }px; z-index: ${200 - (this.nestedLevel + 4)};`} ${hasArrayValue
                                 ? 'margin-top: 9px; margin-left: 6px; margin-right: 6px;'
                                 : ''}"
                               @change="${(e) => this.handleSelectExpr(e, i, operand)}" />
                           `
                         : nothing}
                     </div>
-                  `
+                  `;
+                }
               )}
             `}
         ${this.exprIsSelected || (this.nestedLevel === 0 && !this.highlightedExpr)
@@ -492,7 +538,7 @@ export class EditorExpressionOperandList extends LitElement {
                         <editor-button
                           class="expr-control-button"
                           @click="${this.handleEnterGroupMode}"
-                          ?disabled="${this.operands.length < 1}">
+                          ?disabled="${operands.length < 1}">
                           <editor-icon .icon="${check2square}"></editor-icon>
                           <span>Select ...</span>
                         </editor-button>
