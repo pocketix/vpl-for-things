@@ -624,6 +624,8 @@ export class EditorControls extends LitElement {
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueBoolExpr;
           // Reset with a properly initialized expression object using the initDefaultArgumentType function
           this.selectedAddVariableInitialValueBoolExpr = initDefaultArgumentType(this.selectedAddVariableType);
+          this.program.header.userVariables[this.addVariableName] = this.selectedAddVariableInitialValueBoolExpr;
+          this.selectedAddVariableInitialValueBoolExpr = {value: initDefaultArgumentType(this.selectedAddVariableType), type: Types.boolean_expression};
           break;
         case Types.number:
           this.program.header.userVariables[this.addVariableName].value = this.selectedAddVariableInitialValueNum;
@@ -1020,8 +1022,8 @@ export class EditorControls extends LitElement {
                 </td>
                 <td>
                   ${this.variablesTableMode === 'display'
-                    ? this.userVaribleInitialValueTemplate(key)
-                    : this.userVaribleModifyInitialValueTemplate(key)}
+                    ? this.userVariableInitialValueTemplate(key)
+                    : this.userVariableModifyInitialValueTemplate(key)}
                 </td>
                 ${this.variablesTableMode === 'edit'
                   ? html`
@@ -1040,7 +1042,7 @@ export class EditorControls extends LitElement {
     `;
   }
 
-  userVaribleInitialValueTemplate(varKey: string) {
+  userVariableInitialValueTemplate(varKey: string) {
     switch (this.program.header.userVariables[varKey].type) {
       case Types.boolean:
         return html`<span style="text-transform: capitalize;"
@@ -1062,6 +1064,7 @@ export class EditorControls extends LitElement {
     }
   }
 
+<<<<<<< HEAD
   userVaribleModifyInitialValueTemplate(varKey: string) {
     console.assert(typeof this.program.header.userVariables[varKey].value === "string", "user variable value is of type string");
     const value = this.program.header.userVariables[varKey].value as string; // TODO(filip): rework types
