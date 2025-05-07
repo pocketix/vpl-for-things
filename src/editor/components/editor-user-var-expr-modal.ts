@@ -24,27 +24,8 @@ export class EditorUserVarExprModal extends LitElement {
 
   expressionModalRef: Ref<EditorModal> = createRef();
 
-  connectedCallback() {
-    super.connectedCallback();
-    console.log('User var expression modal connected');
-  }
-
-  firstUpdated() {
-    console.log('User var expression modal first updated, modal ref:', this.expressionModalRef?.value);
-  }
-
-  updated(changedProperties: Map<string, any>) {
-    super.updated(changedProperties);
-    console.log('User var expression modal updated, modal ref:', this.expressionModalRef?.value);
-  }
-
   handleShowExpressionModal() {
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.expressionModalRef && this.expressionModalRef.value) {
-      this.expressionModalRef.value.showModal();
-    } else {
-      console.error('Expression modal reference is undefined in user-var-expr-modal');
-    }
+    this.expressionModalRef.value.showModal();
   }
 
   render() {
@@ -57,7 +38,7 @@ export class EditorUserVarExprModal extends LitElement {
       </editor-button>
       <editor-expression-modal
         ${ref(this.expressionModalRef)}
-        .expression="${this.program.header.userVariables[this.varKey].value}">
+        .expression="${this.program.header.userVariables[this.varKey]}">
       </editor-expression-modal>
     `;
   }

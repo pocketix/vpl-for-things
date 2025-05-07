@@ -32,21 +32,21 @@ export class EditorExpressionOperand extends LitElement {
       }
 
       .operand-button {
+        flex: 1;
+        width: 95%;
+      }
+
+      .operand-button::part(btn) {
         font-family: var(--mono-font);
         white-space: normal;
         word-break: break-all;
         overflow-x: auto;
-        flex: 1;
-        width: 95%;
         justify-content: flex-start;
         border: none;
         box-shadow: none;
         background: none;
         padding-left: 0;
         padding-right: 0;
-      }
-
-      .operand-button {
         opacity: 100 !important;
       }
 
@@ -84,7 +84,7 @@ export class EditorExpressionOperand extends LitElement {
         width: 200px;
       }
 
-      .add-operand-confirm-button {
+      .add-operand-confirm-button::part(btn) {
         justify-content: center;
       }
     `,
@@ -127,12 +127,7 @@ export class EditorExpressionOperand extends LitElement {
   }
 
   handleAddExpressionOperand() {
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
-      this.exprAddOperandModalRef.value.showModal();
-    } else {
-      console.error('Expression add operand modal reference is undefined');
-    }
+    this.exprAddOperandModalRef.value.showModal();
   }
 
   handleSelectOperandTypeChange(e: Event) {
@@ -163,13 +158,7 @@ export class EditorExpressionOperand extends LitElement {
       this.operandValueIsMissing = true;
       return;
     }
-
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
-      this.exprAddOperandModalRef.value.hideModal();
-    } else {
-      console.error('Expression add operand modal reference is undefined');
-    }
+    this.exprAddOperandModalRef.value.hideModal();
   }
 
   handleCancelOperand() {
@@ -180,13 +169,7 @@ export class EditorExpressionOperand extends LitElement {
       });
       this.dispatchEvent(event);
     }
-
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.exprAddOperandModalRef && this.exprAddOperandModalRef.value) {
-      this.exprAddOperandModalRef.value.hideModal();
-    } else {
-      console.error('Expression add operand modal reference is undefined');
-    }
+    this.exprAddOperandModalRef.value.hideModal();
   }
 
   handleOperandValueChange(e: Event) {
@@ -307,13 +290,7 @@ export class EditorExpressionOperand extends LitElement {
         <editor-button
           class="${this.operand.type === Types.variable && this.operand.value ? 'operand-var-input' : ''}"
           style="height: 100%; width: 100%;"
-          @click="${() => {
-            if (this.variablesModalRef && this.variablesModalRef.value) {
-              this.variablesModalRef.value.showModal();
-            } else {
-              console.error('Variables modal reference is undefined');
-            }
-          }}">
+          @click="${() => this.variablesModalRef.value.showModal()}">
           ${this.operand.type === Types.variable && this.operand.value
             ? this.operand.value
             : html`<div class="variables-icon">𝑥</div>`}
@@ -356,7 +333,7 @@ export class EditorExpressionOperand extends LitElement {
       <editor-modal
         ${ref(this.exprAddOperandModalRef)}
         .modalTitle="${'Add operand'}"
-        .closeButtonIsVisible="${false}"
+        ?hideCloseButton="${true}"
         .isVisible="${this.operand.value === null ? this.visibleOnRender : false}">
         <div class="add-operand-modal-wrapper">
           <div class="add-operand-modal-item-wrapper">
@@ -394,14 +371,16 @@ export class EditorExpressionOperand extends LitElement {
           <div style="display: flex; gap: 4px;">
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--green-600); width: 100%; gap: 4px;"
+              btnStyle="color: var(--green-600);"
+              style="width: 100%;"
               @click="${this.handleConfirmOperand}">
               <editor-icon .icon="${checkLg}"></editor-icon>
               <div>OK</div>
             </editor-button>
             <editor-button
               class="add-operand-confirm-button"
-              style="color: var(--red-600); width: 100%; gap: 4px;"
+              btnStyle="color: var(--red-600);"
+              style="width: 100%;"
               @click="${this.handleCancelOperand}">
               <editor-icon .icon="${xLg}"></editor-icon>
               <div>Cancel</div>

@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { editorExpressionCustomEvent } from '../editor-custom-events';
 import { globalStyles } from '../global-styles';
-import { EditorModal, ExpressionOperator } from '@/index';
+import { Expression, ExpressionOperator } from '@/index';
 
 type ExpressionModalCurrentView = 'expressions' | 'addOperand';
 
@@ -28,13 +28,13 @@ export class EditorExpressionModal extends LitElement {
     `,
   ];
 
-  @property() expression: any;
+  @property() expression: Expression;
   @property() expressionModalCurrentView: ExpressionModalCurrentView = 'expressions';
   @property() selectedAddExpression: any;
   @property() highlightedExpr: HTMLElement;
   @property() isExample: boolean = false;
 
-  expressionModalRef: Ref<EditorModal> = createRef();
+  expressionModalRef: Ref<HTMLDialogElement> = createRef();
   expressionsWapperRef: Ref<HTMLElement> = createRef();
   addOperandWrapperRef: Ref<HTMLElement> = createRef();
 
@@ -44,20 +44,6 @@ export class EditorExpressionModal extends LitElement {
     this.addEventListener(editorExpressionCustomEvent.EXPRESSION_HIGHLIGHTED, (e: CustomEvent) => {
       this.handleHighlightExpression(e.detail.exprToHighlight, e.detail.exprGroupRelation);
     });
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    console.log('Expression modal connected');
-  }
-
-  firstUpdated() {
-    console.log('Expression modal first updated, modal ref:', this.expressionModalRef?.value);
-  }
-
-  updated(changedProperties: Map<string, any>) {
-    super.updated(changedProperties);
-    console.log('Expression modal updated, modal ref:', this.expressionModalRef?.value);
   }
 
   handleHighlightExpression(exprElement: HTMLElement, exprGroupRelation: ExpressionOperator) {
@@ -85,35 +71,12 @@ export class EditorExpressionModal extends LitElement {
   }
 
   showModal() {
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.expressionModalRef && this.expressionModalRef.value) {
-      this.expressionModalRef.value.showModal();
-    } else {
-      console.error('Expression modal reference is undefined');
-    }
-  }
-
-  hideModal() {
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.expressionModalRef && this.expressionModalRef.value) {
-      this.expressionModalRef.value.hideModal();
-    } else {
-      console.error('Expression modal reference is undefined');
-    }
-  }
-
-  toggleModal() {
-    // Add defensive check to prevent errors when the modal reference is undefined
-    if (this.expressionModalRef && this.expressionModalRef.value) {
-      this.expressionModalRef.value.toggleModal();
-    } else {
-      console.error('Expression modal reference is undefined');
-    }
+    this.expressionModalRef.value.showModal();
   }
 
   render() {
     return html`
-      <editor-modal ${ref(this.expressionModalRef)} .modalTitle="${'Create Expression'}" class="expression-list-modal">
+      <editor-modal ${ref(this.expressionModalRef)} modalTitle="${'Create Expression'}" class="expression-list-modal">
         <div ${ref(this.expressionsWapperRef)} class="expression-list-modal-content-wrapper">
           <editor-expression
             .expression="${this.expression}"
