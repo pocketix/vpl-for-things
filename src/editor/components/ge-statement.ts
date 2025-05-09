@@ -503,6 +503,10 @@ export class GEStatement extends LitElement {
         .statement-header .statement-controls {
           display: none;
         }
+        .statement-header .statement-label-wrapper {
+          width: 100%;
+        }
+
         .statement-label-wrapper .flex-spacer {
           display: block;
           flex-grow: 1;
@@ -522,6 +526,7 @@ export class GEStatement extends LitElement {
   @property({type: Boolean}) isProcBody: boolean = false;
   @property({type: Boolean}) isExample: boolean = false;
   @property({type: Boolean}) exampleBlockIsVisible: boolean = false;
+  @property({ type: Boolean }) isSmallScreen: boolean = document.body.clientWidth < 800;
   //#endregion
 
   //#region Context
@@ -606,6 +611,15 @@ export class GEStatement extends LitElement {
         this.dispatchEvent(event);
       }
     });
+
+    window.addEventListener('resize', () => {
+      if (document.body.clientWidth < 800) {
+        this.isSmallScreen = true;
+      } else {
+        this.isSmallScreen = false;
+      }
+    });
+
   }
 
   willUpdate(changedProperties: PropertyValues<this>) {
@@ -1115,9 +1129,98 @@ export class GEStatement extends LitElement {
 
           <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
 
+
+          <div class="flex-spacer"></div>
+
+          <div class="statement-controls-modal-wrapper">
+            ${(!this.isExample && this.isSmallScreen)
+              ? html`
+                  <editor-button
+                    style="${this.isRunning ? 'display: none' : ''}"
+                    @click="${this.handleToggleStatementControlsModal}"
+                    title="Statement Controls"
+                  >
+                    <editor-icon .icon="${icons.list}"></editor-icon>
+                  </editor-button>
+                  <editor-modal
+                    class="statement-controls-modal"
+                    .displayType="${'dialog'}"
+                    .titleIsVisible="${false}"
+                    ?hideCloseButton="${true}"
+                    ${ref(this.statementControlsModalRef)}>
+                    <div class="statement-controls-buttons">
+                      <editor-button @click="${this.handleMoveStatementUp}" title="Move statement up">
+                        <editor-icon .icon="${icons.arrowUp}"></editor-icon>
+                        Move Up
+                      </editor-button>
+                      <editor-button @click="${this.handleMoveStatementDown}" title="Move statement down">
+                        <editor-icon .icon="${icons.arrowDown}"></editor-icon>
+                        Move Down
+                      </editor-button>
+                      <editor-button
+                        @click="${this.handleRemoveStatement}"
+                        title="Remove Statement"
+                        class="remove-statement-button">
+                        <editor-icon .icon="${icons.trash}"></editor-icon>
+                        Delete
+                      </editor-button>
+                      ${this.breakpoints !== null
+                      ? this.hasBreakpoint(this.breakpoint)
+                        ? html`
+                          <editor-button
+                            @click="${this.handleBreakpointRemove}"
+                            title="Remove breakpoint">
+                            <editor-icon .icon="${icons.trash}"></editor-icon>
+                            Remove breakpoint
+                          </editor-button>
+                          <editor-button
+                            @click="${this.handleBreakpointConfigure}"
+                            title="Configure breakpoint">
+                            <editor-icon .icon="${icons.pencilSquare}"></editor-icon>
+                            Configure breakpoint
+                          </editor-button>
+                          ${this.breakpoint?.disabled
+                          ? html`
+                            <editor-button
+                              @click="${this.handleBreakpointEnable}"
+                              title="Enable breakpoint">
+                              <editor-icon .icon="${icons.checkLg}"></editor-icon>
+                              Enable breakpoint
+                            </editor-button>
+                            `
+                          : html`
+                            <editor-button
+                              @click="${this.handleBreakpointDisable}"
+                              title="Disable breakpoint">
+                              <editor-icon .icon="${icons.xLg}"></editor-icon>
+                              Disable breakpoint
+                            </editor-button>
+                            `
+                          }
+                        `
+                        : html`
+                          <editor-button
+                            @click="${this.handleBreakpointAdd}"
+                            title="Add breakpoint">
+                            <editor-icon .icon="${icons.plusLg}"></editor-icon>
+                            Add breakpoint
+                          </editor-button>
+                        `
+                      : nothing
+                      }
+                    </div>
+                  </editor-modal>
+                `
+              : nothing}
+          </div>
+
+
+
+
+
+
           ${(this.statement as CompoundStatement).block
             ? html`
-                <div class="flex-spacer"></div>
                 <div @click="${this.handleToggleNestedBlockVisibility}" class="expand-nested-block-button">
                   <editor-icon
                     .icon="${this.nestedBlockVisible ? icons.chevronDown : icons.chevronRight}"
@@ -1145,7 +1248,7 @@ export class GEStatement extends LitElement {
           : nothing}
         <div class="statement-controls">
           <div class="statement-controls-modal-wrapper">
-            ${!this.isExample
+            ${(!this.isExample && !this.isSmallScreen)
               ? html`
                   <editor-button
                     style="${this.isRunning ? 'display: none' : ''}"
