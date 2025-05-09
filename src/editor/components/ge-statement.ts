@@ -110,6 +110,9 @@ export class GEStatement extends LitElement {
       }
 
       .parse-error-container[open] .icon {
+        width: 0.8rem;
+        max-width: 0.8rem;
+        height: 0.8rem;
         flex: 1 0 auto;
       }
 
@@ -262,6 +265,7 @@ export class GEStatement extends LitElement {
         border-width: 3px;
         border-color: var(--breakpoint-color);
         border-style: solid;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)
       }
 
       .breakpoint-marker[to-be-removed] {
@@ -278,7 +282,7 @@ export class GEStatement extends LitElement {
         padding: 0.4rem 0.5rem;
         border-top-left-radius: 0.5rem;
         border-top-right-radius: 0.5rem;
-        height: 50px;
+        // height: 50px;
       }
 
       .statement-header[breakpoint-dragging] {
@@ -481,6 +485,30 @@ export class GEStatement extends LitElement {
       @media (min-width: 500px) {
         .statement-label {
           white-space: nowrap;
+        }
+      }
+
+      .statement-label-wrapper .expand-nested-block-button {
+        display: none;
+      }
+      .statement-label-wrapper .flex-spacer {
+        display: none;
+      }
+
+      @media (max-width: 800px) {
+        .statement-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .statement-header .statement-controls {
+          display: none;
+        }
+        .statement-label-wrapper .flex-spacer {
+          display: block;
+          flex-grow: 1;
+        }
+        .statement-label-wrapper .expand-nested-block-button {
+          display: block;
         }
       }
     `,
@@ -1086,6 +1114,19 @@ export class GEStatement extends LitElement {
             : nothing}
 
           <div class="statement-label">${this.language.statements[this.statement.id].label}</div>
+
+          ${(this.statement as CompoundStatement).block
+            ? html`
+                <div class="flex-spacer"></div>
+                <div @click="${this.handleToggleNestedBlockVisibility}" class="expand-nested-block-button">
+                  <editor-icon
+                    .icon="${this.nestedBlockVisible ? icons.chevronDown : icons.chevronRight}"
+                    .width="${18}"
+                    .height="${18}"
+                    title="Show Block"></editor-icon>
+                </div>
+              `
+            : nothing}
         </div>
         ${(this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments
           ? (this.statement as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments.length === 1

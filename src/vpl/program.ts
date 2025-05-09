@@ -1,31 +1,85 @@
 import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
 import Types from '@vpl/types.ts';
+import { TemplateResult, html } from 'lit';
+import { playCircle, remoteControlLine, variableIcon } from '@/editor/icons';
 
-export function parseOperandToString(operand: ExpressionOperand, negated: boolean = false) {
+export function parseOperandToString(operand: ExpressionOperand, negated: boolean = false, level: number = 0) {
   let valueString =
-    operand.type === Types.boolean_expression ? parseExpressionToString(operand.value as Expression) : `${operand.value}`;
+    operand.type === Types.boolean_expression ? parseExpressionToString(operand.value as Expression, level) : `${operand.value}`;
   return negated ? `NOT ${valueString}` : valueString;
 }
 
-export function parseExpressionToString(expression: Expression) {
+export function parseExpressionToString(expression: Expression, level: number = -1) {
   const exp = Array.isArray(expression.value) ? expression.value : [expression.value];
   let operandsStrings: string[] = exp.map((operand) => {
     if (Array.isArray((operand as Expression).value)) {
-      return parseExpressionToString(operand as Expression);
+      return parseExpressionToString(operand as Expression, level+1);
     } else {
-      return parseOperandToString(operand as ExpressionOperand, expression.type === '!');
+      return parseOperandToString(operand as ExpressionOperand, expression.type === '!', level);
     }
   });
 
   if (expression.type) {
-    return `(${operandsStrings.join(
+    const delimiter = (expression.type === Types.boolean_expression || level <= 0) ? ["", ""]: ["(", ")"];
+    return `${delimiter[0]}${operandsStrings.join(
       ` ${convertOprToDisplayOpr(expression.type as CompareOperator | BoolOperator | NumericOperator)} `
-    )})`;
+    )}${delimiter[1]}`;
   } else {
     return operandsStrings.join(' ');
   }
 }
+
+const valueIconsMap = {
+  "device": remoteControlLine,
+  "variable": variableIcon,
+}
+
+export function parseOperandToHtml(operand: ExpressionOperand, negated: boolean = false, level: number = 0) {
+  const isDevice = operand.value?.toString().startsWith("$") && operand.type === "variable";
+  const icon = valueIconsMap[isDevice ? "device" : operand.type];
+  let valueString =
+    operand.type === Types.boolean_expression ? parseExpressionToHtml(operand.value as Expression, level) : `${operand.value}`;
+  valueString = (isDevice && !!(valueString as any).slice) ? (valueString as any).slice(1) : valueString;
+  return negated
+    ? html`<span class="operator not">NOT</span> ${valueString}`
+    : html`
+      <span class="value ${valueString} ${operand.type} ${isDevice ? 'device':''}">
+        <span class="icon">${icon}</span>
+        ${isDevice 
+          ? (valueString as any)
+            .split(".")
+            .map(s => html`<span>${s}</span>`)
+            .reduce((a, c) => [...a, c, "."], [])
+            .slice(0, -1)
+          : valueString
+        }
+      </span>
+    `;
+}
+
+export function parseExpressionToHtml(expression: Expression, level: number = -1) {
+  const exp = Array.isArray(expression.value) ? expression.value : [expression.value];
+  let operandsStrings: TemplateResult<1>[] = exp.flatMap((operand) => {
+    if (Array.isArray((operand as Expression).value)) {
+      return parseExpressionToHtml(operand as Expression, level+1);
+    } else {
+      return [parseOperandToHtml(operand as ExpressionOperand, expression.type === '!', level)];
+    }
+  });
+
+  if (expression.type) {
+    const delimiter = (expression.type === Types.boolean_expression || level <= 0) ? ["", ""]: ["(", ")"];
+    return html`<span class="delimiter ${delimiter[0]}">${delimiter[0]}</span>${
+      operandsStrings.reduce((acc, curr) =>
+        [...acc, html`${curr}`, html`<span class="operator ${expression.type}">${convertOprToDisplayOpr(expression.type as CompareOperator | BoolOperator | NumericOperator)}</span>`], []
+      ).slice(0, -1)}<span class="delimiter ${delimiter[1]}">${delimiter[1]}</span>`;
+  } else {
+    return operandsStrings;
+  }
+}
+
+
 
 export function convertOprToDisplayOpr(opr: ExpressionOperator) {
   switch (opr) {
@@ -35,6 +89,10 @@ export function convertOprToDisplayOpr(opr: ExpressionOperator) {
       return 'OR';
     case '!':
       return 'NOT';
+    case "===":
+      return "==";
+    case "!==":
+      return "!=";
     case Types.boolean_expression:
       // return "Expression";
       return null;

@@ -8,7 +8,7 @@ import {
   ProgramStatementArgument,
   UnitLanguageStatementWithArgs,
   initDefaultArgumentType,
-  parseExpressionToString, BoolOperator, isExpressionOperator
+  parseExpressionToString, BoolOperator, isExpressionOperator, parseExpressionToHtml
 } from '@/index';
 import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
@@ -37,11 +37,14 @@ export class GeStatementArgument extends LitElement {
       .expr-arg {
         min-width: 0;
         width: 100%;
+        font-size: 0.93rem;
       }
 
       .expr-arg::part(btn) {
         white-space: nowrap;
         font-family: var(--mono-font);
+        padding: 0.35rem;
+        font-size: inherit;
       }
 
       .variables-icon {
@@ -86,6 +89,35 @@ export class GeStatementArgument extends LitElement {
         color: black;
         pointer-events: none;
       }
+
+      .expr-arg .value + .operator,
+      .expr-arg .delimiter + .operator,
+      .expr-arg .operator + .delimiter,
+      .expr-arg .operator:not(.boolean_expression) + .value,
+      .expr-arg .value + .value {
+        margin-left: 0.25rem;
+      }
+
+      .expr-arg .variable {
+        display: flex;
+        align-items: center;
+        padding: 0.15rem;
+        background-color: var(--green-200);
+        border-radius: 0.25rem;
+        flex-wrap: wrap;
+      }
+      .expr-arg .device {
+        background-color: var(--blue-200);
+      }
+      .expr-arg .variable .icon {
+        margin-right: 0.2rem;
+      }
+      .expr-arg .icon:has(svg) {
+        width: 1rem;
+        height: 1rem;
+      }
+
+
     `,
   ];
 
@@ -230,7 +262,7 @@ export class GeStatementArgument extends LitElement {
       permittedVarType = 'all';
     }
 
-    return html`
+    return this.isRunning ? nothing : html`
       <div class="${this.argument.type === Types.variable && this.argument.value ? 'argument-var-wrapper' : ''}">
         <editor-button
           class="${classMap({'expr-arg': this.argument.type === Types.variable && !!this.argument.value, 'disabled': this.isExample})}"
@@ -239,7 +271,7 @@ export class GeStatementArgument extends LitElement {
           ${this.argument.type === Types.variable && this.argument.value
             ? html`
                 <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
-                  <div style="text-overflow: ellipsis; overflow: hidden;">${`$${this.argument.value}`}</div>
+                  <div style="display: flex; flex-wrap: wrap;">${parseExpressionToHtml({value:[{value: this.argument.value, type: "variable" as any}]})}</div>
                 </div>
               `
             : html`<div class="variables-icon">𝑥</div>`}
@@ -290,7 +322,7 @@ export class GeStatementArgument extends LitElement {
           <div class="argument-wrapper">
             ${this.argumentLabelTemplate('')}
             <div class="argument-var-wrapper">
-              <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr">
+              <editor-button @click="${this.handleShowExpressionModal}" class="expr-arg expr-arg-bool-expr" ?noDisableStyle=${true} title="${parseExpressionToString(this.argument as Expression)}">
                 ${(Array.isArray(this.argument.value) && this.argument.value.length === 0)
                   ? html`
                       <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
@@ -299,10 +331,8 @@ export class GeStatementArgument extends LitElement {
                       </div>
                     `
                   : html`
-                      <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
-                        <div style="text-overflow: ellipsis; overflow: hidden;">
-                          ${parseExpressionToString(this.argument as Expression)}
-                        </div>
+                      <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap;">
+                          ${parseExpressionToHtml(this.argument as Expression)}
                       </div>
                     `}
               </editor-button>

@@ -13,17 +13,30 @@ export const globalStyles = css`
     --gray-300: #d1d5db;
     --gray-400: #9ca3af;
     --gray-500: #6b7280;
+    --gray-600: #4b5563;
     --gray-700: #374151;
+    --gray-800: #1A202C;
     --blue-100: #dbeafe;
     --blue-200: #bfdbfe;
+    --blue-300: #93c5fd;
+    --blue-400: #60a5fa;
     --blue-500: #3b82f6;
+    --blue-600: #2563eb;
     --red-500: #ef4444;
     --red-600: #dc2626;
+    --orange-100: oklch(95.4% 0.038 75.164);
+    --orange-200: oklch(90.1% 0.076 70.697);
+    --orange-300: oklch(83.7% 0.128 66.29);
     --orange-500: #f97316;
     --emerald-500: #10b981;
     --indigo-500: #6366f1;
     --violet-500: #8b5cf6;
     --yellow-500: #eab308;
+    --green-100: #dcfce7;
+    --green-200: #bbf7d0;
+    --green-300: #86efac;
+    --green-400: #4ade80;
+    --green-500: #22c55e;
     --green-600: #16a34a;
   }
 

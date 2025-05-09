@@ -51,6 +51,9 @@ export class EditorButton extends LitElement {
         pointer-events: none;
         opacity: 50%;
       }
+      :host > button:first-of-type[disabled][nodisablestyle] {
+        opacity: 100%;
+      }
     `,
   ];
   //#endregion
@@ -60,6 +63,7 @@ export class EditorButton extends LitElement {
   @property() btnStyle: string|null = null;
   @property({type: Boolean}) disabled: boolean = false;
   @property({type: Boolean}) autofocus: boolean = false;
+  @property({type: Boolean}) noDisableStyle: boolean = false;
 
   @consume({ context: isRunningContext, subscribe: true })
   @property({type: Boolean})
@@ -79,7 +83,7 @@ export class EditorButton extends LitElement {
 
   //#region Render
   render() {
-    return html`<button ?disabled=${this.isRunning} ?autofocus=${this.autofocus} part="btn" class="btn" style="${this.btnStyle}"> <slot></slot> </button>`;
+    return html`<button ?disabled=${this.isRunning} ?noDisableStyle=${this.noDisableStyle} ?autofocus=${this.autofocus} part="btn" class="btn" style="${this.btnStyle}"> <slot></slot> </button>`;
   }
   //#endregion
 }

@@ -435,7 +435,7 @@ export class VplEditor extends LitElement {
   render() {
 
     const graphicalEditor = this.viewMode === "ge" || this.viewMode === "split"
-      ? html`<graphical-editor ${ref(this.graphicalEditorRef)}></graphical-editor>`
+      ? html`<graphical-editor ${ref(this.graphicalEditorRef)} part="graphical-editor"></graphical-editor>`
       : nothing;
 
     const textEditor = this.viewMode === "te" || this.viewMode === "split"
