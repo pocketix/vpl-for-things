@@ -377,7 +377,7 @@ export class VplEditor extends LitElement {
 
   //#region Handlers
   handleTextEditorProgramUpdated() {
-    this.graphicalEditorRef.value.requestUpdate();
+    this.graphicalEditorRef.value?.requestUpdate();
   }
 
   handleGraphicalEditorProgramUpdated() {
@@ -415,11 +415,13 @@ export class VplEditor extends LitElement {
       elem.requestUpdate();
     });
 
-    this.textEditorRef.value.textEditorValue = JSON.stringify(
-      this.program.exportProgramBlock(this.program.block),
-      null,
-      '  '
-    );
+    if (this.textEditorRef.value) {
+      this.textEditorRef.value.textEditorValue = JSON.stringify(
+        this.program.exportProgramBlock(this.program.block),
+        null,
+        '  '
+      );
+    }
   }
   //#endregion
 
