@@ -183,4 +183,9 @@ export const globalStyles = css`
   .bold-font {
     font-weight: 600;
   }
+
+  .shepherd-target-click-disabled {
+    pointer-events: none;
+  }
+
 `;
