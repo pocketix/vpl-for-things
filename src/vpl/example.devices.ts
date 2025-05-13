@@ -1,6 +1,23 @@
 import { Device } from './language';
+import Types from './types';
 
 export const exampleDevices: Device[] = [
+  {
+    deviceName: 'light-office-top-1',
+    attributes: ['state'],
+    functions: [{
+      type: "unit_with_args",
+      label: "setBrightness",
+      arguments: [{
+        type: Types.number,
+      }],
+      icon: "lightningChargeFill",
+      group: "iot",
+      backgroundColor: '#f97316',
+      foregroundColor: '#ffffff',
+
+    }],
+  },
   {
     deviceName: 'DistanceSensor-1',
     attributes: ['waterLevel', 'distance'],

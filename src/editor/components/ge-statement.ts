@@ -796,7 +796,6 @@ export class GEStatement extends LitElement {
   }
 
   handleBreakpointConfigure() {
-    // TODO(filip): configure breakpoint
   }
 
   handleBreakpointAdd() {
@@ -1051,7 +1050,7 @@ export class GEStatement extends LitElement {
             ? html`<li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "enable")}>Enable</li>`
             : html`<li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "disable")}>Disable</li>`
           }
-          <li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "configure")}>Configure</li>
+          <!-- <li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "configure")}>Configure</li> -->
           <li @click=${(e:any)=>this.handleBreakpointContextMenuClick(e, "remove")}>Remove</li>
         </ul>
         <div
@@ -1173,12 +1172,12 @@ export class GEStatement extends LitElement {
                             <editor-icon .icon="${icons.trash}"></editor-icon>
                             Remove breakpoint
                           </editor-button>
-                          <editor-button
-                            @click="${this.handleBreakpointConfigure}"
-                            title="Configure breakpoint">
-                            <editor-icon .icon="${icons.pencilSquare}"></editor-icon>
-                            Configure breakpoint
-                          </editor-button>
+                          <!-- <editor-button -->
+                          <!--   @click="${this.handleBreakpointConfigure}" -->
+                          <!--   title="Configure breakpoint"> -->
+                          <!--   <editor-icon .icon="${icons.pencilSquare}"></editor-icon> -->
+                          <!--   Configure breakpoint -->
+                          <!-- </editor-button> -->
                           ${this.breakpoint?.disabled
                           ? html`
                             <editor-button
@@ -1288,12 +1287,12 @@ export class GEStatement extends LitElement {
                             <editor-icon .icon="${icons.trash}"></editor-icon>
                             Remove breakpoint
                           </editor-button>
-                          <editor-button
-                            @click="${this.handleBreakpointConfigure}"
-                            title="Configure breakpoint">
-                            <editor-icon .icon="${icons.pencilSquare}"></editor-icon>
-                            Configure breakpoint
-                          </editor-button>
+                          <!-- <editor-button -->
+                          <!--   @click="${this.handleBreakpointConfigure}" -->
+                          <!--   title="Configure breakpoint"> -->
+                          <!--   <editor-icon .icon="${icons.pencilSquare}"></editor-icon> -->
+                          <!--   Configure breakpoint -->
+                          <!-- </editor-button> -->
                           ${this.breakpoint?.disabled
                           ? html`
                             <editor-button
