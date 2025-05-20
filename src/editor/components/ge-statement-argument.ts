@@ -146,11 +146,17 @@ export class GeStatementArgument extends LitElement {
       console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
     }
 
+    // Add more detailed information to the VALUE_CHANGED event
     const event = new CustomEvent(deviceMetadataCustomEvent.VALUE_CHANGED, {
       bubbles: true,
       composed: true,
+      detail: {
+        argumentValue: this.argument.value,
+        argumentType: this.argument.type
+      }
     });
     this.dispatchEvent(event);
+
     const eventT = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,

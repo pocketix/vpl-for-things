@@ -6,6 +6,7 @@ import {
   CompoundStatementWithArgs,
   Program,
   ProgramStatement,
+  DeviceMetadata,
   initDefaultArgumentType,
   assignUuidToBlock,
 } from '@vpl/program';
@@ -335,12 +336,36 @@ export class GEStatement extends LitElement {
     });
 
     //----------------------------
-    this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
+    this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (e: CustomEvent) => {
       if (this.statement._uuid && this.editorMode === 'initialize') {
         console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-        const initProcEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
+        console.log(`Argument value: ${e.detail?.argumentValue}, type: ${e.detail?.argumentType}`);
+
+        // Find the procedure entry recursively through the program structure
+        const findProcedureEntry = (block: any[], targetUuid: string): any => {
+          // First check if the entry is in this block
+          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+          if (directEntry) return directEntry;
+
+          // If not found directly, search in nested blocks
+          for (const stmt of block) {
+            if (stmt.block && Array.isArray(stmt.block)) {
+              const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+              if (nestedEntry) return nestedEntry;
+            }
+          }
+
+          return null;
+        };
+
+        const initProcEntry = findProcedureEntry(this.program.block, this.uuidMetadata);
 
         if (initProcEntry) {
+          this.updateDeviceMetadataValue();
+        } else {
+          console.log('No procedure entry found in main block, checking nested blocks...');
+          // If we couldn't find the procedure entry directly, try to update the value anyway
+          // This handles the case where the procedure is nested within another block
           this.updateDeviceMetadataValue();
         }
       }
@@ -387,8 +412,27 @@ export class GEStatement extends LitElement {
 
   updateDeviceMetadataValue() {
     if (!this.statement._uuid) return;
-    const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
-    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
+
+    // Find the procedure entry recursively through the program structure
+    const findProcedureEntry = (block: any[], targetUuid: string): any => {
+      // First check if the entry is in this block
+      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+      if (directEntry) return directEntry;
+
+      // If not found directly, search in nested blocks
+      for (const stmt of block) {
+        if (stmt.block && Array.isArray(stmt.block)) {
+          const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+          if (nestedEntry) return nestedEntry;
+        }
+      }
+
+      return null;
+    };
+
+    // Look for the procedure entry in the entire program block structure
+    const procInitEntry = findProcedureEntry(this.program.block, this.uuidMetadata);
+    const deviceEntry = procInitEntry?.devices?.find((device: DeviceMetadata) => device.uuid === this.statement._uuid);
 
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;

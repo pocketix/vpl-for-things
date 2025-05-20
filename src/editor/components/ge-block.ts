@@ -385,43 +385,7 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
     const addedStmt = this.block[this.block.length - 1];
 
-    // Note: We used to check if this is a device statement here
-    // This is now handled through the statementCategories configuration
-
-    // if (isDeviceStatement) {
-    //   // Initialize device metadata for the newly added device statement
-    //   if (!addedStmt.devices) {
-    //     addedStmt.devices = [];
-    //   }
-
-    //   const langStatement = this.language.statements[stmtKey];
-    //   if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-    //     const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-    //     const defaultValues: string[] = [];
-
-    //     // Initialize argument values directly in the statement
-    //     if ((addedStmt as AbstractStatementWithArgs).arguments) {
-    //       argDefs.forEach((argDef, index) => {
-    //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-    //           const defaultValue = argDef.options[0].id;
-    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
-    //           defaultValues.push(String(defaultValue));
-    //         } else {
-    //           const defaultValue = initDefaultArgumentType(argDef.type);
-    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
-    //           defaultValues.push(String(defaultValue));
-    //         }
-    //       });
-    //     }
-
-    //     // Add device metadata entry
-    //     addedStmt.devices.push({
-    //       uuid: addedStmt._uuid,
-    //       deviceId: stmtKey,
-    //       values: defaultValues
-    //     });
-    //   }
-    // }
+    
 
     if (this.language.statements[stmtKey].isUserProcedure) {
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
