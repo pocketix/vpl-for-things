@@ -552,6 +552,75 @@ export class GeBlock extends LitElement {
     }
     let statementIndex = e.detail.index;
 
+    // Get the statement to be removed
+    const statementToRemove = this.block[statementIndex];
+
+    // Check if it's a device type block or a device statement
+    if (statementToRemove) {
+      const isDeviceBlock = statementToRemove.id === 'deviceType';
+      const deviceName = statementToRemove.id.split('.')[0];
+      const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+
+      if (isDeviceBlock || isDeviceStatement) {
+        // Find the metadata entry recursively through the program structure
+        const findMetadataEntry = (block: any[], targetUuid: string): any => {
+          // First check if the entry is in this block
+          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+          if (directEntry) return directEntry;
+
+          // If not found directly, search in nested blocks
+          for (const stmt of block) {
+            if (stmt.block && Array.isArray(stmt.block)) {
+              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
+              if (nestedEntry) return nestedEntry;
+            }
+          }
+
+          return null;
+        };
+
+        // First try to find the metadata entry using the tmpUUID
+        let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
+
+        // If not found and we have a parent procedure UUID, try that
+        if (!metadataEntry && this.parentProcedureUuid) {
+          metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
+        }
+
+        // Remove the device entry from the metadata
+        if (metadataEntry && metadataEntry.devices) {
+          metadataEntry.devices = metadataEntry.devices.filter((device: any) =>
+            device.uuid !== statementToRemove._uuid
+          );
+        }
+
+        // Also clean up the main program's devices array
+        // Recursively search through all blocks in the program to find and clean up device entries
+        const cleanupDevicesInBlock = (block: any[]) => {
+          if (!block || !Array.isArray(block)) return;
+
+          // Check if this block has a devices array
+          for (const stmt of block) {
+            if (stmt.devices && Array.isArray(stmt.devices)) {
+              // Remove the device entry with the matching UUID
+              stmt.devices = stmt.devices.filter((device: any) =>
+                device.uuid !== statementToRemove._uuid
+              );
+            }
+
+            // Recursively check nested blocks
+            if (stmt.block && Array.isArray(stmt.block)) {
+              cleanupDevicesInBlock(stmt.block);
+            }
+          }
+        };
+
+        // Start the cleanup from the program's root block
+        cleanupDevicesInBlock(this.program.block);
+      }
+    }
+
+    // Remove the statement from the block
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
     e.stopPropagation();
@@ -892,6 +961,80 @@ export class GeBlock extends LitElement {
           console.warn(`No metadata entry found for UUID: ${this.tmpUUID} or parent UUID: ${this.parentProcedureUuid}`);
         }
 
+
+        // Clean up any orphaned device entries
+        if (metadataEntry && metadataEntry.devices && Array.isArray(metadataEntry.devices)) {
+          // Get all valid device UUIDs in the procedure body
+          const validDeviceUuids = new Set<string>();
+
+          // Find the procedure definition
+          const procedureId = this.isProcBody ? this.tmpUUID : this.parentProcedureUuid;
+          let procedureBlock: any[] | undefined;
+
+          // Find the procedure block in userProcedures
+          for (const procBlock of Object.values(this.program.header.userProcedures)) {
+            if (procedureId && procBlock) {
+              procedureBlock = procBlock;
+              break;
+            }
+          }
+
+          // Collect valid device UUIDs from the procedure body
+          if (procedureBlock) {
+            const collectDeviceUuids = (block: any[]) => {
+              if (!block || !Array.isArray(block)) return;
+
+              for (const stmt of block) {
+                if (stmt._uuid) {
+                  const isDeviceBlock = stmt.id === 'deviceType';
+                  const deviceName = stmt.id.split('.')[0];
+                  const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+
+                  if (isDeviceBlock || isDeviceStatement) {
+                    validDeviceUuids.add(stmt._uuid);
+                  }
+                }
+
+                if (stmt.block && Array.isArray(stmt.block)) {
+                  collectDeviceUuids(stmt.block);
+                }
+              }
+            };
+
+            collectDeviceUuids(procedureBlock);
+
+            // Filter out orphaned device entries
+            metadataEntry.devices = metadataEntry.devices.filter((device: any) =>
+              validDeviceUuids.has(device.uuid)
+            );
+
+            // Also clean up the main program's devices array
+            // Recursively search through all blocks in the program to find and clean up device entries
+            const cleanupDevicesInBlock = (block: any[]) => {
+              if (!block || !Array.isArray(block)) return;
+
+              // Check if this block has a devices array
+              for (const stmt of block) {
+                if (stmt.devices && Array.isArray(stmt.devices)) {
+                  // Keep only devices that have valid UUIDs
+                  stmt.devices = stmt.devices.filter((device: any) =>
+                    validDeviceUuids.has(device.uuid) ||
+                    // Keep devices that don't belong to this procedure
+                    (this.tmpUUID && !device.uuid.startsWith(this.tmpUUID.substring(0, 8)))
+                  );
+                }
+
+                // Recursively check nested blocks
+                if (stmt.block && Array.isArray(stmt.block)) {
+                  cleanupDevicesInBlock(stmt.block);
+                }
+              }
+            };
+
+            // Start the cleanup from the program's root block
+            cleanupDevicesInBlock(this.program.block);
+          }
+        }
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,

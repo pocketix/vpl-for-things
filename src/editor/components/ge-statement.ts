@@ -662,6 +662,9 @@ export class GEStatement extends LitElement {
 
       parseBlock(this.procedureBlockCopy);
 
+      // Clean up orphaned device entries
+      this.cleanupOrphanedDeviceEntries();
+
       this.requestUpdate();
     }
     this.procModalRef.value.showModal();
@@ -702,6 +705,95 @@ export class GEStatement extends LitElement {
   //   this.requestUpdate();
   // }
   //#endregion
+
+  cleanupOrphanedDeviceEntries() {
+    // Find the procedure entry recursively through the program structure
+    const findProcedureEntry = (block: any[], targetUuid: string): any => {
+      // First check if the entry is in this block
+      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+      if (directEntry) return directEntry;
+
+      // If not found directly, search in nested blocks
+      for (const stmt of block) {
+        if (stmt.block && Array.isArray(stmt.block)) {
+          const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+          if (nestedEntry) return nestedEntry;
+        }
+      }
+
+      return null;
+    };
+
+    const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
+
+    if (!procedureEntry || !procedureEntry.devices || !Array.isArray(procedureEntry.devices)) {
+      return;
+    }
+
+    // Get all device UUIDs in the procedure body
+    const validDeviceUuids = new Set<string>();
+
+    const collectDeviceUuids = (block: any[]) => {
+      if (!block || !Array.isArray(block)) return;
+
+      for (const stmt of block) {
+        if (stmt._uuid) {
+          const isDeviceBlock = stmt.id === 'deviceType';
+          const deviceName = stmt.id.split('.')[0];
+          const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+
+          if (isDeviceBlock || isDeviceStatement) {
+            validDeviceUuids.add(stmt._uuid);
+          }
+        }
+
+        if (stmt.block && Array.isArray(stmt.block)) {
+          collectDeviceUuids(stmt.block);
+        }
+      }
+    };
+
+    // Collect valid device UUIDs from the procedure body
+    const procedureBlock = this.program.header.userProcedures[this.statement.id];
+    if (procedureBlock) {
+      collectDeviceUuids(procedureBlock);
+    }
+
+    // Filter out orphaned device entries
+    procedureEntry.devices = procedureEntry.devices.filter((device: any) =>
+      validDeviceUuids.has(device.uuid)
+    );
+
+    // Also clean up the main program's devices array
+    // Recursively search through all blocks in the program to find and clean up device entries
+    const cleanupDevicesInBlock = (block: any[]) => {
+      if (!block || !Array.isArray(block)) return;
+
+      // Check if this block has a devices array
+      for (const stmt of block) {
+        if (stmt.devices && Array.isArray(stmt.devices)) {
+          // Keep only devices that have valid UUIDs
+          stmt.devices = stmt.devices.filter((device: any) =>
+            validDeviceUuids.has(device.uuid) ||
+            // Keep devices that don't belong to this procedure
+            !device.uuid.startsWith(this.statement._uuid.substring(0, 8))
+          );
+        }
+
+        // Recursively check nested blocks
+        if (stmt.block && Array.isArray(stmt.block)) {
+          cleanupDevicesInBlock(stmt.block);
+        }
+      }
+    };
+
+    // Start the cleanup from the program's root block
+    cleanupDevicesInBlock(this.program.block);
+
+    console.log('Cleaned up orphaned device entries. Valid UUIDs:',
+      Array.from(validDeviceUuids),
+      'Remaining devices:', procedureEntry.devices.length);
+  }
 
   //#region Templates
   multipleArgumentTemplate(argumentsArray: Argument[]) {
