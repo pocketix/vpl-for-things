@@ -113,8 +113,6 @@ export class GeStatementArgument extends LitElement {
     // Add defensive check to prevent errors when the modal reference is undefined
     if (this.expressionModalRef && this.expressionModalRef.value) {
       this.expressionModalRef.value.showModal();
-    } else {
-      console.error('Expression modal reference is undefined in ge-statement-argument');
     }
   }
 
@@ -122,8 +120,6 @@ export class GeStatementArgument extends LitElement {
     // Add defensive check to prevent errors when the modal reference is undefined
     if (this.selectArgumentVariableModalRef && this.selectArgumentVariableModalRef.value) {
       this.selectArgumentVariableModalRef.value.showModal();
-    } else {
-      console.error('Select argument variable modal reference is undefined');
     }
   }
 
@@ -131,8 +127,6 @@ export class GeStatementArgument extends LitElement {
     // Add defensive check to prevent errors when the modal reference is undefined
     if (this.selectArgumentVariableModalRef && this.selectArgumentVariableModalRef.value) {
       this.selectArgumentVariableModalRef.value.hideModal();
-    } else {
-      console.error('Select argument variable modal reference is undefined');
     }
   }
 
@@ -145,9 +139,7 @@ export class GeStatementArgument extends LitElement {
       this.argument.value = newValue;
     }
 
-    if (oldValue !== this.argument.value) {
-      console.log(`Argument value changed from ${oldValue} to ${this.argument.value}`);
-    }
+
 
     // Add more detailed information to the VALUE_CHANGED event
     const event = new CustomEvent(deviceMetadataCustomEvent.VALUE_CHANGED, {
@@ -242,8 +234,6 @@ export class GeStatementArgument extends LitElement {
   useVariableTemplate() {
     // Add defensive checks
     if (!this.argument || !this.argument.type || !this.language || !this.program) {
-      console.error('Missing required data for variable template:',
-        { argument: this.argument, language: this.language, program: this.program });
       return html`<div class="error-variable">Error: Invalid variable data</div>`;
     }
 
@@ -258,7 +248,6 @@ export class GeStatementArgument extends LitElement {
             this.language.statements[this.stmtId] as UnitLanguageStatementWithArgs | CompoundLanguageStatementWithArgs
           ).arguments[this.argPosition].type;
         } catch (error) {
-          console.error('Error getting argument type from statement:', error);
           permittedVarType = this.argument.type;
         }
       } else {
@@ -306,7 +295,6 @@ export class GeStatementArgument extends LitElement {
     // Add defensive checks
     if (!this.language || !this.language.statements ||
         !this.language.statements['deviceType']) {
-      console.error('Missing deviceType statement in language');
       return html`<div class="error-argument">Error: deviceType statement not found</div>`;
     }
 
@@ -329,20 +317,16 @@ export class GeStatementArgument extends LitElement {
   render() {
     // Add defensive checks to prevent errors
     if (!this.argument || !this.stmtId || !this.language || !this.language.statements) {
-      console.error('Missing required data for rendering argument:',
-        { argument: this.argument, stmtId: this.stmtId, language: this.language });
       return html`<div class="error-argument">Error: Invalid argument data</div>`;
     }
 
     // Check if the statement exists in the language
     if (!this.language.statements[this.stmtId]) {
-      console.error(`Statement with ID "${this.stmtId}" not found in language statements`);
       return html`<div class="error-argument">Error: Unknown statement type: ${this.stmtId}</div>`;
     }
 
     // Check if the argument exists
     if (!this.argument.type) {
-      console.error('Argument has no type:', this.argument);
       return html`<div class="error-argument">Error: Invalid argument (no type)</div>`;
     }
 

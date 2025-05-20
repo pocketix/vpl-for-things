@@ -65,6 +65,7 @@ export class GeBlock extends LitElement {
         padding: 0.25rem;
         padding: 0.25rem;
         padding: 0.25rem;
+        padding: 0.25rem;
       }
 
       .statement-type-button::part(btn) {
@@ -214,6 +215,7 @@ export class GeBlock extends LitElement {
   @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
   @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
   @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
+  @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
   @property() selectedDevice: string;
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
@@ -298,23 +300,12 @@ export class GeBlock extends LitElement {
         return this.isProcBody && this.selectedTab === 'riot';
         return this.isProcBody && this.selectedTab === 'riot';
         return this.isProcBody && this.selectedTab === 'riot';
+        return this.isProcBody && this.selectedTab === 'riot';
       }
 
       // Handle statements that should only appear in Riot statements tab
       if (GeBlock.statementCategories.riotOnly.includes(stmt.key)) {
         // Only show these statements in the Riot statements tab (not in Basic statements)
-        return !this.renderBasicStatements;
-      // Handle procedure-only statements (like deviceType)
-      if (GeBlock.statementCategories.procedureOnlyStatements.includes(stmt.key)) {
-        // Only show these statements in user procedures and in the Riot statements tab
-        return this.isProcBody && !this.renderBasicStatements;
-      }
-
-      // Handle statements that should only appear in Riot statements tab
-      if (GeBlock.statementCategories.riotOnly.includes(stmt.key)) {
-        // Only show these statements in the Riot statements tab (not in Basic statements)
-        return this.selectedTab === 'riot';
-        return this.selectedTab === 'riot';
         return this.selectedTab === 'riot';
       }
 
@@ -395,6 +386,11 @@ export class GeBlock extends LitElement {
     if (this.isProcBody && this.selectedTab === 'procedures') {
       this.selectedTab = 'basic';
     }
+
+    // If we're in a procedure body and the selected tab is 'procedures', switch to 'basic'
+    if (this.isProcBody && this.selectedTab === 'procedures') {
+      this.selectedTab = 'basic';
+    }
   }
 
   // Update the list of user procedures in the statementCategories
@@ -432,6 +428,7 @@ export class GeBlock extends LitElement {
     const addedStmt = this.block[this.block.length - 1];
 
     
+
 
     if (this.language.statements[stmtKey].isUserProcedure) {
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
@@ -724,10 +721,6 @@ export class GeBlock extends LitElement {
   handleRenderBasicStatements() {
     if (this.selectedTab !== 'basic') {
       this.selectedTab = 'basic';
-    if (this.selectedTab !== 'basic') {
-      this.selectedTab = 'basic';
-    if (this.selectedTab !== 'basic') {
-      this.selectedTab = 'basic';
       this.addStatementOptionsFilter = '';
     }
   }
@@ -736,33 +729,12 @@ export class GeBlock extends LitElement {
     if (this.selectedTab !== 'procedures') {
       this.selectedTab = 'procedures';
       this.addStatementOptionsFilter = '';
-    }
-  }
-
-  handleRenderProceduresStatements() {
-    if (this.selectedTab !== 'procedures') {
-      this.selectedTab = 'procedures';
-      this.addStatementOptionsFilter = '';
-    }
-  }
-
-  handleRenderProceduresStatements() {
-    if (this.selectedTab !== 'procedures') {
-      this.selectedTab = 'procedures';
-      this.addStatementOptionsFilter = '';
-      this.selectedStmtIdx = 0;
-    }
-  }
-
-  handleRenderProceduresStatements() {
-    if (this.selectedTab !== 'procedures') {
-      this.selectedTab = 'procedures';
-      this.addStatementOptionsFilter = '';
-      this.selectedStmtIdx = 0;
     }
   }
 
   handleRenderDeviceStatements() {
+    if (this.selectedTab !== 'riot') {
+      this.selectedTab = 'riot';
     if (this.selectedTab !== 'riot') {
       this.selectedTab = 'riot';
     if (this.selectedTab !== 'riot') {
@@ -789,6 +761,13 @@ export class GeBlock extends LitElement {
       // Handle device selection for both main program and nested procedure blocks
       if (isDevice && (this.editorMode === 'initialize' || this.isProcBody) && isParentClick) {
         // Allow device selection for device blocks in both initialize and edit modes
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined) {
+          this.showDeviceSelectionModal(clickedBlock);
+          return;
+        }
+      } else if (clickedBlock.id === 'deviceType' && this.editorMode === 'initialize' && isParentClick) {
+        // Only allow device type selection in initialize mode, not in edit mode
         this.clickedBlockDeviceInit = stmtUuid;
         if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);
@@ -1106,38 +1085,10 @@ export class GeBlock extends LitElement {
         // If not found and we have a parent procedure UUID, try that
         if (!metadataEntry && this.parentProcedureUuid) {
           metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
-          console.log('Using parent procedure as metadata entry:', metadataEntry);
         }
 
-        console.log('Found metadata entry:', metadataEntry);
-        // Find the metadata entry recursively through the program structure
-        const findMetadataEntry = (block: any[], targetUuid: string): any => {
-          // First check if the entry is in this block
-          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-          if (directEntry) return directEntry;
-
-          // If not found directly, search in nested blocks
-          for (const stmt of block) {
-            if (stmt.block && Array.isArray(stmt.block)) {
-              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-              if (nestedEntry) return nestedEntry;
-            }
-          }
-
-          return null;
-        };
-
-        // First try to find the metadata entry using the tmpUUID
-        let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
-
-        // If not found and we have a parent procedure UUID, try that
-        if (!metadataEntry && this.parentProcedureUuid) {
-          metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
-          console.log('Using parent procedure as metadata entry:', metadataEntry);
-        }
-
-        console.log('Found metadata entry:', metadataEntry);
-
+=======
+>>>>>>> 08c7e22 (debug logs clean up)
         if (metadataEntry) {
           // Ensure the devices array exists
           if (!metadataEntry.devices) {
@@ -1219,8 +1170,6 @@ export class GeBlock extends LitElement {
             // If the new device has no arguments, reset the values array to empty
             deviceEntry.values = [];
           }
-        } else {
-          console.warn(`No metadata entry found for UUID: ${this.tmpUUID} or parent UUID: ${this.parentProcedureUuid}`);
         }
 
 
@@ -1313,20 +1262,8 @@ export class GeBlock extends LitElement {
           detail: { procedureUuid: this.parentProcedureUuid || this.tmpUUID }
         });
         this.dispatchEvent(updateDeviceCountsEvent);
-      } else {
-        console.warn(`Clicked block not found in the block array.`);
       }
     }
-
-    // Dispatch custom event to reopen the user procedure initialization modal
-    const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
-      bubbles: true,
-      composed: true,
-      detail: {
-        procedureUuid: this.tmpUUID
-      }
-    });
-    this.dispatchEvent(reopenModalEvent);
 
     // Dispatch custom event to reopen the user procedure initialization modal
     const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
@@ -1401,6 +1338,11 @@ export class GeBlock extends LitElement {
     if (changedProperties.has('isProcBody') && this.isProcBody && this.selectedTab === 'procedures') {
       this.selectedTab = 'basic';
     }
+
+    // If isProcBody changed and we're now in a procedure body, make sure we're not on the procedures tab
+    if (changedProperties.has('isProcBody') && this.isProcBody && this.selectedTab === 'procedures') {
+      this.selectedTab = 'basic';
+    }
   }
   //#endregion
 
@@ -1425,8 +1367,6 @@ export class GeBlock extends LitElement {
   statementsTemplate() {
     // Add defensive checks
     if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
-      console.error('Missing required data for statements template:',
-        { block: this.block, program: this.program });
       return html`<div class="error-statements">Error: Invalid block or program data</div>`;
     }
 
@@ -1445,8 +1385,6 @@ export class GeBlock extends LitElement {
 
     // Add defensive checks
     if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
-      console.error('Missing required data for statements template:',
-        { block: this.block, program: this.program });
       return html`<div class="error-statements">Error: Invalid block or program data</div>`;
     }
 
@@ -1489,7 +1427,6 @@ export class GeBlock extends LitElement {
               @click="${(e: Event) => {
                 e.stopPropagation();
                 if (stmt._uuid) {
-                  console.log(`Block clicked: UUID ${stmt._uuid}`);
                   this.toggleStatementSelection(stmt._uuid, true);
                 }
                 if (stmt._uuid) {
@@ -1497,14 +1434,12 @@ export class GeBlock extends LitElement {
                   this.toggleStatementSelection(stmt._uuid, true);
                 }
                 if (stmt._uuid) {
-                  console.log(`Block clicked: UUID ${stmt._uuid}`);
                   this.toggleStatementSelection(stmt._uuid, true);
                 }
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
                 if (e.detail && e.detail.uuid) {
-                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
                   this.toggleStatementSelection(e.detail.uuid, false);
                 }
                 if (e.detail && e.detail.uuid) {
@@ -1512,7 +1447,6 @@ export class GeBlock extends LitElement {
                   this.toggleStatementSelection(e.detail.uuid, false);
                 }
                 if (e.detail && e.detail.uuid) {
-                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
                   this.toggleStatementSelection(e.detail.uuid, false);
                 }
               }}">
@@ -1525,7 +1459,6 @@ export class GeBlock extends LitElement {
   addStatementOptionTemplate(stmtKey: string) {
     // Add defensive checks
     if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
-      console.error(`Statement with key "${stmtKey}" not found in language statements`);
       return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
     }
 
@@ -1549,7 +1482,6 @@ export class GeBlock extends LitElement {
 
     // Add defensive checks
     if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
-      console.error(`Statement with key "${stmtKey}" not found in language statements`);
       return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
     }
 
@@ -1876,246 +1808,12 @@ export class GeBlock extends LitElement {
     const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
 
     // Check if we have any results to show
-    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
-
-    // Filter statements based on search input
-    const filterStatement = (stmtKey: string): boolean => {
-      if (!this.language.statements[stmtKey]) return false;
-
-      // If there's a search filter, check if the statement label matches
-      if (this.addStatementOptionsFilter) {
-        return this.language.statements[stmtKey].label
-          .toLowerCase()
-          .includes(this.addStatementOptionsFilter.toLowerCase());
-      }
-
-      return true;
-    };
-
-    // Filter the basic blocks
-    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
-
-    // Check if we have any results to show
-    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
-
-    // Filter statements based on search input
-    const filterStatement = (stmtKey: string): boolean => {
-      if (!this.language.statements[stmtKey]) return false;
-
-      // If there's a search filter, check if the statement label matches
-      if (this.addStatementOptionsFilter) {
-        return this.language.statements[stmtKey].label
-          .toLowerCase()
-          .includes(this.addStatementOptionsFilter.toLowerCase());
-      }
-
-      return true;
-    };
-
-    // Filter the basic blocks
-    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
-
-    // Filter the user procedures
-    const filteredUserProcedures = !this.isProcBody ?
-      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
-
-    // Check if we have any results to show
-    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
-
-    // Filter statements based on search input
-    const filterStatement = (stmtKey: string): boolean => {
-      if (!this.language.statements[stmtKey]) return false;
-
-      // If there's a search filter, check if the statement label matches
-      if (this.addStatementOptionsFilter) {
-        return this.language.statements[stmtKey].label
-          .toLowerCase()
-          .includes(this.addStatementOptionsFilter.toLowerCase());
-      }
-
-      return true;
-    };
-
-    // Filter the basic blocks
-    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
-
-    // Check if we have any results to show
-    const hasResults = filteredBasicBlocks.length > 0;
-    const hasResults = filteredBasicBlocks.length > 0;
     const hasResults = filteredBasicBlocks.length > 0;
 
     return html`
       ${this.addStatementOptionsVisible ? html`
         ${hasResults ? html`
           <!-- Basic Blocks Section -->
-          ${filteredBasicBlocks.length > 0 ? html`
-            <div class="add-statement-options">
-              <div class="device-section-header">Basic Blocks</div>
-              <div class="device-section-divider"></div>
-              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-        ${hasResults ? html`
-          <!-- Basic Blocks Section -->
-          ${filteredBasicBlocks.length > 0 ? html`
-            <div class="add-statement-options">
-              <div class="device-section-header">Basic Blocks</div>
-              <div class="device-section-divider"></div>
-              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-        ${hasResults ? html`
-          <!-- Basic Blocks Section -->
-          ${filteredBasicBlocks.length > 0 ? html`
-            <div class="add-statement-options">
-              <div class="device-section-header">Basic Blocks</div>
-              <div class="device-section-divider"></div>
-              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-        ${hasResults ? html`
-          <!-- Basic Blocks Section -->
-          ${filteredBasicBlocks.length > 0 ? html`
-            <div class="add-statement-options">
-              <div class="device-section-header">Basic Blocks</div>
-              <div class="device-section-divider"></div>
-              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-
-          <!-- User Procedures Section - only show if not in a procedure body -->
-          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
-            <div class="add-statement-options" style="margin-top: 1rem;">
-              <div class="device-section-header">Procedures</div>
-              <div class="device-section-divider"></div>
-              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-          <div class="add-statement-options">
-            <div class="device-section-header">Basic Blocks</div>
-            <div class="device-section-divider"></div>
-            ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-          </div>
-          <div class="add-statement-options">
-            <div class="device-section-header">Basic Blocks</div>
-            <div class="device-section-divider"></div>
-            ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-          </div>
-        ` : html`
-          <div class="no-available-statements">No matching statements found</div>
-        `}
-      ` : nothing}
-    `;
-  }
-
-  proceduresStatementsTemplate() {
-    // Make sure user procedures list is up to date
-    this.updateUserProceduresList();
-
-    // Filter statements based on search input
-    const filterStatement = (stmtKey: string): boolean => {
-      if (!this.language.statements[stmtKey]) return false;
-
-      // If there's a search filter, check if the statement label matches
-      if (this.addStatementOptionsFilter) {
-        return this.language.statements[stmtKey].label
-          .toLowerCase()
-          .includes(this.addStatementOptionsFilter.toLowerCase());
-      }
-
-      return true;
-    };
-
-    // Filter the user procedures
-    const filteredUserProcedures = !this.isProcBody ?
-      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
-
-    // Check if we have any results to show
-    const hasResults = filteredUserProcedures.length > 0;
-
-    return html`
-      ${this.addStatementOptionsVisible ? html`
-        ${hasResults ? html`
-          <!-- User Procedures Section -->
-          <div class="add-statement-options">
-            <div class="device-section-header">Procedures</div>
-            <div class="device-section-divider"></div>
-            ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-          </div>
-        ` : html`
-          <div class="no-available-statements">No matching procedures found</div>
-        `}
-      ` : nothing}
-    `;
-  }
-
-  proceduresStatementsTemplate() {
-    // Make sure user procedures list is up to date
-    this.updateUserProceduresList();
-
-    // Filter statements based on search input
-    const filterStatement = (stmtKey: string): boolean => {
-      if (!this.language.statements[stmtKey]) return false;
-
-      // If there's a search filter, check if the statement label matches
-      if (this.addStatementOptionsFilter) {
-        return this.language.statements[stmtKey].label
-          .toLowerCase()
-          .includes(this.addStatementOptionsFilter.toLowerCase());
-      }
-
-      return true;
-    };
-
-    // Filter the user procedures
-    const filteredUserProcedures = !this.isProcBody ?
-      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
-
-    // Check if we have any results to show
-    const hasResults = filteredUserProcedures.length > 0;
-
-    return html`
-      ${this.addStatementOptionsVisible ? html`
-        ${hasResults ? html`
-          <!-- User Procedures Section -->
-          <div class="add-statement-options">
-            <div class="device-section-header">Procedures</div>
-            <div class="device-section-divider"></div>
-            ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-          </div>
-        ` : html`
-          <div class="no-available-statements">No matching procedures found</div>
-        `}
-          <!-- User Procedures Section - only show if not in a procedure body -->
-          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
-            <div class="add-statement-options" style="margin-top: 1rem;">
-              <div class="device-section-header">Procedures</div>
-              <div class="device-section-divider"></div>
-              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-        ` : html`
-          <div class="no-available-statements">No matching statements found</div>
-        `}
-          <!-- User Procedures Section - only show if not in a procedure body -->
-          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
-            <div class="add-statement-options" style="margin-top: 1rem;">
-              <div class="device-section-header">Procedures</div>
-              <div class="device-section-divider"></div>
-              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
-        ` : html`
-          <div class="no-available-statements">No matching statements found</div>
-        `}
-          <!-- User Procedures Section - only show if not in a procedure body -->
-          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
-            <div class="add-statement-options" style="margin-top: 1rem;">
-              <div class="device-section-header">Procedures</div>
-              <div class="device-section-divider"></div>
-              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
-            </div>
-          ` : nothing}
           <div class="add-statement-options">
             <div class="device-section-header">Basic Blocks</div>
             <div class="device-section-divider"></div>
@@ -2172,7 +1870,6 @@ export class GeBlock extends LitElement {
   devicesTemplate() {
     // Add defensive checks
     if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
-      console.error('Missing device list in language:', this.language);
       return html`<div class="error-devices">Error: No devices available</div>`;
     }
 
@@ -2204,7 +1901,6 @@ export class GeBlock extends LitElement {
 
     // Add defensive checks
     if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
-      console.error('Missing device list in language:', this.language);
       return html`<div class="error-devices">Error: No devices available</div>`;
     }
 
@@ -2252,6 +1948,7 @@ export class GeBlock extends LitElement {
                 style="${this.selectedTab === 'basic'
                 style="${this.selectedTab === 'basic'
                 style="${this.selectedTab === 'basic'
+                style="${this.selectedTab === 'basic'
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
@@ -2271,6 +1968,16 @@ export class GeBlock extends LitElement {
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
               </editor-button>
+              ${!this.isProcBody ? html`
+                <editor-button
+                  class="statement-type-button"
+                  @click="${this.handleRenderProceduresStatements}"
+                  style="${this.selectedTab === 'procedures'
+                    ? 'border-bottom: 2px solid var(--blue-500)'
+                    : 'border-bottom: 2px solid white'}">
+                  Procedures
+                </editor-button>
+              ` : nothing}
               ${!this.isProcBody ? html`
                 <editor-button
                   class="statement-type-button"
@@ -2307,6 +2014,7 @@ export class GeBlock extends LitElement {
                 style="${this.selectedTab === 'riot'
                 style="${this.selectedTab === 'riot'
                 style="${this.selectedTab === 'riot'
+                style="${this.selectedTab === 'riot'
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
                 Riot statements
@@ -2314,6 +2022,11 @@ export class GeBlock extends LitElement {
             </div>
           </div>
           <div class="add-statements-wrapper">
+            ${this.selectedTab === 'basic'
+              ? this.basicStatementsTemplate()
+              : this.selectedTab === 'procedures' && !this.isProcBody
+                ? this.proceduresStatementsTemplate()
+                : this.deviceStatementsTemplate()}
             ${this.selectedTab === 'basic'
               ? this.basicStatementsTemplate()
               : this.selectedTab === 'procedures' && !this.isProcBody
@@ -2338,14 +2051,11 @@ export class GeBlock extends LitElement {
   render() {
     // Add defensive checks to prevent errors
     if (!this.language || !this.program) {
-      console.error('Missing required context for rendering block:',
-        { language: this.language, program: this.program });
       return html`<div class="error-block">Error: Missing language or program context</div>`;
     }
 
     // Check if block is defined
     if (!this.block || !Array.isArray(this.block)) {
-      console.error('Block is not defined or not an array:', this.block);
       return html`<div class="error-block">Error: Invalid block data</div>`;
     }
     // Add defensive checks to prevent errors
@@ -2362,14 +2072,11 @@ export class GeBlock extends LitElement {
     }
     // Add defensive checks to prevent errors
     if (!this.language || !this.program) {
-      console.error('Missing required context for rendering block:',
-        { language: this.language, program: this.program });
       return html`<div class="error-block">Error: Missing language or program context</div>`;
     }
 
     // Check if block is defined
     if (!this.block || !Array.isArray(this.block)) {
-      console.error('Block is not defined or not an array:', this.block);
       return html`<div class="error-block">Error: Invalid block data</div>`;
     }
 

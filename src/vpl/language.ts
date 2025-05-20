@@ -45,9 +45,6 @@ export class Language {
           this.deviceList.push(device.deviceName);
         }
       }
-      console.log('Device List:', this.deviceList); // Log the device list
-      console.log('Device deviceListWithTypes:', this.deviceListWithTypes); // Log the device types
-      console.log('Unique Device Types:', this.uniqueDeviceTypes); // Log the unique device types
     }
   }
 }

@@ -340,10 +340,8 @@ export class GEStatement extends LitElement {
     });
 
     //----------------------------
-    this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (e: CustomEvent) => {
+    this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
       if (this.statement._uuid && this.editorMode === 'initialize') {
-        console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-        console.log(`Argument value: ${e.detail?.argumentValue}, type: ${e.detail?.argumentType}`);
 
         // Find the procedure entry recursively through the program structure
         const findProcedureEntry = (block: any[], targetUuid: string): any => {
@@ -367,7 +365,6 @@ export class GEStatement extends LitElement {
         if (initProcEntry) {
           this.updateDeviceMetadataValue();
         } else {
-          console.log('No procedure entry found in main block, checking nested blocks...');
           // If we couldn't find the procedure entry directly, try to update the value anyway
           // This handles the case where the procedure is nested within another block
           this.updateDeviceMetadataValue();
@@ -668,11 +665,9 @@ export class GEStatement extends LitElement {
       };
 
       const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
-      console.log('Procedure Entry:', procedureEntry);
 
       const parseBlock = (block: any[]) => {
         block.forEach((stmt: any, index: number) => {
-          console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
             // Handle the case where procedureEntry might be null
             const deviceEntry = procedureEntry && procedureEntry.devices ?
@@ -747,7 +742,6 @@ export class GEStatement extends LitElement {
                 arguments: newArguments,
                 isInvalid: false,
               };
-              console.log('Modified Statement with values:', block[index]);
             }
           }
           if (stmt.block && Array.isArray(stmt.block)) {
@@ -890,9 +884,7 @@ export class GEStatement extends LitElement {
     // Start the cleanup from the program's root block
     cleanupDevicesInBlock(this.program.block);
 
-    console.log('Cleaned up orphaned device entries. Valid UUIDs:',
-      Array.from(validDeviceUuids),
-      'Remaining devices:', procedureEntry.devices.length);
+
   }
 
   //#region Templates
@@ -932,14 +924,11 @@ export class GEStatement extends LitElement {
   statementTemplate(hasNestedBlock: boolean) {
     // Add defensive checks to prevent errors when statement or language data is missing
     if (!this.statement || !this.statement.id || !this.language || !this.language.statements) {
-      console.error('Missing required data for rendering statement:',
-        { statement: this.statement, language: this.language });
       return html`<div class="error-statement">Error: Invalid statement data</div>`;
     }
 
     // Check if the statement exists in the language
     if (!this.language.statements[this.statement.id]) {
-      console.error(`Statement with ID "${this.statement.id}" not found in language statements`);
       return html`<div class="error-statement">Error: Unknown statement type: ${this.statement.id}</div>`;
     }
 
@@ -1104,14 +1093,11 @@ export class GEStatement extends LitElement {
   render() {
     // Add defensive checks to prevent errors when statement or language data is missing
     if (!this.statement || !this.statement.id || !this.language || !this.language.statements) {
-      console.error('Missing required data for rendering statement:',
-        { statement: this.statement, language: this.language });
       return html`<div class="error-statement">Error: Invalid statement data</div>`;
     }
 
     // Check if the statement exists in the language
     if (!this.language.statements[this.statement.id]) {
-      console.error(`Statement with ID "${this.statement.id}" not found in language statements`);
       return html`<div class="error-statement">Error: Unknown statement type: ${this.statement.id}</div>`;
     }
 
@@ -1127,7 +1113,6 @@ export class GEStatement extends LitElement {
           // Always dispatch the toggle-statement-selection event
           // The parent component will decide what to do based on the mode
           if (this.statement.isInvalid) {
-            console.log(`Skipping invalid block with UUID: ${this.statement._uuid}`);
             return;
           }
 
