@@ -231,11 +231,7 @@ export class GEStatement extends LitElement {
         margin-bottom: 8px;
       }
 
-      @media (min-width: 500px) {
-        .statement-label {
-          white-space: nowrap;
-        }
-      }
+      
     `,
   ];//}}}
   //#endregion
@@ -366,6 +362,18 @@ export class GEStatement extends LitElement {
       if (this.language?.statements[this.statement?.id]?.isUserProcedure && !this.isProcBody) {
         this.updateDeviceCounts();
         this.requestUpdate();
+      }
+    });
+
+    // Listen for device count updates
+    this.addEventListener('update-device-counts', (e: CustomEvent) => {
+      if (this.language?.statements[this.statement?.id]?.isUserProcedure && !this.isProcBody) {
+        // Check if this is the procedure that needs updating
+        const procedureUuid = e.detail?.procedureUuid;
+        if (!procedureUuid || this.statement._uuid === procedureUuid) {
+          this.updateDeviceCounts();
+          this.requestUpdate();
+        }
       }
     });
   }

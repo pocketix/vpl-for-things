@@ -667,12 +667,21 @@ export class GeBlock extends LitElement {
     this.requestUpdate();
     e.stopPropagation();
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    // Dispatch program updated event
+    const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
       detail: { programBodyUpdated: true },
     });
-    this.dispatchEvent(event);
+    this.dispatchEvent(programUpdatedEvent);
+
+    // Dispatch a specific event to update device counts in all ge-statement components
+    const updateDeviceCountsEvent = new CustomEvent('update-device-counts', {
+      bubbles: true,
+      composed: true,
+      detail: { procedureUuid: this.parentProcedureUuid || this.tmpUUID }
+    });
+    this.dispatchEvent(updateDeviceCountsEvent);
   }
 
   handleAddNewStatement(e: Event) {
@@ -1255,12 +1264,21 @@ export class GeBlock extends LitElement {
           }
         }
 
-        const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        // Dispatch program updated event
+        const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,
           composed: true,
           detail: { programBodyUpdated: true },
         });
-        this.dispatchEvent(event);
+        this.dispatchEvent(programUpdatedEvent);
+
+        // Dispatch a specific event to update device counts in all ge-statement components
+        const updateDeviceCountsEvent = new CustomEvent('update-device-counts', {
+          bubbles: true,
+          composed: true,
+          detail: { procedureUuid: this.parentProcedureUuid || this.tmpUUID }
+        });
+        this.dispatchEvent(updateDeviceCountsEvent);
       } else {
         console.warn(`Clicked block not found in the block array.`);
       }

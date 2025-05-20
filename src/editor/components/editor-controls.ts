@@ -47,48 +47,36 @@ export class EditorControls extends LitElement {
         justify-content: center;
         align-items: center;
         gap: 0.25rem;
+        width: 100%;
       }
 
       .editor-switcher {
-        width: 100%;
+        width: auto;
       }
 
       .controls {
         display: flex;
-        flex-wrap: wrap;
-        column-gap: 1.5rem;
-        row-gap: 0.25rem;
+        flex-wrap: nowrap;
+        gap: 0.75rem;
         justify-content: flex-start;
         width: 100%;
-        padding-bottom: 0.5rem;
+        padding: 0.5rem;
+        background-color: white;
+        border-radius: 0.5rem;
+        border: 1px solid var(--gray-300);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        overflow-x: auto;
       }
 
-      .controls-group-editor {
+      .controls-group {
         display: flex;
-        gap: 0.25rem;
-      }
-
-      .controls-group-user {
-        display: flex;
-        gap: 0.25rem;
+        gap: 0.75rem;
         align-items: center;
-        flex-wrap: nowrap;
       }
 
-      .controls-group-user editor-button {
-        flex: 1;
-      }
-
-      .controls-group-export {
-        display: flex;
-        gap: 0.25rem;
-        width: 100%;
-        height: 100%;
-      }
-
-      .controls-group-export editor-button {
-        flex: 1;
-        height: 100%;
+      .controls-group:not(:last-child) {
+        padding-right: 0.75rem;
+        border-right: 1px solid var(--gray-200);
       }
 
       .variables-icon {
@@ -212,84 +200,11 @@ export class EditorControls extends LitElement {
 
       .control-button::part(btn) {
         font-weight: 400;
-      }
-
-      @media (min-width: 500px) {
-        :host {
-          flex-direction: row;
-        }
-
-        .editor-switcher {
-          width: initial;
-        }
-
-        .controls-group-user {
-          width: fit-content;
-        }
-
-        .controls-group-user editor-button {
-          flex-grow: 0;
-        }
-
-        .controls-group-export {
-          width: fit-content;
-          height: fit-content;
-        }
-
-        .controls-group-export editor-button {
-          height: fit-content;
-        }
-
-        .controls {
-          padding-bottom: 0;
-        }
-      }
-
-      .skeletonize-description {
-        width: 100%;
-        padding: 0.75rem;
-        background-color: var(--blue-50);
-        border-radius: 0.375rem;
-        border: 1px solid var(--blue-200);
-        color: var(--blue-900);
-      }
-
-      .skeletonize-title {
-        font-weight: 600;
-        font-size: 0.875rem;
-        margin-bottom: 0.25rem;
-        color: var(--blue-700);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .skeletonize-text {
-        font-size: 0.875rem;
-        line-height: 1.25rem;
+        white-space: nowrap;
       }
 
       .control-button.active {
         border-color: var(--blue-500);
-      }
-
-      .create-procedure {
-        order: -1;
-      }
-
-      .editor-controls-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .skeletonize-header {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-        margin-left: 0.5rem;
-        max-width: 300px;
       }
 
       .skeletonize-description {
@@ -337,16 +252,45 @@ export class EditorControls extends LitElement {
         transform: translateY(-1px);
       }
 
-      @media (max-width: 900px) {
+      .editor-controls-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .skeletonize-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        width: 100%;
+        max-width: 300px;
+      }
+
+      /* Mobile responsive styles */
+      @media (max-width: 768px) {
         .controls {
-          flex-direction: column !important;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .controls-group {
+          flex-wrap: wrap;
+        }
+
+        .controls-group:not(:last-child) {
+          padding-right: 0;
+          border-right: none;
+          border-bottom: 1px solid var(--gray-200);
+          padding-bottom: 0.5rem;
+          margin-bottom: 0.5rem;
+          width: 100%;
         }
 
         .skeletonize-header {
-          width: 100%;
           max-width: none;
-          margin-left: 0;
-          margin-top: 0.5rem;
         }
       }
     `,
@@ -1109,91 +1053,90 @@ export class EditorControls extends LitElement {
   render() {
     return html`
       <div class="editor-controls-wrapper">
-        <div class="controls" style="display: flex; flex-direction: row; align-items: flex-start; gap: 1rem;">
-          <div class="controls-group-export" style="flex: 1; min-width: 0;">
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <input
-                ${ref(this.inputProgramFileRef)}
-                type="file"
-                name="program-file-input"
-                id="program-file-input"
-                style="display: none;"
-                accept="application/json"
-                @input="${this.handleImportProgram}" />
-              <editor-button @click="${() => this.inputProgramFileRef.value.click()}" class="control-button">
-                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
-                </editor-icon>
-                <span>Import Program</span>
-              </editor-button>
-              <editor-button @click="${this.handleExportProgram}" class="control-button">
-                <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
-                <span>Export Program</span>
-              </editor-button>
-              <!-- Export Linearized button removed -->
-            </div>
+        <div class="controls">
+          <!-- Import/Export Group -->
+          <div class="controls-group">
+            <input
+              ${ref(this.inputProgramFileRef)}
+              type="file"
+              name="program-file-input"
+              id="program-file-input"
+              style="display: none;"
+              accept="application/json"
+              @input="${this.handleImportProgram}" />
+            <editor-button @click="${() => this.inputProgramFileRef.value.click()}" class="control-button">
+              <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+              </editor-icon>
+              <span>Import Program</span>
+            </editor-button>
+            <editor-button @click="${this.handleExportProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+              <span>Export Program</span>
+            </editor-button>
             <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
+          </div>
 
+          <!-- Variables/Procedures Group -->
+          <div class="controls-group">
+            <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
+              <div class="variables-icon">𝑥</div>
+              <div>Variables</div>
+            </editor-button>
+            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
+              <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+              <span>Procedures</span>
+            </editor-button>
+          </div>
 
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <!-- Programs button removed -->
-              <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
-                <div class="variables-icon">𝑥</div>
-                <div>Variables</div>
-              </editor-button>
-              <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
-                <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
-                <span>Procedures</span>
-              </editor-button>
+          <!-- View Controls Group -->
+          <div class="controls-group">
+            <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
+              <option value="split">Split View</option>
+              <option value="ge">Graphical View</option>
+              <option value="te">Text View</option>
+            </select>
+            <editor-button
+              @click="${this.handleSkeletonize}"
+              class="control-button ${this.skeletonizeMode ? 'active' : ''}"
+              style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
+              <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
+              <span>Skeletonize</span>
+            </editor-button>
+          </div>
+        </div>
+
+        ${this.skeletonizeMode ? html`
+          <div class="skeletonize-header">
+            <div class="skeletonize-description">
+              <div class="skeletonize-title">
+                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
+                <span>Create a New Procedure</span>
+              </div>
+              <div class="skeletonize-text">
+                <div>1. Click on blocks in your program to select them</div>
+                <div>2. Selected blocks will be included in your new procedure</div>
+                <div>3. Click "Create Procedure" when you're ready</div>
+              </div>
             </div>
-            <div style="border: 1px solid black; padding: 10px; display: inline-block;">
-              <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
-                <option value="split">Split View</option>
-                <option value="ge">Graphical View</option>
-                <option value="te">Text View</option>
-              </select>
+            <div style="width: 100%;">
               <editor-button
-                @click="${this.handleSkeletonize}"
-                class="control-button ${this.skeletonizeMode ? 'active' : ''}"
-                style="${this.skeletonizeMode ? 'background-color: var(--blue-100);' : ''}">
-                <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
-                <span>Skeletonize</span>
-              </editor-button>
+              @click="${() => {
+                const proceduresModal = this.userProceduresModalRef.value;
+                proceduresModal.showModal();
+                requestAnimationFrame(() => {
+                  proceduresModal.handleShowAddProcedureModal();
+                });
+              }}"
+              class="control-button create-procedure"
+              style="background-color: var(--blue-500); color: white; font-weight: 500;">
+              <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
+              <span>Create Procedure</span>
+            </editor-button>
             </div>
           </div>
-          ${this.skeletonizeMode ? html`
-            <div class="skeletonize-header" style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1;">
-              <div class="skeletonize-description">
-                <div class="skeletonize-title">
-                  <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}"></editor-icon>
-                  <span>Create a New Procedure</span>
-                </div>
-                <div class="skeletonize-text">
-                  <div>1. Click on blocks in your program to select them</div>
-                  <div>2. Selected blocks will be included in your new procedure</div>
-                  <div>3. Click "Create Procedure" when you're ready</div>
-                </div>
-              </div>
-              <div style="width: 100%;">
-                <editor-button
-                @click="${() => {
-                  const proceduresModal = this.userProceduresModalRef.value;
-                  proceduresModal.showModal();
-                  requestAnimationFrame(() => {
-                    proceduresModal.handleShowAddProcedureModal();
-                  });
-                }}"
-                class="control-button create-procedure"
-                style="background-color: var(--blue-500); color: white; font-weight: 500;">
-                <editor-icon .icon="${plusLg}" .width="${18}" .height="${18}" title="Create Procedure"></editor-icon>
-                <span>Create Procedure</span>
-              </editor-button>
-              </div>
-            </div>
-          ` : nothing}
-        </div>
+        ` : nothing}
       </div>
       ${this.userVariablesModalTemplate()}
-      <!-- Programs modal removed -->
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
     `;
   }
