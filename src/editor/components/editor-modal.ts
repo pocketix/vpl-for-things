@@ -20,8 +20,7 @@ export class EditorModal extends LitElement {
       }
 
       .dialog {
-        /* padding: 0.75rem; */
-        padding: 0;
+        padding: 0.75rem;
         border: 1px solid var(--gray-300);
         border-radius: 0.5rem;
         outline: none;

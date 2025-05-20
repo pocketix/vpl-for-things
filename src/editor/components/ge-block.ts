@@ -53,6 +53,7 @@ export class GeBlock extends LitElement {
         display: flex;
         flex-direction: column;
         height: 500px;
+        padding: 0.25rem;
       }
 
       .statement-type-button {
