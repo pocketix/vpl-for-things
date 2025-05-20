@@ -231,7 +231,16 @@ export class GEStatement extends LitElement {
         margin-bottom: 8px;
       }
 
-      
+      .modal-info-header {
+        background-color: var(--gray-100);
+        color: var(--gray-700);
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+        text-align: center;
+        border: 1px solid var(--gray-300);
+      }
     `,
   ];//}}}
   //#endregion
@@ -1124,6 +1133,7 @@ export class GEStatement extends LitElement {
                 .isFullWidth="${true}"
                 .isFullHeight="${true}"
                 .isFromBody="${true}">
+                <div class="modal-info-header">${this.editorMode === 'initialize' ? 'Initialize Procedure Parameters' : 'Edit Procedure Body'}</div>
                 <ge-block
                   .isProcBody="${true}"
                   .isExample="${this.isExample}"
