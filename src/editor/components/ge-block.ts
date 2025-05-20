@@ -611,7 +611,10 @@ export class GeBlock extends LitElement {
       var isDevice = false;
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
-      if ((clickedBlock.id === 'deviceType' || isDevice) && this.editorMode === 'initialize' && isParentClick) {
+      // Handle device selection for both main program and nested procedure blocks
+      if ((clickedBlock.id === 'deviceType' || isDevice) &&
+          (this.editorMode === 'initialize' || this.isProcBody) &&
+          isParentClick) {
         this.clickedBlockDeviceInit = stmtUuid;
         if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);
@@ -816,39 +819,77 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        const metadataEntry = this.program.block.find((stmt) => stmt._uuid === this.tmpUUID);
+        // Find the metadata entry recursively through the program structure
+        const findMetadataEntry = (block: any[], targetUuid: string): any => {
+          // First check if the entry is in this block
+          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+          if (directEntry) return directEntry;
+
+          // If not found directly, search in nested blocks
+          for (const stmt of block) {
+            if (stmt.block && Array.isArray(stmt.block)) {
+              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
+              if (nestedEntry) return nestedEntry;
+            }
+          }
+
+          return null;
+        };
+
+        // First try to find the metadata entry using the tmpUUID
+        let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
+
+        // If not found and we have a parent procedure UUID, try that
+        if (!metadataEntry && this.parentProcedureUuid) {
+          metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
+          console.log('Using parent procedure as metadata entry:', metadataEntry);
+        }
+
+        console.log('Found metadata entry:', metadataEntry);
 
         if (metadataEntry) {
-          const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
-          if (deviceEntry) {
-            deviceEntry.deviceId = stmtKey;
+          // Ensure the devices array exists
+          if (!metadataEntry.devices) {
+            metadataEntry.devices = [];
+          }
 
-            const langStatement = this.language.statements[stmtKey];
-            if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-              const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-              const defaultValues: string[] = [];
+          let deviceEntry = metadataEntry.devices.find((device: any) => device.uuid === clickedBlock._uuid);
 
-              argDefs.forEach(argDef => {
-                let defaultValue: string;
-                if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                  defaultValue = String(argDef.options[0].id);
-                } else {
-                  defaultValue = String(initDefaultArgumentType(argDef.type));
-                }
-                defaultValues.push(defaultValue);
-              });
-
-              // Update the values array in the device metadata
-              deviceEntry.values = defaultValues;
-            } else {
-              // If the new device has no arguments, reset the values array to empty
-              deviceEntry.values = [];
-            }
+          // If device entry doesn't exist, create it
+          if (!deviceEntry) {
+            deviceEntry = {
+              uuid: clickedBlock._uuid,
+              deviceId: stmtKey,
+              values: []
+            };
+            metadataEntry.devices.push(deviceEntry);
           } else {
-            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
+            deviceEntry.deviceId = stmtKey;
+          }
+
+          const langStatement = this.language.statements[stmtKey];
+          if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+            const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+            const defaultValues: string[] = [];
+
+            argDefs.forEach(argDef => {
+              let defaultValue: string;
+              if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                defaultValue = String(argDef.options[0].id);
+              } else {
+                defaultValue = String(initDefaultArgumentType(argDef.type));
+              }
+              defaultValues.push(defaultValue);
+            });
+
+            // Update the values array in the device metadata
+            deviceEntry.values = defaultValues;
+          } else {
+            // If the new device has no arguments, reset the values array to empty
+            deviceEntry.values = [];
           }
         } else {
-          console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+          console.warn(`No metadata entry found for UUID: ${this.tmpUUID} or parent UUID: ${this.parentProcedureUuid}`);
         }
 
 
