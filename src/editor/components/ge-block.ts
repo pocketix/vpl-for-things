@@ -64,6 +64,7 @@ export class GeBlock extends LitElement {
         height: 500px;
         padding: 0.25rem;
         padding: 0.25rem;
+        padding: 0.25rem;
       }
 
       .statement-type-button::part(btn) {
@@ -212,6 +213,7 @@ export class GeBlock extends LitElement {
   @property() addStatementOptionsFilter: string = '';
   @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
   @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
+  @property() selectedTab: 'basic' | 'procedures' | 'riot' = 'basic';
   @property() selectedDevice: string;
   @property() parentStmt: ProgramStatement;
   @property() isProcBody: boolean = false;
@@ -295,6 +297,7 @@ export class GeBlock extends LitElement {
         // Only show these statements in user procedures and in the Riot statements tab
         return this.isProcBody && this.selectedTab === 'riot';
         return this.isProcBody && this.selectedTab === 'riot';
+        return this.isProcBody && this.selectedTab === 'riot';
       }
 
       // Handle statements that should only appear in Riot statements tab
@@ -310,6 +313,7 @@ export class GeBlock extends LitElement {
       // Handle statements that should only appear in Riot statements tab
       if (GeBlock.statementCategories.riotOnly.includes(stmt.key)) {
         // Only show these statements in the Riot statements tab (not in Basic statements)
+        return this.selectedTab === 'riot';
         return this.selectedTab === 'riot';
         return this.selectedTab === 'riot';
       }
@@ -386,6 +390,11 @@ export class GeBlock extends LitElement {
     if (this.isProcBody && this.selectedTab === 'procedures') {
       this.selectedTab = 'basic';
     }
+
+    // If we're in a procedure body and the selected tab is 'procedures', switch to 'basic'
+    if (this.isProcBody && this.selectedTab === 'procedures') {
+      this.selectedTab = 'basic';
+    }
   }
 
   // Update the list of user procedures in the statementCategories
@@ -422,45 +431,7 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
     const addedStmt = this.block[this.block.length - 1];
 
-    // Note: We used to check if this is a device statement here
-    // This is now handled through the statementCategories configuration
-    // Note: We used to check if this is a device statement here
-    // This is now handled through the statementCategories configuration
-
-    // if (isDeviceStatement) {
-    //   // Initialize device metadata for the newly added device statement
-    //   if (!addedStmt.devices) {
-    //     addedStmt.devices = [];
-    //   }
-
-    //   const langStatement = this.language.statements[stmtKey];
-    //   if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-    //     const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-    //     const defaultValues: string[] = [];
-
-    //     // Initialize argument values directly in the statement
-    //     if ((addedStmt as AbstractStatementWithArgs).arguments) {
-    //       argDefs.forEach((argDef, index) => {
-    //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-    //           const defaultValue = argDef.options[0].id;
-    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
-    //           defaultValues.push(String(defaultValue));
-    //         } else {
-    //           const defaultValue = initDefaultArgumentType(argDef.type);
-    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
-    //           defaultValues.push(String(defaultValue));
-    //         }
-    //       });
-    //     }
-
-    //     // Add device metadata entry
-    //     addedStmt.devices.push({
-    //       uuid: addedStmt._uuid,
-    //       deviceId: stmtKey,
-    //       values: defaultValues
-    //     });
-    //   }
-    // }
+    
 
     if (this.language.statements[stmtKey].isUserProcedure) {
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
@@ -755,6 +726,15 @@ export class GeBlock extends LitElement {
       this.selectedTab = 'basic';
     if (this.selectedTab !== 'basic') {
       this.selectedTab = 'basic';
+    if (this.selectedTab !== 'basic') {
+      this.selectedTab = 'basic';
+      this.addStatementOptionsFilter = '';
+    }
+  }
+
+  handleRenderProceduresStatements() {
+    if (this.selectedTab !== 'procedures') {
+      this.selectedTab = 'procedures';
       this.addStatementOptionsFilter = '';
     }
   }
@@ -787,6 +767,8 @@ export class GeBlock extends LitElement {
       this.selectedTab = 'riot';
     if (this.selectedTab !== 'riot') {
       this.selectedTab = 'riot';
+    if (this.selectedTab !== 'riot') {
+      this.selectedTab = 'riot';
       this.addStatementOptionsFilter = '';
       this.selectedStmtIdx = 0;
     }
@@ -805,6 +787,15 @@ export class GeBlock extends LitElement {
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
       // Handle device selection for both main program and nested procedure blocks
+      if (isDevice && (this.editorMode === 'initialize' || this.isProcBody) && isParentClick) {
+        // Allow device selection for device blocks in both initialize and edit modes
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined) {
+          this.showDeviceSelectionModal(clickedBlock);
+          return;
+        }
+      } else if (clickedBlock.id === 'deviceType' && this.editorMode === 'initialize' && isParentClick) {
+        // Only allow device type selection in initialize mode, not in edit mode
       if (isDevice && (this.editorMode === 'initialize' || this.isProcBody) && isParentClick) {
         // Allow device selection for device blocks in both initialize and edit modes
         this.clickedBlockDeviceInit = stmtUuid;
@@ -1405,6 +1396,11 @@ export class GeBlock extends LitElement {
     if (changedProperties.has('isProcBody') && this.isProcBody && this.selectedTab === 'procedures') {
       this.selectedTab = 'basic';
     }
+
+    // If isProcBody changed and we're now in a procedure body, make sure we're not on the procedures tab
+    if (changedProperties.has('isProcBody') && this.isProcBody && this.selectedTab === 'procedures') {
+      this.selectedTab = 'basic';
+    }
   }
   //#endregion
 
@@ -1899,10 +1895,6 @@ export class GeBlock extends LitElement {
     // Filter the basic blocks
     const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
 
-    // Filter the user procedures
-    const filteredUserProcedures = !this.isProcBody ?
-      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
-
     // Check if we have any results to show
     const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
 
@@ -1948,6 +1940,7 @@ export class GeBlock extends LitElement {
     const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
 
     // Check if we have any results to show
+    const hasResults = filteredBasicBlocks.length > 0;
     const hasResults = filteredBasicBlocks.length > 0;
     const hasResults = filteredBasicBlocks.length > 0;
 
@@ -2003,8 +1996,54 @@ export class GeBlock extends LitElement {
             <div class="device-section-divider"></div>
             ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
           </div>
+          <div class="add-statement-options">
+            <div class="device-section-header">Basic Blocks</div>
+            <div class="device-section-divider"></div>
+            ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+          </div>
         ` : html`
           <div class="no-available-statements">No matching statements found</div>
+        `}
+      ` : nothing}
+    `;
+  }
+
+  proceduresStatementsTemplate() {
+    // Make sure user procedures list is up to date
+    this.updateUserProceduresList();
+
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the user procedures
+    const filteredUserProcedures = !this.isProcBody ?
+      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
+
+    // Check if we have any results to show
+    const hasResults = filteredUserProcedures.length > 0;
+
+    return html`
+      ${this.addStatementOptionsVisible ? html`
+        ${hasResults ? html`
+          <!-- User Procedures Section -->
+          <div class="add-statement-options">
+            <div class="device-section-header">Procedures</div>
+            <div class="device-section-divider"></div>
+            ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+          </div>
+        ` : html`
+          <div class="no-available-statements">No matching procedures found</div>
         `}
       ` : nothing}
     `;
@@ -2212,6 +2251,7 @@ export class GeBlock extends LitElement {
                 @click="${this.handleRenderBasicStatements}"
                 style="${this.selectedTab === 'basic'
                 style="${this.selectedTab === 'basic'
+                style="${this.selectedTab === 'basic'
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
@@ -2231,6 +2271,16 @@ export class GeBlock extends LitElement {
                   : 'border-bottom: 2px solid white'}">
                 Basic statements
               </editor-button>
+              ${!this.isProcBody ? html`
+                <editor-button
+                  class="statement-type-button"
+                  @click="${this.handleRenderProceduresStatements}"
+                  style="${this.selectedTab === 'procedures'
+                    ? 'border-bottom: 2px solid var(--blue-500)'
+                    : 'border-bottom: 2px solid white'}">
+                  Procedures
+                </editor-button>
+              ` : nothing}
               ${!this.isProcBody ? html`
                 <editor-button
                   class="statement-type-button"
@@ -2256,6 +2306,7 @@ export class GeBlock extends LitElement {
                 @click="${this.handleRenderDeviceStatements}"
                 style="${this.selectedTab === 'riot'
                 style="${this.selectedTab === 'riot'
+                style="${this.selectedTab === 'riot'
                   ? 'border-bottom: 2px solid var(--blue-500)'
                   : 'border-bottom: 2px solid white'}">
                 Riot statements
@@ -2263,6 +2314,11 @@ export class GeBlock extends LitElement {
             </div>
           </div>
           <div class="add-statements-wrapper">
+            ${this.selectedTab === 'basic'
+              ? this.basicStatementsTemplate()
+              : this.selectedTab === 'procedures' && !this.isProcBody
+                ? this.proceduresStatementsTemplate()
+                : this.deviceStatementsTemplate()}
             ${this.selectedTab === 'basic'
               ? this.basicStatementsTemplate()
               : this.selectedTab === 'procedures' && !this.isProcBody
