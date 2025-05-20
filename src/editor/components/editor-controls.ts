@@ -1178,7 +1178,6 @@ export class EditorControls extends LitElement {
                 @click="${() => {
                   const proceduresModal = this.userProceduresModalRef.value;
                   proceduresModal.showModal();
-                  // Wait for modal to be fully shown before calling handleShowAddProcedureModal
                   requestAnimationFrame(() => {
                     proceduresModal.handleShowAddProcedureModal();
                   });

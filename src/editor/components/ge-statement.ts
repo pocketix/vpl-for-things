@@ -251,6 +251,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false; // Track if the statement is highlighted
   @property({ type: Boolean }) isSelected: boolean = false; // Track if the statement is selected in skeletonize mode
+  @property({ type: Boolean }) isNestedUserProcedure: boolean = false; // Track if this is a nested user procedure
   @property({ type: Object }) procedureBlockCopy: any = []; // Add a new property
   @property() uuidMetadata: string;
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
@@ -544,14 +545,11 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return;
-    //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
-    const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
-    this.editorMode = isInitialization ? 'initialize' : 'edit';
 
-    // If this is an initialization, set restrainedMode to true
-    if (isInitialization) {
-      this.restrainedMode = true;
-    }
+    // For nested user procedure blocks, we always want to open the initialization modal
+    // This is a simpler approach than trying to detect if it's a nested block
+    this.editorMode = 'initialize';
+    this.restrainedMode = true;
 
     console.log('Original Procedure Block:', this.statement.id);
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
@@ -563,15 +561,33 @@ export class GEStatement extends LitElement {
       this.uuidMetadata = this.statement._uuid;
       this.requestUpdate();
 
-      const procedureEntry = isInitialization;
+      // Find the procedure entry recursively through the program structure
+      const findProcedureEntry = (block: any[], targetUuid: string): any => {
+        // First check if the entry is in this block
+        const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+        if (directEntry) return directEntry;
+
+        // If not found directly, search in nested blocks
+        for (const stmt of block) {
+          if (stmt.block && Array.isArray(stmt.block)) {
+            const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+            if (nestedEntry) return nestedEntry;
+          }
+        }
+
+        return null;
+      };
+
+      const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
       console.log('Procedure Entry:', procedureEntry);
 
       const parseBlock = (block: any[]) => {
         block.forEach((stmt: any, index: number) => {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
-
-            const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
+            // Handle the case where procedureEntry might be null
+            const deviceEntry = procedureEntry && procedureEntry.devices ?
+              procedureEntry.devices.find((device: any) => device.uuid === stmt._uuid) : null;
             let deviceID = deviceEntry?.deviceId || 'deviceType';
             if (deviceEntry) {
 
