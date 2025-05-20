@@ -84,11 +84,7 @@ export class EditorModal extends LitElement {
         border-bottom: 1px solid var(--gray-300);
       }
 
-      @media (min-width: 450px) {
-        .dialog {
-          width: fit-content;
-        }
-      }
+      
     `,
   ];
   //#endregion CSS
