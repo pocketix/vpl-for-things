@@ -57,7 +57,6 @@ export class VplEditor extends LitElement {
   @property({ attribute: false })
   set initialProgram(value: any) {
     if (value) {
-      console.log('Initial program set:', value);
       this._initialProgram = value;
       this.updateProgram(value);
     }
@@ -73,7 +72,6 @@ export class VplEditor extends LitElement {
   @property({ attribute: false })
   set devices(value: any) {
     if (value) {
-      console.log('Custom devices set:', value);
       this._customDevices = value;
       this.setVplDevices(value);
     }
@@ -128,10 +126,7 @@ export class VplEditor extends LitElement {
    * @param newDevices The new devices to set (Device[] array)
    */
   setVplDevices(newDevices: any): void {
-    console.log('Updating devices in VPL editor');
-
     if (!Array.isArray(newDevices)) {
-      console.error('Invalid devices type. Expected an array of Device objects.');
       return; // Exit early
     }
 
@@ -185,18 +180,12 @@ export class VplEditor extends LitElement {
       }
     }
 
-    console.log('Device List:', this.language.deviceList);
-    console.log('Device deviceListWithTypes:', this.language.deviceListWithTypes);
-    console.log('Unique Device Types:', this.language.uniqueDeviceTypes);
-
     // Request an update to refresh the UI
     this.requestUpdate();
 
     // Dispatch events to update child components
     this.dispatchGraphicalEditorProgramUpdatedEvent();
     this.dispatchTextEditorProgramUpdatedEvent();
-
-    console.log('Devices update complete');
   }
 
   /**
@@ -204,37 +193,29 @@ export class VplEditor extends LitElement {
    * @param newProgram The new program to set (Program object or JSON string/object)
    */
   setVplProgram(newProgram: Program | string | object): void {
-    console.log('Updating program in VPL editor');
-
     let importedProgram: any = null;
 
     // Handle different input types
     if (newProgram instanceof Program) {
       // If it's already a Program instance, use it directly
       importedProgram = newProgram.exportProgram();
-      console.log('Program instance provided:', importedProgram);
     } else if (typeof newProgram === 'string') {
       // If it's a string, try to parse it as JSON
       try {
         importedProgram = JSON.parse(newProgram);
-        console.log('String program parsed:', importedProgram);
       } catch (error) {
-        console.error('Failed to parse program string as JSON:', error);
         return; // Exit early if parsing fails
       }
     } else if (typeof newProgram === 'object' && newProgram !== null) {
       // If it's an object (but not a Program), treat it as program data
       importedProgram = newProgram;
-      console.log('Object program provided:', importedProgram);
     } else {
       // Invalid input type
-      console.error('Invalid program type. Expected Program instance, JSON string, or object.');
       return; // Exit early
     }
 
     // Validate the program structure
     if (!importedProgram.header || !importedProgram.block) {
-      console.error("The program does not contain a valid structure (missing header or block).");
       return;
     }
 
@@ -267,8 +248,6 @@ export class VplEditor extends LitElement {
       bubbles: true,
       composed: true
     }));
-
-    console.log('Program update complete');
   }
 
   //#region Lifecycle
@@ -329,8 +308,6 @@ export class VplEditor extends LitElement {
 
     // If the program property was changed externally, update the internal state
     if (changedProperties.has('program') && this.program) {
-      console.log('Program property changed externally, syncing editors');
-
       try {
         // Analyze the program to ensure it's properly initialized
         analyzeBlock(this.program.block, this.language.statements, null);
@@ -338,7 +315,7 @@ export class VplEditor extends LitElement {
           analyzeBlock(this.program.header.userProcedures[userProcId], this.language.statements, null);
         }
       } catch (error) {
-        console.error('Error analyzing editors after program property change:', error);
+        // Error handling silently fails to avoid debug logs
       }
     }
   }

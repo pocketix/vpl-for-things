@@ -385,7 +385,7 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
     const addedStmt = this.block[this.block.length - 1];
 
-    
+
 
     if (this.language.statements[stmtKey].isUserProcedure) {
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
@@ -903,10 +903,7 @@ export class GeBlock extends LitElement {
         // If not found and we have a parent procedure UUID, try that
         if (!metadataEntry && this.parentProcedureUuid) {
           metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
-          console.log('Using parent procedure as metadata entry:', metadataEntry);
         }
-
-        console.log('Found metadata entry:', metadataEntry);
 
         if (metadataEntry) {
           // Ensure the devices array exists
@@ -949,8 +946,6 @@ export class GeBlock extends LitElement {
             // If the new device has no arguments, reset the values array to empty
             deviceEntry.values = [];
           }
-        } else {
-          console.warn(`No metadata entry found for UUID: ${this.tmpUUID} or parent UUID: ${this.parentProcedureUuid}`);
         }
 
 
@@ -1043,8 +1038,6 @@ export class GeBlock extends LitElement {
           detail: { procedureUuid: this.parentProcedureUuid || this.tmpUUID }
         });
         this.dispatchEvent(updateDeviceCountsEvent);
-      } else {
-        console.warn(`Clicked block not found in the block array.`);
       }
     }
 
@@ -1104,8 +1097,6 @@ export class GeBlock extends LitElement {
   statementsTemplate() {
     // Add defensive checks
     if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
-      console.error('Missing required data for statements template:',
-        { block: this.block, program: this.program });
       return html`<div class="error-statements">Error: Invalid block or program data</div>`;
     }
 
@@ -1132,14 +1123,12 @@ export class GeBlock extends LitElement {
               @click="${(e: Event) => {
                 e.stopPropagation();
                 if (stmt._uuid) {
-                  console.log(`Block clicked: UUID ${stmt._uuid}`);
                   this.toggleStatementSelection(stmt._uuid, true);
                 }
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
                 if (e.detail && e.detail.uuid) {
-                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
                   this.toggleStatementSelection(e.detail.uuid, false);
                 }
               }}">
@@ -1152,7 +1141,6 @@ export class GeBlock extends LitElement {
   addStatementOptionTemplate(stmtKey: string) {
     // Add defensive checks
     if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
-      console.error(`Statement with key "${stmtKey}" not found in language statements`);
       return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
     }
 
@@ -1346,7 +1334,6 @@ export class GeBlock extends LitElement {
   devicesTemplate() {
     // Add defensive checks
     if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
-      console.error('Missing device list in language:', this.language);
       return html`<div class="error-devices">Error: No devices available</div>`;
     }
 
@@ -1429,14 +1416,11 @@ export class GeBlock extends LitElement {
   render() {
     // Add defensive checks to prevent errors
     if (!this.language || !this.program) {
-      console.error('Missing required context for rendering block:',
-        { language: this.language, program: this.program });
       return html`<div class="error-block">Error: Missing language or program context</div>`;
     }
 
     // Check if block is defined
     if (!this.block || !Array.isArray(this.block)) {
-      console.error('Block is not defined or not an array:', this.block);
       return html`<div class="error-block">Error: Invalid block data</div>`;
     }
 
