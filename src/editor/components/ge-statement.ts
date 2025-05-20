@@ -241,6 +241,11 @@ export class GEStatement extends LitElement {
         text-align: center;
         border: 1px solid var(--gray-300);
       }
+        @media (min-width: 500px) {
+        .statement-label {
+          white-space: nowrap;
+        }
+      }
     `,
   ];//}}}
   //#endregion
@@ -851,9 +856,9 @@ export class GEStatement extends LitElement {
   multipleArgumentTemplate(argumentsArray: Argument[]) {
     return html`
       <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value.showModal()}">
-        <div style="display: flex; gap: 4px; align-items: center;">
+        <div style="display: flex; gap: 4px; align-items: center; flex-direction: row;">
           <editor-icon .icon="${icons.threeDots}"></editor-icon>
-          <div>Arguments</div>
+          <div style="white-space: nowrap;">Arguments</div>
         </div>
       </editor-button>
       <editor-modal ${ref(this.multipleArgsModalRef)} .modalTitle="${'Set Arguments'}">
