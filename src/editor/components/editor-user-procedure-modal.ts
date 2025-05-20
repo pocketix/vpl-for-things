@@ -30,6 +30,17 @@ export class EditorUserProcedureModal extends LitElement {
         top: 3px;
         left: 6px;
       }
+
+      .modal-info-header {
+        background-color: var(--gray-100);
+        color: var(--gray-700);
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+        text-align: center;
+        border: 1px solid var(--gray-300);
+      }
     `,
   ];
 
@@ -121,6 +132,7 @@ export class EditorUserProcedureModal extends LitElement {
         <editor-button class="delete-proc-button" @click="${this.handleDeleteProcedure}">
           <editor-icon .icon="${icons['trash']}" .color="${'var(--red-600)'}"></editor-icon>
         </editor-button>
+        <div class="modal-info-header">Edit Procedure Body</div>
         <ge-block .isProcBody="${true}" .block="${this.program.header.userProcedures[this.stmtKey]}" .editorMode="${'edit'}"></ge-block>
       </editor-modal>
     `;
