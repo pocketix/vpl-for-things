@@ -703,9 +703,15 @@ export class GeBlock extends LitElement {
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
       // Handle device selection for both main program and nested procedure blocks
-      if ((clickedBlock.id === 'deviceType' || isDevice) &&
-          (this.editorMode === 'initialize' || this.isProcBody) &&
-          isParentClick) {
+      if (isDevice && (this.editorMode === 'initialize' || this.isProcBody) && isParentClick) {
+        // Allow device selection for device blocks in both initialize and edit modes
+        this.clickedBlockDeviceInit = stmtUuid;
+        if (clickedBlock._uuid !== undefined) {
+          this.showDeviceSelectionModal(clickedBlock);
+          return;
+        }
+      } else if (clickedBlock.id === 'deviceType' && this.editorMode === 'initialize' && isParentClick) {
+        // Only allow device type selection in initialize mode, not in edit mode
         this.clickedBlockDeviceInit = stmtUuid;
         if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);

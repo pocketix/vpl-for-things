@@ -292,19 +292,7 @@ export class GeStatementArgument extends LitElement {
     `;
   }
 
-  handleEditDeviceType() {
-    const currentValue = String(this.argument.value || '');
-    const newValue = prompt('Enter device type:', currentValue);
 
-    if (newValue !== null) {
-      this.argument.value = newValue;
-      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-  }
 
   deviceTypeTemplate(argumentElementId: string) {
     // Add defensive checks
@@ -324,12 +312,6 @@ export class GeStatementArgument extends LitElement {
           <div
             style="padding: 0.5rem; border: 1px solid transparent; border-radius: 0.25rem; background-color: ${bgColor}; color: black; width: 100%; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
             <span>${value}</span>
-            <span
-              @click="${this.handleEditDeviceType}"
-              style="cursor: pointer; display: inline-flex; align-items: center;"
-              title="Edit device type">
-              <editor-icon .icon="${pencilSquare}" .width="${14}" .height="${14}"></editor-icon>
-            </span>
           </div>
         </div>
       </div>
