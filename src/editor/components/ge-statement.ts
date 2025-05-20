@@ -353,6 +353,14 @@ export class GEStatement extends LitElement {
         this.handleShowProcDef();
       }
     });
+
+    // Listen for program updates to refresh device counts
+    this.addEventListener(graphicalEditorCustomEvent.PROGRAM_UPDATED, () => {
+      if (this.language?.statements[this.statement?.id]?.isUserProcedure && !this.isProcBody) {
+        this.updateDeviceCounts();
+        this.requestUpdate();
+      }
+    });
   }
 
   updateDeviceMetadataValue() {
@@ -396,10 +404,29 @@ export class GEStatement extends LitElement {
 
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
-    const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
 
-    if (!procedureEntry) return 0;
-    const initializedCount = procedureEntry.devices.filter(device => {
+    // Find the procedure entry recursively through the program structure
+    const findProcedureEntry = (block: any[], targetUuid: string): any => {
+      // First check if the entry is in this block
+      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+      if (directEntry) return directEntry;
+
+      // If not found directly, search in nested blocks
+      for (const stmt of block) {
+        if (stmt.block && Array.isArray(stmt.block)) {
+          const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+          if (nestedEntry) return nestedEntry;
+        }
+      }
+
+      return null;
+    };
+
+    const procedureEntry = findProcedureEntry(this.program.block, procedureUuid);
+
+    if (!procedureEntry || !procedureEntry.devices) return 0;
+
+    const initializedCount = procedureEntry.devices.filter((device: any) => {
       if (device.deviceId === 'deviceType') {
         return false;
       }
