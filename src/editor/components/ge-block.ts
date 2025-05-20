@@ -236,6 +236,7 @@ export class GeBlock extends LitElement {
     excludeFromDeviceSelection: ['deviceType', 'alert'],
     excludeFromDeviceSelection: ['deviceType', 'alert'],
     excludeFromDeviceSelection: ['deviceType', 'alert'],
+    excludeFromDeviceSelection: ['deviceType', 'alert'],
 
     // Statements that are available ONLY in user procedures (not in main body)
     procedureOnlyStatements: ['deviceType'],
@@ -593,6 +594,75 @@ export class GeBlock extends LitElement {
     }
     let statementIndex = e.detail.index;
 
+    // Get the statement to be removed
+    const statementToRemove = this.block[statementIndex];
+
+    // Check if it's a device type block or a device statement
+    if (statementToRemove) {
+      const isDeviceBlock = statementToRemove.id === 'deviceType';
+      const deviceName = statementToRemove.id.split('.')[0];
+      const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+
+      if (isDeviceBlock || isDeviceStatement) {
+        // Find the metadata entry recursively through the program structure
+        const findMetadataEntry = (block: any[], targetUuid: string): any => {
+          // First check if the entry is in this block
+          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+          if (directEntry) return directEntry;
+
+          // If not found directly, search in nested blocks
+          for (const stmt of block) {
+            if (stmt.block && Array.isArray(stmt.block)) {
+              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
+              if (nestedEntry) return nestedEntry;
+            }
+          }
+
+          return null;
+        };
+
+        // First try to find the metadata entry using the tmpUUID
+        let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
+
+        // If not found and we have a parent procedure UUID, try that
+        if (!metadataEntry && this.parentProcedureUuid) {
+          metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
+        }
+
+        // Remove the device entry from the metadata
+        if (metadataEntry && metadataEntry.devices) {
+          metadataEntry.devices = metadataEntry.devices.filter((device: any) =>
+            device.uuid !== statementToRemove._uuid
+          );
+        }
+
+        // Also clean up the main program's devices array
+        // Recursively search through all blocks in the program to find and clean up device entries
+        const cleanupDevicesInBlock = (block: any[]) => {
+          if (!block || !Array.isArray(block)) return;
+
+          // Check if this block has a devices array
+          for (const stmt of block) {
+            if (stmt.devices && Array.isArray(stmt.devices)) {
+              // Remove the device entry with the matching UUID
+              stmt.devices = stmt.devices.filter((device: any) =>
+                device.uuid !== statementToRemove._uuid
+              );
+            }
+
+            // Recursively check nested blocks
+            if (stmt.block && Array.isArray(stmt.block)) {
+              cleanupDevicesInBlock(stmt.block);
+            }
+          }
+        };
+
+        // Start the cleanup from the program's root block
+        cleanupDevicesInBlock(this.program.block);
+      }
+    }
+
+    // Remove the statement from the block
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
     e.stopPropagation();
@@ -684,6 +754,10 @@ export class GeBlock extends LitElement {
       var isDevice = false;
       if (this.language.deviceList.includes(deviceName)) { isDevice = true; }
 
+      // Handle device selection for both main program and nested procedure blocks
+      if ((clickedBlock.id === 'deviceType' || isDevice) &&
+          (this.editorMode === 'initialize' || this.isProcBody) &&
+          isParentClick) {
       // Handle device selection for both main program and nested procedure blocks
       if ((clickedBlock.id === 'deviceType' || isDevice) &&
           (this.editorMode === 'initialize' || this.isProcBody) &&
@@ -794,6 +868,12 @@ export class GeBlock extends LitElement {
         return true;
       }
 
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
       // Filter out non-device groups and statements that should be excluded
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && !GeBlock.statementCategories.excludeFromDeviceSelection.includes(stmtKey);
@@ -841,6 +921,13 @@ export class GeBlock extends LitElement {
         return;
       }
 
+      // Special handling for deviceType statement
+      if (stmtKey === 'deviceType') {
+        // Always put deviceType in the Other category
+        this.otherDeviceStatements.push(stmtKey);
+        return;
+      }
+
       const deviceName = stmtKey.split('.')[0];
       const deviceType = this.language.deviceListWithTypes[deviceName];
 
@@ -865,6 +952,9 @@ export class GeBlock extends LitElement {
     // Find the clicked block
     const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
 
+    // Find the clicked block
+    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
+
     // Filter all device statements based on search input
     const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
@@ -875,6 +965,12 @@ export class GeBlock extends LitElement {
       }
 
       // Filter out non-device groups and statements that should be excluded
+
+      // If the clicked block is a deviceType, make sure deviceType is included in the options
+      if (clickedBlock && clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
+        return true;
+      }
+
 
       // If the clicked block is a deviceType, make sure deviceType is included in the options
       if (clickedBlock && clickedBlock.id === 'deviceType' && stmtKey === 'deviceType') {
@@ -971,8 +1067,51 @@ export class GeBlock extends LitElement {
         }
 
         console.log('Found metadata entry:', metadataEntry);
+        // Find the metadata entry recursively through the program structure
+        const findMetadataEntry = (block: any[], targetUuid: string): any => {
+          // First check if the entry is in this block
+          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+          if (directEntry) return directEntry;
+
+          // If not found directly, search in nested blocks
+          for (const stmt of block) {
+            if (stmt.block && Array.isArray(stmt.block)) {
+              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
+              if (nestedEntry) return nestedEntry;
+            }
+          }
+
+          return null;
+        };
+
+        // First try to find the metadata entry using the tmpUUID
+        let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
+
+        // If not found and we have a parent procedure UUID, try that
+        if (!metadataEntry && this.parentProcedureUuid) {
+          metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
+          console.log('Using parent procedure as metadata entry:', metadataEntry);
+        }
+
+        console.log('Found metadata entry:', metadataEntry);
 
         if (metadataEntry) {
+          // Ensure the devices array exists
+          if (!metadataEntry.devices) {
+            metadataEntry.devices = [];
+          }
+
+          let deviceEntry = metadataEntry.devices.find((device: any) => device.uuid === clickedBlock._uuid);
+
+          // If device entry doesn't exist, create it
+          if (!deviceEntry) {
+            deviceEntry = {
+              uuid: clickedBlock._uuid,
+              deviceId: stmtKey,
+              values: []
+            };
+            metadataEntry.devices.push(deviceEntry);
+          } else {
           // Ensure the devices array exists
           if (!metadataEntry.devices) {
             metadataEntry.devices = [];
@@ -1002,6 +1141,12 @@ export class GeBlock extends LitElement {
           if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
             const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
             const defaultValues: string[] = [];
+          }
+
+          const langStatement = this.language.statements[stmtKey];
+          if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+            const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+            const defaultValues: string[] = [];
 
               argDefs.forEach(argDef => {
                 let defaultValue: string;
@@ -1013,14 +1158,6 @@ export class GeBlock extends LitElement {
                   defaultValue = String(initDefaultArgumentType(argDef.type));
                   defaultValue = String(initDefaultArgumentType(argDef.type));
                 }
-                defaultValues.push(defaultValue);
-              });
-
-              // Update the values array in the device metadata
-              deviceEntry.values = defaultValues;
-            } else {
-              // If the new device has no arguments, reset the values array to empty
-              deviceEntry.values = [];
                 defaultValues.push(defaultValue);
               });
             argDefs.forEach(argDef => {
@@ -1044,6 +1181,79 @@ export class GeBlock extends LitElement {
         }
 
 
+        // Clean up any orphaned device entries
+        if (metadataEntry && metadataEntry.devices && Array.isArray(metadataEntry.devices)) {
+          // Get all valid device UUIDs in the procedure body
+          const validDeviceUuids = new Set<string>();
+
+          // Find the procedure definition
+          const procedureId = this.isProcBody ? this.tmpUUID : this.parentProcedureUuid;
+          let procedureBlock: any[] | undefined;
+
+          // Find the procedure block in userProcedures
+          for (const procBlock of Object.values(this.program.header.userProcedures)) {
+            if (procedureId && procBlock) {
+              procedureBlock = procBlock;
+              break;
+            }
+          }
+
+          // Collect valid device UUIDs from the procedure body
+          if (procedureBlock) {
+            const collectDeviceUuids = (block: any[]) => {
+              if (!block || !Array.isArray(block)) return;
+
+              for (const stmt of block) {
+                if (stmt._uuid) {
+                  const isDeviceBlock = stmt.id === 'deviceType';
+                  const deviceName = stmt.id.split('.')[0];
+                  const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+
+                  if (isDeviceBlock || isDeviceStatement) {
+                    validDeviceUuids.add(stmt._uuid);
+                  }
+                }
+
+                if (stmt.block && Array.isArray(stmt.block)) {
+                  collectDeviceUuids(stmt.block);
+                }
+              }
+            };
+
+            collectDeviceUuids(procedureBlock);
+
+            // Filter out orphaned device entries
+            metadataEntry.devices = metadataEntry.devices.filter((device: any) =>
+              validDeviceUuids.has(device.uuid)
+            );
+
+            // Also clean up the main program's devices array
+            // Recursively search through all blocks in the program to find and clean up device entries
+            const cleanupDevicesInBlock = (block: any[]) => {
+              if (!block || !Array.isArray(block)) return;
+
+              // Check if this block has a devices array
+              for (const stmt of block) {
+                if (stmt.devices && Array.isArray(stmt.devices)) {
+                  // Keep only devices that have valid UUIDs
+                  stmt.devices = stmt.devices.filter((device: any) =>
+                    validDeviceUuids.has(device.uuid) ||
+                    // Keep devices that don't belong to this procedure
+                    (this.tmpUUID && !device.uuid.startsWith(this.tmpUUID.substring(0, 8)))
+                  );
+                }
+
+                // Recursively check nested blocks
+                if (stmt.block && Array.isArray(stmt.block)) {
+                  cleanupDevicesInBlock(stmt.block);
+                }
+              }
+            };
+
+            // Start the cleanup from the program's root block
+            cleanupDevicesInBlock(this.program.block);
+          }
+        }
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,
@@ -1166,9 +1376,20 @@ export class GeBlock extends LitElement {
     // Ensure skeletonize_uuid exists
     const skeletonizeUuids = this.program.header.skeletonize_uuid || [];
 
+    // Add defensive checks
+    if (!this.block || !Array.isArray(this.block) || !this.program || !this.program.header) {
+      console.error('Missing required data for statements template:',
+        { block: this.block, program: this.program });
+      return html`<div class="error-statements">Error: Invalid block or program data</div>`;
+    }
+
+    // Ensure skeletonize_uuid exists
+    const skeletonizeUuids = this.program.header.skeletonize_uuid || [];
+
     return html`
       ${repeat(
         this.block,
+        (stmt) => stmt._uuid || '',
         (stmt) => stmt._uuid || '',
         (stmt) => stmt._uuid || '',
         (stmt, i) =>
@@ -1191,6 +1412,8 @@ export class GeBlock extends LitElement {
               .isHighlighted="${stmt._uuid ? skeletonizeUuids.includes(stmt._uuid) : false}"
               .isSelected="${stmt._uuid ? this.selectedStatements.has(stmt._uuid) : false}"
               .isHighlighted="${stmt._uuid ? skeletonizeUuids.includes(stmt._uuid) : false}"
+              .isSelected="${stmt._uuid ? this.selectedStatements.has(stmt._uuid) : false}"
+              .isHighlighted="${stmt._uuid ? skeletonizeUuids.includes(stmt._uuid) : false}"
               .uuidMetadata="${this.tmpUUID}"
               .uuidMetadata="${this.tmpUUID}"
               .editorMode="${this.editorMode}"
@@ -1206,9 +1429,17 @@ export class GeBlock extends LitElement {
                   console.log(`Block clicked: UUID ${stmt._uuid}`);
                   this.toggleStatementSelection(stmt._uuid, true);
                 }
+                if (stmt._uuid) {
+                  console.log(`Block clicked: UUID ${stmt._uuid}`);
+                  this.toggleStatementSelection(stmt._uuid, true);
+                }
               }}"
               @nested-click="${(e: CustomEvent) => {
                 e.stopPropagation();
+                if (e.detail && e.detail.uuid) {
+                  console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
+                  this.toggleStatementSelection(e.detail.uuid, false);
+                }
                 if (e.detail && e.detail.uuid) {
                   console.log(`Nested block clicked: UUID ${e.detail.uuid}`);
                   this.toggleStatementSelection(e.detail.uuid, false);
@@ -1249,12 +1480,27 @@ export class GeBlock extends LitElement {
     const icon = statement.icon && icons[statement.icon] ? icons[statement.icon] : icons.questionCircle;
     const label = statement.label || stmtKey;
 
+    // Add defensive checks
+    if (!stmtKey || !this.language || !this.language.statements || !this.language.statements[stmtKey]) {
+      console.error(`Statement with key "${stmtKey}" not found in language statements`);
+      return html`<div class="error-statement-option">Error: Unknown statement type: ${stmtKey}</div>`;
+    }
+
+    const statement = this.language.statements[stmtKey];
+    const foregroundColor = statement.foregroundColor || '#ffffff';
+    const backgroundColor = statement.backgroundColor || '#cccccc';
+    const icon = statement.icon && icons[statement.icon] ? icons[statement.icon] : icons.questionCircle;
+    const label = statement.label || stmtKey;
+
     return html`
       <editor-button
         .value="${stmtKey}"
         @click="${this.handleAddNewStatement}"
         .title="${stmtKey}"
         class="add-statament-option-button"
+        style="${`color: ${foregroundColor}; background-color: ${backgroundColor}`}">
+        <editor-icon .icon="${icon}"></editor-icon>
+        <span>${label}</span>
         style="${`color: ${foregroundColor}; background-color: ${backgroundColor}`}">
         <editor-icon .icon="${icon}"></editor-icon>
         <span>${label}</span>
@@ -1347,6 +1593,30 @@ export class GeBlock extends LitElement {
     // Check if we have any Riot statements to show
     const hasRiotStatements = filteredRiotStatements.length > 0 || filteredProcedureOnlyStatements.length > 0;
 
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the Riot statements
+    const filteredRiotStatements = GeBlock.statementCategories.riotOnly.filter(filterStatement);
+
+    // Filter the procedure-only statements
+    const filteredProcedureOnlyStatements = this.isProcBody ?
+      GeBlock.statementCategories.procedureOnlyStatements.filter(filterStatement) : [];
+
+    // Check if we have any Riot statements to show
+    const hasRiotStatements = filteredRiotStatements.length > 0 || filteredProcedureOnlyStatements.length > 0;
+
     // Create the Riot statements section based on context
     const riotStatementsTemplate = html`
       ${hasRiotStatements ? html`
@@ -1367,7 +1637,24 @@ export class GeBlock extends LitElement {
           ${filteredRiotStatements.map(stmtKey =>
             this.addStatementOptionTemplate(stmtKey)
           )}
+      ${hasRiotStatements ? html`
+        <div class="add-statement-options">
+          <!-- Show filtered regular Riot statements -->
+          ${filteredRiotStatements.map(stmtKey =>
+            this.addStatementOptionTemplate(stmtKey)
+          )}
 
+          <!-- Only show filtered procedure-only statements when in a procedure body -->
+          ${this.isProcBody && filteredProcedureOnlyStatements.length > 0 ?
+            filteredProcedureOnlyStatements.map(stmtKey =>
+              this.addStatementOptionTemplate(stmtKey)
+            )
+            : nothing
+          }
+        </div>
+      ` : html`
+        <div class="no-available-statements">No matching Riot statements found</div>
+      `}
           <!-- Only show filtered procedure-only statements when in a procedure body -->
           ${this.isProcBody && filteredProcedureOnlyStatements.length > 0 ?
             filteredProcedureOnlyStatements.map(stmtKey =>
@@ -1449,11 +1736,31 @@ export class GeBlock extends LitElement {
     const hasDeviceStatements = deviceStatements.length > 0;
 
     // For regular editing, show both Device statements and Riot statements (Device statements first)
+      return html`
+        <div class="device-section-header">Riot Statements</div>
+        <div class="device-section-divider"></div>
+        ${riotStatementsTemplate}
+      `;
+    }
+
+    // For regular editing, filter device statements
+    const deviceStatements = Object.keys(this.filteredAddStatementOptions).filter(stmtKey => {
+      return (this.language.statements[stmtKey] as DeviceStatement).deviceName === this.selectedDevice &&
+        filterStatement(stmtKey);
+    });
+
+    const hasDeviceStatements = deviceStatements.length > 0;
+
+    // For regular editing, show both Device statements and Riot statements (Device statements first)
     return html`
+      <div class="device-section-header">Device Statements</div>
       <div class="device-section-header">Device Statements</div>
       <div class="device-section-divider"></div>
       ${this.devicesTemplate()}
       <div class="add-statement-options">
+        ${hasDeviceStatements
+          ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
+          : html`<div class="no-available-device-statements">No matching device statements</div>`}
         ${hasDeviceStatements
           ? deviceStatements.map(stmtKey => this.addStatementOptionTemplate(stmtKey))
           : html`<div class="no-available-device-statements">No matching device statements</div>`}
@@ -1476,12 +1783,40 @@ export class GeBlock extends LitElement {
       <div class="device-section-header" style="margin-top: 1rem;">Riot Statements</div>
       <div class="device-section-divider"></div>
       ${riotStatementsTemplate}
+
+      <div class="device-section-header" style="margin-top: 1rem;">Riot Statements</div>
+      <div class="device-section-divider"></div>
+      ${riotStatementsTemplate}
     `;
   }
 
   basicStatementsTemplate() {
     // Make sure user procedures list is up to date
     this.updateUserProceduresList();
+
+    // Filter statements based on search input
+    const filterStatement = (stmtKey: string): boolean => {
+      if (!this.language.statements[stmtKey]) return false;
+
+      // If there's a search filter, check if the statement label matches
+      if (this.addStatementOptionsFilter) {
+        return this.language.statements[stmtKey].label
+          .toLowerCase()
+          .includes(this.addStatementOptionsFilter.toLowerCase());
+      }
+
+      return true;
+    };
+
+    // Filter the basic blocks
+    const filteredBasicBlocks = GeBlock.statementCategories.basicBlocks.filter(filterStatement);
+
+    // Filter the user procedures
+    const filteredUserProcedures = !this.isProcBody ?
+      GeBlock.statementCategories.userProcedures.filter(filterStatement) : [];
+
+    // Check if we have any results to show
+    const hasResults = filteredBasicBlocks.length > 0 || filteredUserProcedures.length > 0;
 
     // Filter statements based on search input
     const filterStatement = (stmtKey: string): boolean => {
@@ -1584,7 +1919,27 @@ export class GeBlock extends LitElement {
               ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
             </div>
           ` : nothing}
+        ${hasResults ? html`
+          <!-- Basic Blocks Section -->
+          ${filteredBasicBlocks.length > 0 ? html`
+            <div class="add-statement-options">
+              <div class="device-section-header">Basic Blocks</div>
+              <div class="device-section-divider"></div>
+              ${filteredBasicBlocks.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
 
+          <!-- User Procedures Section - only show if not in a procedure body -->
+          ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
+            <div class="add-statement-options" style="margin-top: 1rem;">
+              <div class="device-section-header">Procedures</div>
+              <div class="device-section-divider"></div>
+              ${filteredUserProcedures.map(stmtKey => this.addStatementOptionTemplate(stmtKey))}
+            </div>
+          ` : nothing}
+        ` : html`
+          <div class="no-available-statements">No matching statements found</div>
+        `}
           <!-- User Procedures Section - only show if not in a procedure body -->
           ${!this.isProcBody && filteredUserProcedures.length > 0 ? html`
             <div class="add-statement-options" style="margin-top: 1rem;">
@@ -1623,6 +1978,22 @@ export class GeBlock extends LitElement {
   }
 
   devicesTemplate() {
+    // Add defensive checks
+    if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
+      console.error('Missing device list in language:', this.language);
+      return html`<div class="error-devices">Error: No devices available</div>`;
+    }
+
+    // If device list is empty, show a message
+    if (this.language.deviceList.length === 0) {
+      return html`<div class="no-devices-message">No devices available</div>`;
+    }
+
+    // Ensure selectedDevice is set to a valid device
+    if (!this.selectedDevice || !this.language.deviceList.includes(this.selectedDevice)) {
+      this.selectedDevice = this.language.deviceList[0];
+    }
+
     // Add defensive checks
     if (!this.language || !this.language.deviceList || !Array.isArray(this.language.deviceList)) {
       console.error('Missing device list in language:', this.language);
@@ -1725,6 +2096,18 @@ export class GeBlock extends LitElement {
   }
 
   render() {
+    // Add defensive checks to prevent errors
+    if (!this.language || !this.program) {
+      console.error('Missing required context for rendering block:',
+        { language: this.language, program: this.program });
+      return html`<div class="error-block">Error: Missing language or program context</div>`;
+    }
+
+    // Check if block is defined
+    if (!this.block || !Array.isArray(this.block)) {
+      console.error('Block is not defined or not an array:', this.block);
+      return html`<div class="error-block">Error: Invalid block data</div>`;
+    }
     // Add defensive checks to prevent errors
     if (!this.language || !this.program) {
       console.error('Missing required context for rendering block:',
