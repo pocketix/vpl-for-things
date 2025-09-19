@@ -20,12 +20,14 @@
   "exports": {
     ".": {
       "import": {
-        "default": "./dist/vpl-for-things.js",
-        "types": "./dist/index.d.ts"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/vpl-for-things.js"
+        
       },
       "require": {
-        "default": "./dist/vpl-for-things.umd.cjs",
-        "types": "./dist/index.d.ts"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/vpl-for-things.umd.cjs"
+        
       }
     },
     "./style.css": "./dist/style.css",
