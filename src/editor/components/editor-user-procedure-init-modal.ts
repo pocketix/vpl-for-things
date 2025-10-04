@@ -69,7 +69,7 @@ export class EditorUserProcedureInitModal extends LitElement {
     handleProcedureModalClose = () => {
         const event = new CustomEvent(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, {
             bubbles: true,
-            composed: true
+            composed: true,
         });
         this.dispatchEvent(event);
     }

@@ -872,8 +872,10 @@ export class GeBlock extends LitElement {
           composed: true,
           detail: {
             deviceUuid: clickedBlock._uuid,
+            deviceTypeIndex: index,
             procedureUuid: this.tmpUUID,
             selectedDeviceId: stmtKey
+            
           }
         });
         this.dispatchEvent(deviceSelectionEvent);
@@ -909,115 +911,57 @@ export class GeBlock extends LitElement {
             metadataEntry.devices = [];
           }
 
-          let deviceEntry = metadataEntry.devices.find((device: any) => device.uuid === clickedBlock._uuid);
-
-          // If device entry doesn't exist, create it
-          if (!deviceEntry) {
-            deviceEntry = {
-              uuid: clickedBlock._uuid,
-              deviceId: stmtKey,
-              values: []
-            };
-            metadataEntry.devices.push(deviceEntry);
-          } else {
-            deviceEntry.deviceId = stmtKey;
-          }
-
-          const langStatement = this.language.statements[stmtKey];
-          if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-            const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-            const defaultValues: string[] = [];
-
-            argDefs.forEach(argDef => {
-              let defaultValue: string;
-              if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                defaultValue = String(argDef.options[0].id);
-              } else {
-                defaultValue = String(initDefaultArgumentType(argDef.type));
+          const getDeviceIndexByPosition = (procedureBlock: any[], targetUuid: string): number => {
+            let deviceIndex = 0;
+            for (const stmt of procedureBlock) {
+              if (stmt.id === 'deviceType' || (stmt.id && this.language?.deviceList?.includes(stmt.id.split('.')[0]))) {
+                if (stmt._uuid === targetUuid) {
+                  return deviceIndex;
+                }
+                deviceIndex++;
               }
-              defaultValues.push(defaultValue);
-            });
-
-            // Update the values array in the device metadata
-            deviceEntry.values = defaultValues;
-          } else {
-            // If the new device has no arguments, reset the values array to empty
-            deviceEntry.values = [];
-          }
-        }
-
-
-        // Clean up any orphaned device entries
-        if (metadataEntry && metadataEntry.devices && Array.isArray(metadataEntry.devices)) {
-          // Get all valid device UUIDs in the procedure body
-          const validDeviceUuids = new Set<string>();
-
-          // Find the procedure definition
-          const procedureId = this.isProcBody ? this.tmpUUID : this.parentProcedureUuid;
-          let procedureBlock: any[] | undefined;
-
-          // Find the procedure block in userProcedures
-          for (const procBlock of Object.values(this.program.header.userProcedures)) {
-            if (procedureId && procBlock) {
-              procedureBlock = procBlock;
-              break;
             }
-          }
+            return -1;
+          };
 
-          // Collect valid device UUIDs from the procedure body
+          const procedureBlock = this.tmpUUID ? 
+            this.program.header.userProcedures[metadataEntry.id] : 
+            (this.parentProcedureUuid ? this.program.header.userProcedures[metadataEntry.id] : null);
+
           if (procedureBlock) {
-            const collectDeviceUuids = (block: any[]) => {
-              if (!block || !Array.isArray(block)) return;
+            const deviceIndex = getDeviceIndexByPosition(procedureBlock, clickedBlock._uuid);
+            
+            if (deviceIndex !== -1) {
+              // Ensure the devices array has enough entries
+              while (metadataEntry.devices.length <= deviceIndex) {
+                metadataEntry.devices.push({
+                  deviceId: 'deviceType',
+                  values: ['']
+                });
+              }
 
-              for (const stmt of block) {
-                if (stmt._uuid) {
-                  const isDeviceBlock = stmt.id === 'deviceType';
-                  const deviceName = stmt.id.split('.')[0];
-                  const isDeviceStatement = this.language.deviceList?.includes(deviceName);
+              const langStatement = this.language.statements[stmtKey];
+              const defaultValues: string[] = [];
 
-                  if (isDeviceBlock || isDeviceStatement) {
-                    validDeviceUuids.add(stmt._uuid);
+              if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+                const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+
+                argDefs.forEach(argDef => {
+                  let defaultValue: string;
+                  if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    defaultValue = String(argDef.options[0].id);
+                  } else {
+                    defaultValue = String(initDefaultArgumentType(argDef.type));
                   }
-                }
-
-                if (stmt.block && Array.isArray(stmt.block)) {
-                  collectDeviceUuids(stmt.block);
-                }
+                  defaultValues.push(defaultValue);
+                });
               }
-            };
 
-            collectDeviceUuids(procedureBlock);
-
-            // Filter out orphaned device entries
-            metadataEntry.devices = metadataEntry.devices.filter((device: any) =>
-              validDeviceUuids.has(device.uuid)
-            );
-
-            // Also clean up the main program's devices array
-            // Recursively search through all blocks in the program to find and clean up device entries
-            const cleanupDevicesInBlock = (block: any[]) => {
-              if (!block || !Array.isArray(block)) return;
-
-              // Check if this block has a devices array
-              for (const stmt of block) {
-                if (stmt.devices && Array.isArray(stmt.devices)) {
-                  // Keep only devices that have valid UUIDs
-                  stmt.devices = stmt.devices.filter((device: any) =>
-                    validDeviceUuids.has(device.uuid) ||
-                    // Keep devices that don't belong to this procedure
-                    (this.tmpUUID && !device.uuid.startsWith(this.tmpUUID.substring(0, 8)))
-                  );
-                }
-
-                // Recursively check nested blocks
-                if (stmt.block && Array.isArray(stmt.block)) {
-                  cleanupDevicesInBlock(stmt.block);
-                }
-              }
-            };
-
-            // Start the cleanup from the program's root block
-            cleanupDevicesInBlock(this.program.block);
+              metadataEntry.devices[deviceIndex] = {
+                deviceId: stmtKey,
+                values: defaultValues
+              };
+            }
           }
         }
 
