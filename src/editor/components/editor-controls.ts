@@ -681,13 +681,6 @@ export class EditorControls extends LitElement {
   }
 
 
-
-
-
-
-
-
-
   userVariablesModalTemplate() {
     return html`
       <editor-modal class="user-variables-modal" ${ref(this.userVariablesModalRef)} .modalTitle="${'Variables'}">

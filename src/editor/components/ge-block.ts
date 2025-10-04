@@ -401,7 +401,6 @@ export class GeBlock extends LitElement {
             if (stmt.id === 'deviceType' ) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
-                uuid: stmt._uuid,
                 deviceId: String(arg.value),
                 values: [String(arg.value)],
               });
@@ -439,7 +438,6 @@ export class GeBlock extends LitElement {
               }
 
               devices.push({
-                uuid: stmt._uuid,
                 deviceId: stmt.id,
                 values: deviceValues
               });

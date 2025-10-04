@@ -162,7 +162,6 @@ export function assignUuidToBlock(block: Block) {
 }
 
 export type DeviceMetadata = {
-  uuid: string;
   deviceId: string;
   values: string[];
 };

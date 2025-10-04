@@ -427,9 +427,26 @@ export class GEStatement extends LitElement {
       return null;
     };
 
+    const getDeviceTypeIndexByOrder = (block: any[], deviceUuid: string): number => {
+      let count = -1;
+      for (const stmt of block) {
+        console.log('Checking statement in device order:', stmt);
+        if (stmt.id === 'deviceType') {
+          count++;
+          if (stmt.uuid === deviceUuid) {
+            return count;
+          }
+        }
+      }
+      return -1;
+    };
+
     // Look for the procedure entry in the entire program block structure
     const procInitEntry = findProcedureEntry(this.program.block, this.uuidMetadata);
-    const deviceEntry = procInitEntry?.devices?.find((device: DeviceMetadata) => device.uuid === this.statement._uuid);
+    console.log('Procedure Entry for Device Update:', procInitEntry);
+    let deviceTypeIndex = getDeviceTypeIndexByOrder(this.program.header.userProcedures[procInitEntry.id], this.statement._uuid);
+    const deviceEntry = procInitEntry.devices[deviceTypeIndex];
+    console.log('Device Entry for Metadata Update:', deviceEntry);
 
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
@@ -612,10 +629,11 @@ export class GEStatement extends LitElement {
     this.restrainedMode = true;
 
     const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
-
+    console.log('Original Procedure Block for Initialization:', originalProcedureBlock);
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
+      console.log('Procedure Block Copy for Initialization:', this.procedureBlockCopy);
 
       this.uuidMetadata = this.statement._uuid;
       this.requestUpdate();
@@ -638,13 +656,15 @@ export class GEStatement extends LitElement {
       };
 
       const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
-
+      console.log('Procedure Entry for Initialization:', procedureEntry);
       const parseBlock = (block: any[]) => {
+        let deviceTypeIndex = 0;
         block.forEach((stmt: any, index: number) => {
           if (stmt.id === 'deviceType') {
             // Handle the case where procedureEntry might be null
-            const deviceEntry = procedureEntry && procedureEntry.devices ?
-              procedureEntry.devices.find((device: any) => device.uuid === stmt._uuid) : null;
+            const deviceEntry = procedureEntry && procedureEntry.devices
+            ? procedureEntry.devices[deviceTypeIndex]: null;
+            console.log('Device Entry for Initializationss:', deviceEntry);
             let deviceID = deviceEntry?.deviceId || 'deviceType';
             if (deviceEntry) {
 

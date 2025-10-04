@@ -76,8 +76,8 @@ export class EditorUserProcedureModal extends LitElement {
 
   handleChangeProcedureBody() {
     this.updateComplete.then(() => {
-      console.log('Opening modal for procedure:', this.stmtKey);
-      console.log('Modal reference:', this.userProcedureBodyModalRef.value);
+      console.log('Opening modal for procedurein edit:', this.stmtKey);
+      console.log('Modal reference in edit:', this.userProcedureBodyModalRef.value);
 
       if (this.userProcedureBodyModalRef.value) {
         this.userProcedureBodyModalRef.value.showModal();

@@ -77,7 +77,7 @@ export class EditorUserProcedureInitModal extends LitElement {
     handleOpenProcedureInitModal() {
         this.updateComplete.then(() => {
         console.log('Opening initialization modal for procedure:', this.stmtKey);
-        console.log('Modal reference:', this.procedureInitModalRef.value);
+        console.log('Modal reference init:', this.procedureInitModalRef.value);
 
         if (this.procedureInitModalRef.value) {
             this.procedureInitModalRef.value.showModal();
