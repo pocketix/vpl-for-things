@@ -9,6 +9,7 @@ import {
   CompoundLanguageStatementWithArgs,
   DeviceStatement,
   EditorModal,
+  GraphicalEditor,
   Language,
   UnitLanguageStatementWithArgs,
 } from '@/index';
@@ -961,8 +962,18 @@ export class GeBlock extends LitElement {
                 deviceId: stmtKey,
                 values: defaultValues
               };
+              const reparseEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
+                bubbles: true,
+                composed: true,
+                detail: { 
+                  procedureUuid: this.tmpUUID || this.parentProcedureUuid
+                }
+              });
+              this.dispatchEvent(reparseEvent);
+              this.requestUpdate();
             }
           }
+          
         }
 
         // Dispatch program updated event
@@ -972,6 +983,7 @@ export class GeBlock extends LitElement {
           detail: { programBodyUpdated: true },
         });
         this.dispatchEvent(programUpdatedEvent);
+        this.requestUpdate();
 
         // Dispatch a specific event to update device counts in all ge-statement components
         const updateDeviceCountsEvent = new CustomEvent('update-device-counts', {
