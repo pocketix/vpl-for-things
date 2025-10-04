@@ -254,6 +254,7 @@ export class GEStatement extends LitElement {
   //#region Props
   @property() statement: ProgramStatement;
   @property() index: number;
+  @property() deviceIndex: number = -1; // Index of this statement in the device array (-1 if not a device)
   @property() nestedBlockVisible: boolean = true;
   @property() isProcBody: boolean = false;
   @property() isExample: boolean = false;
@@ -268,6 +269,7 @@ export class GEStatement extends LitElement {
   @property() editorMode: 'edit' | 'initialize' = 'edit'; // Mode for the editor: edit or initialize
   @property() initializedDeviceCount: number = 0; // Count of initialized devices
   @property() totalDeviceCount: number = 0; // Total count of device blocks
+  @property({ type: Object }) procedureDeviceIndices: Map<string, number> = new Map(); // Device indices for the entire procedure (passed down from parent)
   //#endregion
 
   //#region Context
@@ -337,8 +339,14 @@ export class GEStatement extends LitElement {
 
     //----------------------------
     this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
-      if (this.statement._uuid && this.editorMode === 'initialize') {
+      // Only handle VALUE_CHANGED events if this statement is a device statement (not a procedure instance)
+      // Device statements should be: deviceType OR actual device statements (like CoffeeMachine.makeCoffee)
+      const isDeviceStatement = !!(this.statement as any).id &&
+                               !(this.statement as any).devices &&
+                               ((this.statement as any).id === 'deviceType' ||
+                                (this.language?.deviceList?.includes((this.statement as any).id.split('.')[0])));
 
+      if (this.statement._uuid && this.editorMode === 'initialize' && isDeviceStatement && this.uuidMetadata) {
         // Find the procedure entry recursively through the program structure
         const findProcedureEntry = (block: any[], targetUuid: string): any => {
           // First check if the entry is in this block
@@ -408,14 +416,16 @@ export class GEStatement extends LitElement {
   }
 
   updateDeviceMetadataValue() {
-    console.log('Updating device metadata value for statement:', this.statement);
-    if (!this.statement._uuid) return;
+    if (!this.statement._uuid) {
+      return;
+    }
+
+
 
     // Find the procedure entry recursively through the program structure
     const findProcedureEntry = (block: any[], targetUuid: string): any => {
       // First check if the entry is in this block
       const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-      console.log('Checking statement in procedure search:', directEntry);
       if (directEntry) return directEntry;
 
       for (const stmt of block) {
@@ -428,33 +438,39 @@ export class GEStatement extends LitElement {
       return null;
     };
 
-    const getDeviceTypeIndexByOrder = (block: any[], deviceUuid: string): number => {
-      let count = -1;
-      for (const stmt of block) {
-        console.log('Checking statement in device order:', stmt);
-        if (stmt.id === 'deviceType' || (stmt.id && this.language?.deviceList?.includes(stmt.id.split('.')[0]))) {
-          count++;
-          if (stmt._uuid === deviceUuid) {
-            return count;
-          }
-        }
-      }
-      return -1;
-    };
+
 
     // Look for the procedure entry in the entire program block structure
     const procInitEntry = findProcedureEntry(this.program.block, this.uuidMetadata);
-    console.log('Procedure Entry for Device Update:', procInitEntry);
-    let deviceTypeIndex = getDeviceTypeIndexByOrder(this.program.header.userProcedures[procInitEntry.id], this.statement._uuid);
+
+    if (!procInitEntry) {
+      return;
+    }
+
+    // Use the pre-calculated device index passed down from the parent ge-block
+    if (this.deviceIndex === -1) {
+      return;
+    }
+
+    let deviceTypeIndex = this.deviceIndex;
+
+    if (deviceTypeIndex === -1) {
+      return;
+    }
+
     const deviceEntry = procInitEntry.devices[deviceTypeIndex];
-    console.log('Device Entry for Metadata Update:', deviceEntry);
 
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+
       if (argValue !== undefined && argValue !== null) {
         deviceEntry.values[0] = String(argValue);
       }
-      return;
+
+      // Also ensure the deviceId is set correctly if it's not already
+      if (!deviceEntry.deviceId || deviceEntry.deviceId === '') {
+        deviceEntry.deviceId = this.statement.id;
+      }
     }
   }
 
@@ -550,14 +566,16 @@ export class GEStatement extends LitElement {
       this.updateDeviceCounts();
     }
 
-    this.statementHeaderRef.value.setAttribute(
-      'style',
-      `background-color: ${
-        this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
-      }; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}; ${
-        this.statement.isInvalid ? 'border: 4px dashed #facc15' : ''
-      }`
-    );
+    if (this.statementHeaderRef.value) {
+      this.statementHeaderRef.value.setAttribute(
+        'style',
+        `background-color: ${
+          this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor
+        }; color: ${this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].foregroundColor}; ${
+          this.statement.isInvalid ? 'border: 4px dashed #facc15' : ''
+        }`
+      );
+    }
 
     if (this.statementNestedBlockRef.value) {
       const bgColor = this.language.statements[this.statement.isInvalid ? '_err' : this.statement.id].backgroundColor;
@@ -565,10 +583,12 @@ export class GEStatement extends LitElement {
       const isUserProcedure = this.language.statements[this.statement.id]?.isUserProcedure;
       const transparency = (this.skeletonizeMode && isUserProcedure) ? '' : '3a';
 
-      this.statementNestedBlockRef.value.setAttribute(
-        'style',
-        `background-color: ${bgColor}${transparency}; color: ${fgColor};`
-      );
+      if (this.statementNestedBlockRef.value) {
+        this.statementNestedBlockRef.value.setAttribute(
+          'style',
+          `background-color: ${bgColor}${transparency}; color: ${fgColor};`
+        );
+      }
     }
   }
   //#endregion
@@ -613,12 +633,16 @@ export class GEStatement extends LitElement {
   }
 
   handleToggleStatementControlsModal(e: Event) {
-    this.statementControlsModalRef.value.toggleModal();
+    if (this.statementControlsModalRef.value) {
+      this.statementControlsModalRef.value.toggleModal();
+    }
     e.stopPropagation();
   }
 
   handleHideStatementControlsModal() {
-    this.statementControlsModalRef.value.hideModal();
+    if (this.statementControlsModalRef.value) {
+      this.statementControlsModalRef.value.hideModal();
+    }
   }
 
   handleShowProcDef() {
@@ -631,6 +655,7 @@ export class GEStatement extends LitElement {
     console.log('Original Procedure Block for Initialization:', originalProcedureBlock);
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
+
       assignUuidToBlock(this.procedureBlockCopy);
       console.log('Procedure Block Copy for Initialization:', this.procedureBlockCopy);
 
@@ -655,13 +680,15 @@ export class GEStatement extends LitElement {
 
       const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
       console.log('Procedure Entry for Initialization:', procedureEntry);
+      // Use a shared device index that persists across all recursive calls
+      const sharedState = { deviceTypeIndex: 0 };
+
       const parseBlock = (block: any[]) => {
-        let deviceTypeIndex = 0;
         block.forEach((stmt: any, index: number) => {
           if (stmt.id === 'deviceType') {
             const deviceEntry = procedureEntry && procedureEntry.devices
-            ? procedureEntry.devices[deviceTypeIndex]: null;
-            console.log('Device Entry for Initializationss:', deviceEntry);
+            ? procedureEntry.devices[sharedState.deviceTypeIndex]: null;
+            console.log(`Device Entry for Initialization (index ${sharedState.deviceTypeIndex}):`, deviceEntry);
             let deviceID = deviceEntry?.deviceId || 'deviceType';
             console.log('Device ID for Initialization:', deviceID);
             if (deviceEntry) {
@@ -685,7 +712,7 @@ export class GEStatement extends LitElement {
                 ],
                 isInvalid: false,
               };
-              
+
             } else {
               // Get the language statement definition to determine arguments structure
               const langStatement = this.language.statements[deviceID];
@@ -729,7 +756,7 @@ export class GEStatement extends LitElement {
               };
             }
             console.log('procedureBlockCopy after device update:', this.procedureBlockCopy);
-            deviceTypeIndex++;
+            sharedState.deviceTypeIndex++;
           }
           if (stmt.block && Array.isArray(stmt.block)) {
             parseBlock(stmt.block);
@@ -744,7 +771,9 @@ export class GEStatement extends LitElement {
 
       this.requestUpdate();
     }
-    this.procModalRef.value.showModal();
+    if (this.procModalRef.value) {
+      this.procModalRef.value.showModal();
+    }
   }
 
   handleShowStmtDescModal(e: Event) {
@@ -783,97 +812,12 @@ export class GEStatement extends LitElement {
   // }
   //#endregion
 
-  // cleanupOrphanedDeviceEntries() {
-  //   // Find the procedure entry recursively through the program structure
-  //   const findProcedureEntry = (block: any[], targetUuid: string): any => {
-  //     // First check if the entry is in this block
-  //     const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-  //     if (directEntry) return directEntry;
 
-  //     // If not found directly, search in nested blocks
-  //     for (const stmt of block) {
-  //       if (stmt.block && Array.isArray(stmt.block)) {
-  //         const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
-  //         if (nestedEntry) return nestedEntry;
-  //       }
-  //     }
-
-  //     return null;
-  //   };
-
-  //   const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
-
-  //   if (!procedureEntry || !procedureEntry.devices || !Array.isArray(procedureEntry.devices)) {
-  //     return;
-  //   }
-
-  //   // Get all device UUIDs in the procedure body
-  //   const validDeviceUuids = new Set<string>();
-
-  //   const collectDeviceUuids = (block: any[]) => {
-  //     if (!block || !Array.isArray(block)) return;
-
-  //     for (const stmt of block) {
-  //       if (stmt._uuid) {
-  //         const isDeviceBlock = stmt.id === 'deviceType';
-  //         const deviceName = stmt.id.split('.')[0];
-  //         const isDeviceStatement = this.language.deviceList?.includes(deviceName);
-
-  //         if (isDeviceBlock || isDeviceStatement) {
-  //           validDeviceUuids.add(stmt._uuid);
-  //         }
-  //       }
-
-  //       if (stmt.block && Array.isArray(stmt.block)) {
-  //         collectDeviceUuids(stmt.block);
-  //       }
-  //     }
-  //   };
-
-  //   // Collect valid device UUIDs from the procedure body
-  //   const procedureBlock = this.program.header.userProcedures[this.statement.id];
-  //   if (procedureBlock) {
-  //     collectDeviceUuids(procedureBlock);
-  //   }
-
-  //   // Filter out orphaned device entries
-  //   procedureEntry.devices = procedureEntry.devices.filter((device: any) =>
-  //     validDeviceUuids.has(device.uuid)
-  //   );
-
-  //   // Also clean up the main program's devices array
-  //   // Recursively search through all blocks in the program to find and clean up device entries
-  //   const cleanupDevicesInBlock = (block: any[]) => {
-  //     if (!block || !Array.isArray(block)) return;
-
-  //     // Check if this block has a devices array
-  //     for (const stmt of block) {
-  //       if (stmt.devices && Array.isArray(stmt.devices)) {
-  //         // Keep only devices that have valid UUIDs
-  //         stmt.devices = stmt.devices.filter((device: any) =>
-  //           validDeviceUuids.has(device.uuid) ||
-  //           // Keep devices that don't belong to this procedure
-  //           !device.uuid.startsWith(this.statement._uuid.substring(0, 8))
-  //         );
-  //       }
-
-  //       // Recursively check nested blocks
-  //       if (stmt.block && Array.isArray(stmt.block)) {
-  //         cleanupDevicesInBlock(stmt.block);
-  //       }
-  //     }
-  //   };
-
-  //   // Start the cleanup from the program's root block
-  //   cleanupDevicesInBlock(this.program.block);
-
-
-  // }
 
   //#region Templates
   multipleArgumentTemplate(argumentsArray: Argument[]) {
     return html`
-      <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value.showModal()}">
+      <editor-button class="expr-arg" @click="${() => this.multipleArgsModalRef.value?.showModal()}">
         <div style="display: flex; gap: 4px; align-items: center; flex-direction: row;">
           <editor-icon .icon="${icons.threeDots}"></editor-icon>
           <div style="white-space: nowrap;">Arguments</div>
@@ -895,7 +839,7 @@ export class GEStatement extends LitElement {
                 </ge-statement-argument>
               `
           )}
-          <editor-button class="ok-button" @click="${() => this.multipleArgsModalRef.value.hideModal()}">
+          <editor-button class="ok-button" @click="${() => this.multipleArgsModalRef.value?.hideModal()}">
             <editor-icon .icon="${icons.checkLg}"></editor-icon>
             <span>OK</span>
           </editor-button>
@@ -1118,6 +1062,7 @@ export class GEStatement extends LitElement {
                 .restrainedMode="${this.restrainedMode}"
                 .tmpUUID="${this.uuidMetadata}"
                 .editorMode="${this.editorMode}"
+                .procedureDeviceIndices="${this.procedureDeviceIndices}"
                 @click="${(e: Event) => {
                   e.stopPropagation();
                   const event = new CustomEvent('nested-click', {
