@@ -438,11 +438,13 @@ export class GEStatement extends LitElement {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
 
       if (argValue !== undefined && argValue !== null) {
-        deviceEntry.values[0] = String(argValue);
+        if (deviceEntry.arguments && deviceEntry.arguments[0]) {
+          deviceEntry.arguments[0].value = argValue;
+        }
       }
 
-      if (!deviceEntry.deviceId || deviceEntry.deviceId === '') {
-        deviceEntry.deviceId = this.statement.id;
+      if (!deviceEntry.id || deviceEntry.id === '') {
+        deviceEntry.id = this.statement.id;
       }
     }
   }
@@ -492,12 +494,12 @@ export class GEStatement extends LitElement {
 
     if (!procedureEntry || !procedureEntry.devices) return 0;
 
-    const initializedCount = procedureEntry.devices.filter((device: any) => {
-      if (device.deviceId === 'deviceType') {
+    const initializedCount = procedureEntry.devices.filter((device: DeviceMetadata) => {
+      if (device.id === 'deviceType') {
         return false;
       }
 
-      if (this.language.statements[device.deviceId]) {
+      if (this.language.statements[device.id]) {
         return true;
       }
 
@@ -645,7 +647,7 @@ export class GEStatement extends LitElement {
           if (stmt.id === 'deviceType') {
             const deviceEntry = procedureEntry && procedureEntry.devices
             ? procedureEntry.devices[sharedState.deviceTypeIndex]: null;
-            let deviceID = deviceEntry?.deviceId || 'deviceType';
+            let deviceID = deviceEntry?.id || 'deviceType';
 
             if (deviceEntry) {
               const deviceIDName = deviceID.split('.')[0];
@@ -681,12 +683,8 @@ export class GEStatement extends LitElement {
                     isInvalid: false
                   };
 
-                  if (deviceEntry && deviceEntry.values && deviceEntry.values[argIndex] !== undefined) {
-                    if (argDef.type === Types.number || argDef.type === 'num_opt') {
-                      newArg.value = Number(deviceEntry.values[argIndex]);
-                    } else {
-                      newArg.value = deviceEntry.values[argIndex];
-                    }
+                  if (deviceEntry && deviceEntry.arguments && deviceEntry.arguments[argIndex] !== undefined) {
+                    newArg.value = deviceEntry.arguments[argIndex].value;
                   } else {
                     if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                       newArg.value = argDef.options[0].id;

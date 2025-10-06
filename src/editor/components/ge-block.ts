@@ -5,7 +5,7 @@ import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType, ProgramStatementArgument } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent, deviceMetadataCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -16,6 +16,7 @@ import {
   Language,
   UnitLanguageStatementWithArgs,
 } from '@/index';
+import Types from '@/vpl/types';
 
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
@@ -420,16 +421,15 @@ export class GeBlock extends LitElement {
             if (stmt.id === 'deviceType') {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
-                deviceId: String(arg.value),
-                values: [String(arg.value)],
+                id: 'deviceType',
+                arguments: [{
+                  type: Types.string,
+                  value: String(arg.value)
+                }]
               });
             } else if (this.language.deviceList.includes(deviceName)) {
-              const deviceStatement = {
-                ...stmt,
-                arguments: []
-              };
+              const deviceArguments: any[] = [];
               const langStatement = this.language.statements[stmt.id];
-              const deviceValues: string[] = [];
 
               if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
                 const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
@@ -437,29 +437,26 @@ export class GeBlock extends LitElement {
                 argDefs.forEach((argDef, index) => {
                   const newArg = {
                     type: argDef.type,
-                    value: null
+                    value: null as any
                   };
 
                   if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                     newArg.value = argDef.options[0].id;
-                    deviceValues.push(String(argDef.options[0].id));
                   } else {
                     newArg.value = initDefaultArgumentType(argDef.type);
-                    deviceValues.push(String(newArg.value));
                   }
 
                   if ((stmt as AbstractStatementWithArgs).arguments &&
                       (stmt as AbstractStatementWithArgs).arguments[index]) {
                     newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
-                    deviceValues[index] = String(newArg.value);
                   }
-                  deviceStatement.arguments.push(newArg);
+                  deviceArguments.push(newArg);
                 });
               }
 
               devices.push({
-                deviceId: stmt.id,
-                values: deviceValues
+                id: stmt.id,
+                arguments: deviceArguments
               });
             }
           }
@@ -851,31 +848,37 @@ export class GeBlock extends LitElement {
         if (deviceIndex !== -1) {
           while (metadataEntry.devices.length <= deviceIndex) {
             metadataEntry.devices.push({
-              deviceId: 'deviceType',
-              values: ['']
+              id: 'deviceType',
+              arguments: [{
+                type: Types.string,
+                value: ''
+              }]
             });
           }
 
           const langStatement = this.language.statements[stmtKey];
-          const defaultValues: string[] = [];
+          const defaultArguments: any[] = [];
 
           if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
             const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
 
             argDefs.forEach(argDef => {
-              let defaultValue: string;
+              let defaultValue: any;
               if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                defaultValue = String(argDef.options[0].id);
+                defaultValue = argDef.options[0].id;
               } else {
-                defaultValue = String(initDefaultArgumentType(argDef.type));
+                defaultValue = initDefaultArgumentType(argDef.type);
               }
-              defaultValues.push(defaultValue);
+              defaultArguments.push({
+                type: argDef.type,
+                value: defaultValue
+              });
             });
           }
 
           metadataEntry.devices[deviceIndex] = {
-            deviceId: stmtKey,
-            values: defaultValues
+            id: stmtKey,
+            arguments: defaultArguments
           };
         }
       }
@@ -914,8 +917,8 @@ export class GeBlock extends LitElement {
           if (replacementState.deviceIndex < metadataEntry.devices.length) {
             const deviceData = metadataEntry.devices[replacementState.deviceIndex];
 
-            if (deviceData.deviceId !== 'deviceType' && deviceData.deviceId !== '') {
-              const selectedStatement = this.language.statements[deviceData.deviceId];
+            if (deviceData.id !== 'deviceType' && deviceData.id !== '') {
+              const selectedStatement = this.language.statements[deviceData.id];
               if (selectedStatement) {
                 const originalUuid = stmt._uuid;
                 Object.keys(stmt).forEach(key => {
@@ -925,7 +928,7 @@ export class GeBlock extends LitElement {
                 });
 
                 Object.assign(stmt, selectedStatement, {
-                  id: deviceData.deviceId,
+                  id: deviceData.id,
                   _uuid: originalUuid
                 });
 
@@ -998,31 +1001,37 @@ export class GeBlock extends LitElement {
           if (deviceIndex !== -1) {
             while (metadataEntry.devices.length <= deviceIndex) {
               metadataEntry.devices.push({
-                deviceId: 'deviceType',
-                values: ['']
+                id: 'deviceType',
+                arguments: [{
+                  type: Types.string,
+                  value: ''
+                }]
               });
             }
 
             const langStatement = this.language.statements[stmtKey];
-            const defaultValues: string[] = [];
+            const defaultArguments: ProgramStatementArgument[] = [];
 
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
 
               argDefs.forEach(argDef => {
-                let defaultValue: string;
+                let defaultValue: any;
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                   defaultValue = String(argDef.options[0].id);
                 } else {
-                  defaultValue = String(initDefaultArgumentType(argDef.type));
+                  defaultValue = initDefaultArgumentType(argDef.type);
                 }
-                defaultValues.push(defaultValue);
+                defaultArguments.push({
+                  type: argDef.type,
+                  value: defaultValue
+                });
               });
             }
 
             metadataEntry.devices[deviceIndex] = {
-              deviceId: stmtKey,
-              values: defaultValues
+              id: stmtKey,
+              arguments: defaultArguments
             };
 
             const reparseEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {

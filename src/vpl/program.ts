@@ -1,4 +1,4 @@
-import { VariableTypes, ArgumentType, LanguageStatementType, Variable, Argument, Statements } from './language';
+import { ArgumentType, LanguageStatementType, Argument, Statements } from './language';
 import { v4 as uuidv4 } from 'uuid';
 import Types from '@vpl/types.ts';
 
@@ -162,8 +162,8 @@ export function assignUuidToBlock(block: Block) {
 }
 
 export type DeviceMetadata = {
-  deviceId: string;
-  values: string[];
+  id: string;
+  arguments: ProgramStatementArgument[];
 };
 export class Program {
   header: Header;
