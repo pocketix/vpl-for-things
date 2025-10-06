@@ -19,6 +19,8 @@ import {
 
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+import { findMetadataEntry } from '../utils/find-metadata-entry';
+import { findBlockRecursively } from '../utils/find-block-recursively';
 
 @customElement('ge-block')
 export class GeBlock extends LitElement {
@@ -551,19 +553,6 @@ export class GeBlock extends LitElement {
       const isDeviceStatement = this.language.deviceList?.includes(deviceName);
 
       if (isDeviceBlock || isDeviceStatement) {
-        const findMetadataEntry = (block: any[], targetUuid: string): any => {
-          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-          if (directEntry) return directEntry;
-
-          for (const stmt of block) {
-            if (stmt.block && Array.isArray(stmt.block)) {
-              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-              if (nestedEntry) return nestedEntry;
-            }
-          }
-          return null;
-        };
-
         let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
 
         if (!metadataEntry && this.parentProcedureUuid) {
@@ -806,20 +795,6 @@ export class GeBlock extends LitElement {
     this.deviceSearchInput = (e.currentTarget as HTMLInputElement).value;
     const searchTerm = this.deviceSearchInput.toLowerCase();
 
-    // Helper function to find block recursively
-    const findBlockRecursively = (block: any[], targetUuid: string): any => {
-      for (const stmt of block) {
-        if (stmt._uuid === targetUuid) {
-          return stmt;
-        }
-        if (stmt.block && Array.isArray(stmt.block)) {
-          const found = findBlockRecursively(stmt.block, targetUuid);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
     // Find the clicked block recursively
     const clickedBlock = findBlockRecursively(this.block, this.clickedBlockDeviceInit);
 
@@ -855,21 +830,6 @@ export class GeBlock extends LitElement {
   }
 
   private updateDevicesArrayForSelectedDevice(stmtKey: string): void {
-    const findMetadataEntry = (block: any[], targetUuid: string): any => {
-      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-      if (directEntry) {
-        return directEntry;
-      }
-
-      for (const stmt of block) {
-        if (stmt.block && Array.isArray(stmt.block)) {
-          const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-          if (nestedEntry) return nestedEntry;
-        }
-      }
-      return null;
-    };
-
     let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
 
     if (!metadataEntry && this.parentProcedureUuid) {
@@ -923,19 +883,6 @@ export class GeBlock extends LitElement {
   }
 
   private replaceAllDeviceTypesInProcedure(stmtKey: string): boolean {
-    const findMetadataEntry = (block: any[], targetUuid: string): any => {
-      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-      if (directEntry) return directEntry;
-
-      for (const stmt of block) {
-        if (stmt.block && Array.isArray(stmt.block)) {
-          const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-          if (nestedEntry) return nestedEntry;
-        }
-      }
-      return null;
-    };
-
     let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
     if (!metadataEntry && this.parentProcedureUuid) {
       metadataEntry = findMetadataEntry(this.program.block, this.parentProcedureUuid);
@@ -1030,21 +977,6 @@ export class GeBlock extends LitElement {
     const wasReplaced = this.replaceAllDeviceTypesInProcedure(stmtKey);
 
     if (wasReplaced) {
-      const findMetadataEntry = (block: any[], targetUuid: string): any => {
-        const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-        if (directEntry) {
-          return directEntry;
-        }
-
-        for (const stmt of block) {
-          if (stmt.block && Array.isArray(stmt.block)) {
-            const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-            if (nestedEntry) return nestedEntry;
-          }
-        }
-        return null;
-      };
-
       let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
 
       if (!metadataEntry && this.parentProcedureUuid) {
