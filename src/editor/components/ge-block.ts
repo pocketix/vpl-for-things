@@ -350,6 +350,46 @@ export class GeBlock extends LitElement {
     const result = traverseBlock(procedureBlock);
     return result;
   }
+
+  private countDeviceStatementsInBlock(block: any[]): number {
+    let count = 0;
+
+    const countDevicesInBlock = (blockToCount: any[]) => {
+      if (!blockToCount || !Array.isArray(blockToCount)) return;
+
+      for (const stmt of blockToCount) {
+        if (stmt.id === 'deviceType') {
+          count++;
+        } else if (stmt.id && this.language?.deviceList) {
+          const deviceName = stmt.id.split('.')[0];
+          if (this.language.deviceList.includes(deviceName)) {
+            count++;
+          }
+        }
+        if (stmt.block && Array.isArray(stmt.block)) {
+          countDevicesInBlock(stmt.block);
+        }
+      }
+    };
+
+    countDevicesInBlock(block);
+    return count;
+  }
+
+  private trimDevicesArrayToMatchDeviceCount(metadataEntry: any, procedureBlock: any[]) {
+    if (!metadataEntry || !metadataEntry.devices || !Array.isArray(metadataEntry.devices)) return;
+    if (!procedureBlock || !Array.isArray(procedureBlock)) return;
+
+    // Count the actual device statements in the procedure block
+    const actualDeviceCount = this.countDeviceStatementsInBlock(procedureBlock);
+
+    // Trim the devices array from the back to match the actual device count
+    if (metadataEntry.devices.length > actualDeviceCount) {
+      const removedCount = metadataEntry.devices.length - actualDeviceCount;
+      metadataEntry.devices.splice(actualDeviceCount);
+      console.log(`Trimmed ${removedCount} orphaned device entries from devices array. New length: ${actualDeviceCount}`);
+    }
+  }
   //#endregion
 
   //#region Lifecycle
@@ -566,6 +606,9 @@ export class GeBlock extends LitElement {
             if (deviceIndex !== -1 && deviceIndex < metadataEntry.devices.length) {
               metadataEntry.devices.splice(deviceIndex, 1);
             }
+
+            // After removing the device, trim any remaining orphaned entries
+            this.trimDevicesArrayToMatchDeviceCount(metadataEntry, procedureBlock);
           }
         }
       }

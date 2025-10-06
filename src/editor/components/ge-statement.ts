@@ -23,6 +23,7 @@ import {
   procedureEditorCustomEvent,
   statementCustomEvent,
   deviceMetadataCustomEvent,
+  textEditorCustomEvent,
 } from '@/editor/editor-custom-events';
 
 import { globalStyles } from '../global-styles';
@@ -521,8 +522,84 @@ export class GEStatement extends LitElement {
       if (procedureBlock) {
         this.totalDeviceCount = this.countDeviceTypeBlocks(procedureBlock);
         this.initializedDeviceCount = this.countInitializedDevices(this.statement._uuid);
+
+        // Match the number of devices array entries to deviceType statements
+        this.matchNumberOfDevices();
       }
     }
+  }
+
+  matchNumberOfDevices() {
+    if (!this.program || !this.statement?._uuid) return;
+
+    // Find the procedure entry recursively through the program structure
+    const findProcedureEntry = (block: any[], targetUuid: string): any => {
+      // First check if the entry is in this block
+      const directEntry = block.find(stmt => stmt._uuid === targetUuid);
+      if (directEntry) return directEntry;
+
+      // If not found directly, search in nested blocks
+      for (const stmt of block) {
+        if (stmt.block && Array.isArray(stmt.block)) {
+          const nestedEntry = findProcedureEntry(stmt.block, targetUuid);
+          if (nestedEntry) return nestedEntry;
+        }
+      }
+
+      return null;
+    };
+
+    const procedureEntry = findProcedureEntry(this.program.block, this.statement._uuid);
+
+    if (!procedureEntry) return;
+
+    // Ensure devices array exists
+    if (!procedureEntry.devices) {
+      procedureEntry.devices = [];
+    }
+
+    const currentDevicesLength = procedureEntry.devices.length;
+    const targetDeviceCount = this.totalDeviceCount;
+
+    let needsTextEditorUpdate = false;
+
+    if (currentDevicesLength > targetDeviceCount) {
+      // Trim excess devices from the end
+      procedureEntry.devices = procedureEntry.devices.slice(0, targetDeviceCount);
+      needsTextEditorUpdate = true;
+    } else if (currentDevicesLength < targetDeviceCount) {
+      // Add empty device entries
+      const devicesToAdd = targetDeviceCount - currentDevicesLength;
+      for (let i = 0; i < devicesToAdd; i++) {
+        procedureEntry.devices.push({
+          uuid: '', // Will be filled when deviceType blocks are processed
+          deviceId: 'deviceType',
+          values: []
+        });
+      }
+      needsTextEditorUpdate = true;
+    }
+
+    // Update the text editor if changes were made
+    if (needsTextEditorUpdate) {
+      this.updateTextEditor();
+    }
+  }
+
+  updateTextEditor() {
+    // Dispatch events to update both graphical and text editors
+    const graphicalEditorEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+      detail: { programBodyUpdated: true }
+    });
+    this.dispatchEvent(graphicalEditorEvent);
+
+    const textEditorEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(textEditorEvent);
   }
 
   updated(changedProperties: Map<string, any>) {
