@@ -1090,24 +1090,24 @@ export class GeBlock extends LitElement {
         }
       }
 
-      const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-        bubbles: true,
-        composed: true,
-        detail: { programBodyUpdated: true },
-      });
-      this.dispatchEvent(programUpdatedEvent);
-      this.requestUpdate();
-
       const updateDeviceCountsEvent = new CustomEvent('update-device-counts', {
-        bubbles: true,
+        bubbles: false,
         composed: true,
         detail: { procedureUuid: this.parentProcedureUuid || this.tmpUUID }
       });
       this.dispatchEvent(updateDeviceCountsEvent);
     }
 
+    const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: false,
+      composed: true,
+      detail: { programBodyUpdated: true },
+    });
+    this.dispatchEvent(programUpdatedEvent);
+    this.requestUpdate();
+
     const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
-      bubbles: true,
+      bubbles: false,
       composed: true,
       detail: {
         procedureUuid: this.tmpUUID
@@ -1122,7 +1122,7 @@ export class GeBlock extends LitElement {
       this.selectedStatements.clear();
 
       const event = new CustomEvent('skeletonize-selection-changed', {
-        bubbles: true,
+        bubbles: false,
         composed: true,
         detail: { skeletonizeUuids: this.program.header.skeletonize_uuid }
       });
