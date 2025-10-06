@@ -163,8 +163,8 @@ export function assignUuidToBlock(block: Block) {
 
 export type DeviceMetadata = {
   uuid: string;
-  deviceId: string;
-  values: string[];
+  id: string;
+  arguments: ProgramStatementArgument[];
 };
 export class Program {
   header: Header;

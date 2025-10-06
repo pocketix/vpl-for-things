@@ -1,21 +1,35 @@
 import { consume } from '@lit/context';
-import { LitElement, html, css, nothing } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
-import { graphicalEditorCustomEvent, statementCustomEvent, deviceMetadataCustomEvent } from '@/editor/editor-custom-events';
+import {
+  AbstractStatementWithArgs,
+  assignUuidToBlock,
+  Block,
+  CompoundStatement,
+  DeviceMetadata,
+  initDefaultArgumentType,
+  Program,
+  ProgramStatement, ProgramStatementArgument
+} from '@/vpl/program';
+import {
+  deviceMetadataCustomEvent,
+  graphicalEditorCustomEvent,
+  statementCustomEvent
+} from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
   CompoundLanguageStatementWithArgs,
   DeviceStatement,
   EditorModal,
   Language,
-  UnitLanguageStatementWithArgs,
+  UnitLanguageStatementWithArgs
 } from '@/index';
-import { Ref, createRef, ref } from 'lit/directives/ref.js';
+import { createRef, Ref, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
 import * as icons from '../icons';
+import { findMetadataEntry } from '@/editor/utils/find-metadata-entry.ts';
 
 
 @customElement('ge-block')
@@ -397,13 +411,16 @@ export class GeBlock extends LitElement {
           const deviceName = stmt.id.split('.')[0];
           const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
 
+          console.log(deviceName);
+          console.log(isDeviceStatement);
+
           if (isDeviceStatement) {
             if (stmt.id === 'deviceType' ) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
                 uuid: stmt._uuid,
-                deviceId: String(arg.value),
-                values: [String(arg.value)],
+                id: String(arg.value),
+                arguments: (stmt as AbstractStatementWithArgs).arguments,
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -411,7 +428,7 @@ export class GeBlock extends LitElement {
                 arguments: []
               };
               const langStatement = this.language.statements[stmt.id];
-              const deviceValues: string[] = [];
+              const deviceValues: ProgramStatementArgument[] = [];
 
               if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
                 const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
@@ -419,20 +436,20 @@ export class GeBlock extends LitElement {
                 argDefs.forEach((argDef, index) => {
                   const newArg = {
                     type: argDef.type,
-                    value: null
+                    value: null as any
                   };
 
                   if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                     newArg.value = argDef.options[0].id;
-                    deviceValues.push(String(argDef.options[0].id));
+                    deviceValues.push(newArg);
                   } else {
                     newArg.value = initDefaultArgumentType(argDef.type);
-                    deviceValues.push(String(newArg.value));
+                    deviceValues.push(newArg);
                   }
                   if ((stmt as AbstractStatementWithArgs).arguments &&
                       (stmt as AbstractStatementWithArgs).arguments[index]) {
                     newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
-                    deviceValues[index] = String(newArg.value);
+                    deviceValues[index] = newArg;
                   }
                   deviceStatement.arguments.push(newArg);
                 });
@@ -440,8 +457,8 @@ export class GeBlock extends LitElement {
 
               devices.push({
                 uuid: stmt._uuid,
-                deviceId: stmt.id,
-                values: deviceValues
+                id: stmt.id,
+                arguments: deviceValues
               });
             }
           }
@@ -532,23 +549,6 @@ export class GeBlock extends LitElement {
       const isDeviceStatement = this.language.deviceList?.includes(deviceName);
 
       if (isDeviceBlock || isDeviceStatement) {
-        // Find the metadata entry recursively through the program structure
-        const findMetadataEntry = (block: any[], targetUuid: string): any => {
-          // First check if the entry is in this block
-          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-          if (directEntry) return directEntry;
-
-          // If not found directly, search in nested blocks
-          for (const stmt of block) {
-            if (stmt.block && Array.isArray(stmt.block)) {
-              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-              if (nestedEntry) return nestedEntry;
-            }
-          }
-
-          return null;
-        };
-
         // First try to find the metadata entry using the tmpUUID
         let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
 
@@ -880,23 +880,6 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        // Find the metadata entry recursively through the program structure
-        const findMetadataEntry = (block: any[], targetUuid: string): any => {
-          // First check if the entry is in this block
-          const directEntry = block.find(stmt => stmt._uuid === targetUuid);
-          if (directEntry) return directEntry;
-
-          // If not found directly, search in nested blocks
-          for (const stmt of block) {
-            if (stmt.block && Array.isArray(stmt.block)) {
-              const nestedEntry = findMetadataEntry(stmt.block, targetUuid);
-              if (nestedEntry) return nestedEntry;
-            }
-          }
-
-          return null;
-        };
-
         // First try to find the metadata entry using the tmpUUID
         let metadataEntry = findMetadataEntry(this.program.block, this.tmpUUID);
 
@@ -911,41 +894,27 @@ export class GeBlock extends LitElement {
             metadataEntry.devices = [];
           }
 
-          let deviceEntry = metadataEntry.devices.find((device: any) => device.uuid === clickedBlock._uuid);
+          let deviceEntry: DeviceMetadata = metadataEntry.devices
+            .find((device: any) => device.uuid === clickedBlock._uuid);
 
           // If device entry doesn't exist, create it
           if (!deviceEntry) {
             deviceEntry = {
               uuid: clickedBlock._uuid,
-              deviceId: stmtKey,
-              values: []
+              id: stmtKey,
+              arguments: []
             };
             metadataEntry.devices.push(deviceEntry);
           } else {
-            deviceEntry.deviceId = stmtKey;
+            deviceEntry.id = stmtKey;
           }
 
-          const langStatement = this.language.statements[stmtKey];
-          if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-            const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-            const defaultValues: string[] = [];
+          const langStatement = this.language.statements[stmtKey] as UnitLanguageStatementWithArgs | undefined;
 
-            argDefs.forEach(argDef => {
-              let defaultValue: string;
-              if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                defaultValue = String(argDef.options[0].id);
-              } else {
-                defaultValue = String(initDefaultArgumentType(argDef.type));
-              }
-              defaultValues.push(defaultValue);
-            });
-
-            // Update the values array in the device metadata
-            deviceEntry.values = defaultValues;
-          } else {
-            // If the new device has no arguments, reset the values array to empty
-            deviceEntry.values = [];
-          }
+          deviceEntry.arguments = langStatement?.arguments?.map(argDef => ({
+            type: argDef.type,
+            value: initDefaultArgumentType(argDef.type)
+          })) ?? [];
         }
 
 

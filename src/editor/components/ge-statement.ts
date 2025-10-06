@@ -489,16 +489,12 @@ export class GEStatement extends LitElement {
 
     if (!procedureEntry || !procedureEntry.devices) return 0;
 
-    const initializedCount = procedureEntry.devices.filter((device: any) => {
-      if (device.deviceId === 'deviceType') {
+    const initializedCount = procedureEntry.devices.filter((device: DeviceMetadata) => {
+      if (device.id === 'deviceType') {
         return false;
       }
 
-      if (this.language.statements[device.deviceId]) {
-        return true;
-      }
-
-      return false;
+      return !!this.language.statements[device.id];
     }).length;
 
     return initializedCount;
