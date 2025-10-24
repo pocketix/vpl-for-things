@@ -363,6 +363,13 @@ export class GEStatement extends LitElement {
         } else {
           this.updateDeviceMetadataValue();
         }
+
+        // Dispatch PROGRAM_UPDATED event to sync text editor when device values change during initialization
+        const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+          bubbles: true,
+          composed: true,
+        });
+        this.dispatchEvent(event);
       }
       this.requestUpdate();
     });
@@ -370,6 +377,14 @@ export class GEStatement extends LitElement {
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
       this.restrainedMode = false;
       this.editorMode = 'edit';
+
+      // Dispatch PROGRAM_UPDATED event to sync text editor when procedure modal is closed
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+
       this.requestUpdate();
     });
 
@@ -447,6 +462,13 @@ export class GEStatement extends LitElement {
       if (!deviceEntry.id || deviceEntry.id === '') {
         deviceEntry.id = this.statement.id;
       }
+
+      // Dispatch PROGRAM_UPDATED event to sync text editor when device metadata changes
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
     }
   }
 
@@ -523,13 +545,13 @@ export class GEStatement extends LitElement {
         this.totalDeviceCount = this.countDeviceTypeBlocks(procedureBlock);
         this.initializedDeviceCount = this.countInitializedDevices(this.statement._uuid);
 
-        // Match the number of devices array entries to deviceType statements
-        this.matchNumberOfDevices();
+        // Synchronize device array structure with template
+        this.synchronizeDeviceArrayWithTemplate();
       }
     }
   }
 
-  matchNumberOfDevices() {
+  synchronizeDeviceArrayWithTemplate() {
     if (!this.program || !this.statement?._uuid) return;
 
     // Find the procedure entry recursively through the program structure
@@ -558,48 +580,72 @@ export class GEStatement extends LitElement {
       procedureEntry.devices = [];
     }
 
-    const currentDevicesLength = procedureEntry.devices.length;
-    const targetDeviceCount = this.totalDeviceCount;
+    // Get device positions from the procedure template
+    const procedureBlock = this.program.header.userProcedures[this.statement.id];
+    const devicePositions = this.getDevicePositionsInBlock(procedureBlock);
 
-    let needsTextEditorUpdate = false;
+    // Create new device array matching the template structure
+    const currentDevices = procedureEntry.devices || [];
+    const newDevices: any[] = [];
 
-    if (currentDevicesLength > targetDeviceCount) {
-      // Trim excess devices from the end
-      procedureEntry.devices = procedureEntry.devices.slice(0, targetDeviceCount);
-      needsTextEditorUpdate = true;
-    } else if (currentDevicesLength < targetDeviceCount) {
-      // Add empty device entries
-      const devicesToAdd = targetDeviceCount - currentDevicesLength;
-      for (let i = 0; i < devicesToAdd; i++) {
-        procedureEntry.devices.push({
-          uuid: '', // Will be filled when deviceType blocks are processed
-          deviceId: 'deviceType',
-          values: []
+    // Track if the device array structure changed
+    let deviceArrayChanged = false;
+
+    // Create new device array matching the template structure
+    for (let i = 0; i < devicePositions.length; i++) {
+      if (i < currentDevices.length && currentDevices[i]) {
+        // Keep existing device if it exists
+        newDevices.push(currentDevices[i]);
+      } else {
+        // Add default deviceType for new positions
+        newDevices.push({
+          id: 'deviceType',
+          arguments: [{
+            type: Types.string,
+            value: ''
+          }]
         });
+        deviceArrayChanged = true;
       }
-      needsTextEditorUpdate = true;
     }
 
-    // Update the text editor if changes were made
-    if (needsTextEditorUpdate) {
-      this.updateTextEditor();
+    // Check if devices were removed (array got shorter)
+    if (currentDevices.length > devicePositions.length) {
+      deviceArrayChanged = true;
+    }
+
+    // Update the procedure entry with the synchronized device array
+    procedureEntry.devices = newDevices;
+
+    // Dispatch PROGRAM_UPDATED event to sync text editor when device array structure changes
+    if (deviceArrayChanged) {
+      const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
     }
   }
 
-  updateTextEditor() {
-    // Dispatch events to update both graphical and text editors
-    const graphicalEditorEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true,
-      detail: { programBodyUpdated: true }
-    });
-    this.dispatchEvent(graphicalEditorEvent);
+  private getDevicePositionsInBlock(block: any[]): number[] {
+    const positions: number[] = [];
+    let currentIndex = 0;
 
-    const textEditorEvent = new CustomEvent(textEditorCustomEvent.PROGRAM_UPDATED, {
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(textEditorEvent);
+    const traverseBlock = (currentBlock: any[]) => {
+      for (const stmt of currentBlock) {
+        if (stmt.id === 'deviceType' || (stmt.id && this.language?.deviceList?.includes(stmt.id.split('.')[0]))) {
+          positions.push(currentIndex);
+        }
+        currentIndex++;
+
+        if (stmt.block && Array.isArray(stmt.block)) {
+          traverseBlock(stmt.block);
+        }
+      }
+    };
+
+    traverseBlock(block);
+    return positions;
   }
 
   updated(changedProperties: Map<string, any>) {

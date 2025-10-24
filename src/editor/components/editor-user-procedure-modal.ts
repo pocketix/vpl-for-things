@@ -67,11 +67,18 @@ export class EditorUserProcedureModal extends LitElement {
   }
 
   handleProcedureModalClose = () => {
-    const event = new CustomEvent(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, {
+    const procedureEvent = new CustomEvent(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, {
       bubbles: true,
       composed: true
     });
-    this.dispatchEvent(event);
+    this.dispatchEvent(procedureEvent);
+
+    // Dispatch PROGRAM_UPDATED event to sync text editor when procedure body editing is complete
+    const programEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(programEvent);
   }
 
   handleChangeProcedureBody() {

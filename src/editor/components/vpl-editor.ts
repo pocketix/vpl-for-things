@@ -361,11 +361,16 @@ export class VplEditor extends LitElement {
       elem.requestUpdate();
     });
 
-    this.textEditorRef.value.textEditorValue = JSON.stringify(
-      this.program.exportProgramBlock(this.program.block),
-      null,
-      '  '
-    );
+    
+    if (this.textEditorRef.value && typeof this.textEditorRef.value.updateTextEditorFromProgram === 'function') {
+      this.textEditorRef.value.updateTextEditorFromProgram();
+    } else {
+      this.textEditorRef.value.textEditorValue = JSON.stringify(
+        this.program.exportProgramBlock(this.program.block),
+        null,
+        '  '
+      );
+    }
   }
 
   handleChangeEditorView(newView: 'ge' | 'te' | 'split') {

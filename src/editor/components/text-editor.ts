@@ -57,11 +57,22 @@ export class TextEditor extends LitElement {
   //#region Lifecycle
   connectedCallback() {
     super.connectedCallback();
-    this.textEditorValue = JSON.stringify(this.program.exportProgramBlock(this.program.block), null, ' ');
+    this.updateTextEditorFromProgram();
+    this.addEventListener(textEditorCustomEvent.PROGRAM_UPDATED, () => {
+      this.updateTextEditorFromProgram();
+    });
   }
 
   firstUpdated() {}
-  //#endregion
+
+  
+  updateTextEditorFromProgram() {
+    if (this.program) {
+      this.textEditorValue = JSON.stringify(this.program.exportProgramBlock(this.program.block), null, '  ');
+      this.requestUpdate();
+    }
+  }
+  
 
   handleTextEditorValueChange(e: Event) {
     this.textEditorValueIsInvalid = false;
