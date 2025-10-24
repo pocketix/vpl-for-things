@@ -25,7 +25,7 @@ export class EditorModal extends LitElement {
         border-radius: 0.5rem;
         outline: none;
         z-index: 10000;
-        width: 100%;
+        width: 60%;
         max-width: 100vw;
       }
 
