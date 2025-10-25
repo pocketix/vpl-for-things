@@ -145,7 +145,11 @@ export function assignUuidToBlock(block: Block) {
     if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
         if (isExpressionArray(arg)) {
-          (arg.value as Expression[]).forEach(item => assignUuidToExprOperands(item));
+          (arg.value as Expression[]).forEach(item => {
+            if (Array.isArray(item.value)) {
+              assignUuidToExprOperands(item);
+            }
+          });
         }
       }
     }
