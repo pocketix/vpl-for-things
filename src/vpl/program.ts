@@ -47,12 +47,7 @@ export function initDefaultArgumentType(argumentType: ArgumentType): string | nu
     case Types.boolean:
       return true;
     case Types.boolean_expression:
-      // Return an array with a properly structured expression object
-      // Don't set a default type to ensure it's properly initialized by the user
-      return [{
-        value: [],
-        _uuid: uuidv4()
-      }] as Expression[];
+      return [] as Expression[];
     case Types.number:
       return 0;
     case Types.string:
